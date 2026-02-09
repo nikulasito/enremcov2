@@ -1,0 +1,41 @@
+@extends('layouts.newguest')
+
+@section('content')
+<!-- <div class="card">
+    <div class="card-body">
+        <h1 class="card-title text-center">Verify Your Email</h1>
+        <p class="card-text">
+            Thanks for signing up! Before getting started, please verify your email address by clicking the link we just emailed to you. If you didn’t receive the email, we’ll gladly send you another.
+        </p>
+            @if (session('status') == 'verification-link-sent')
+            <div class="alert alert-success" role="alert">
+                A new verification link has been sent to your email address.
+            </div>
+            @endif
+            <form method="POST" action="{{ route('verification.send') }}" class="text-center">
+                @csrf
+                <button type="submit" class="btn btn-primary">Resend Verification Email</button>
+            </form>
+        </form>
+    </div>
+</div> -->
+
+<div class="card">
+    <div class="card-body">
+        <h1 class="card-title text-center">Thank you for Signing up</h1>
+        <p class="card-text">
+            Thanks for signing up! Please check your registered email for more details. If you didn’t receive the email, we’ll gladly send you another.
+        </p>
+            @if (session('status') == 'verification-link-sent')
+            <div class="alert alert-success" role="alert">
+                Please check your email address.
+            </div>
+            @endif
+            <form method="POST" action="{{ route('verification.send') }}" class="text-center">
+                @csrf
+                <button type="submit" class="btn btn-primary">Resend Verification Email</button>
+            </form>
+        </form>
+    </div>
+</div>
+@endsection

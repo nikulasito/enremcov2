@@ -1,0 +1,66 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Carbon\Carbon;
+
+class Loan extends Model
+{
+    use HasFactory;
+
+    protected $table = 'loan_details';
+
+    protected $fillable = [
+        'loan_number',
+        'member_id',
+        'type_of_loan',
+        'date_of_loan',
+        'interest_rate',
+        'number_of_terms',
+        'date_loan_approved',
+        'monthly_payment',
+
+        // IMPORTANT:
+        // If your loan_details table has employee_ID column, include it here:
+        'employee_ID',
+    ];
+
+    protected static function booted()
+    {
+        static::creating(function ($loan) {
+            // Auto-generate only if empty
+            if (empty($loan->loan_number)) {
+                $loan->loan_number = self::generateLoanNumber();
+            }
+        });
+    }
+
+    public static function generateLoanNumber(): string
+    {
+        // PH time
+        $date = Carbon::now('Asia/Manila')->format('Ymd');
+
+        do {
+            $rand = random_int(1000, 9999);
+            $loanNo = "LN-{$date}-{$rand}";
+        } while (self::where('loan_number', $loanNo)->exists());
+
+        return $loanNo;
+    }
+
+    /**
+     * Relation: loan_details.employee_ID -> users.employee_ID
+     * (Based on your blade usage: $loan->employee_ID and $user->employee_ID)
+     */
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'employee_ID', 'employee_ID');
+    }
+
+    public function member()
+    {
+        return $this->belongsTo(\App\Models\Member::class, 'member_id');
+    }
+}
