@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\SharesController;
 use App\Http\Controllers\Admin\SavingsController;
 use App\Http\Controllers\Admin\WithdrawController;
 use App\Http\Controllers\Admin\LoansController;
+use App\Http\Controllers\MemberLoanController;
 use App\Http\Controllers\Admin\LoanPaymentController;
 use App\Http\Middleware\IsAdmin;
 use App\Http\Middleware\AdminMiddleware;
@@ -231,7 +232,27 @@ Route::post('/admin/upload-savings-template', [SavingsController::class, 'upload
 
 // Route::get('/admin/savings', [AdminController::class, 'savings']);
 // Route::get('/admin/loans', [AdminController::class, 'loans']);
+Route::get('/about', function () {
+    return view('about');
+})->name('about');
+Route::get('/services', function () {
+    return view('services');
+})->name('services');
+Route::get('/loan-products', function () {
+    return view('loan-products');
+})->name('loan-products');
+Route::get('/contact', function () {
+    return view('contact');
+})->name('contact');
 
+Route::middleware('auth')->prefix('member')->name('member.')->group(function () {
+    Route::get('/loans/apply', fn() => view('member.loans.apply'))->name('loans.apply');
+    Route::post('/loans/store', [MemberLoanController::class, 'store'])->name('loans.store');
+
+    // ✅ move comaker search here
+    Route::get('/loans/comakers/search', [MemberLoanController::class, 'searchComakers'])
+        ->name('loans.comakers.search');
+});
 
 Route::get('/admin/new-members', [AdminController::class, 'newMembers'])->name('admin.new-members');
 Route::patch('/admin/approve-member/{id}', [AdminController::class, 'approveMember'])->name('admin.approve-member');

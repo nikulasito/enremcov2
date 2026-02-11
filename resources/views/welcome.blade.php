@@ -62,16 +62,18 @@
                 </a>
 
                 <nav class="hidden flex-1 justify-center gap-8 md:flex">
+                    <a class="text-sm font-semibold text-primary text-[#111814] dark:text-[#f0f4f2] hover:text-primary transition-colors"
+                        href="{{ route('home') }}">Home</a>
+                    <a href="{{ route('about') }}"
+                        class="text-sm font-semibold {{ request()->routeIs('about') ? 'text-primary' : 'text-[#111814] dark:text-[#f0f4f2] hover:text-primary transition-colors' }}">
+                        About Us
+                    </a>
                     <a class="text-sm font-semibold text-[#111814] dark:text-[#f0f4f2] hover:text-primary transition-colors"
-                        href="#">Home</a>
+                        href="{{ route('services') }}">Services</a>
                     <a class="text-sm font-semibold text-[#111814] dark:text-[#f0f4f2] hover:text-primary transition-colors"
-                        href="#">About Us</a>
+                        href="{{ route('loan-products') }}">Loan Products</a>
                     <a class="text-sm font-semibold text-[#111814] dark:text-[#f0f4f2] hover:text-primary transition-colors"
-                        href="#">Services</a>
-                    <a class="text-sm font-semibold text-[#111814] dark:text-[#f0f4f2] hover:text-primary transition-colors"
-                        href="#">Loan Products</a>
-                    <a class="text-sm font-semibold text-[#111814] dark:text-[#f0f4f2] hover:text-primary transition-colors"
-                        href="#">Contact</a>
+                        href="{{ route('contact') }}">Contact</a>
                 </nav>
 
                 <div class="flex items-center gap-3">
@@ -105,49 +107,44 @@
         </header>
 
         <main class="flex-1">
-            <section class="relative w-full overflow-hidden">
-                <div class="mx-auto max-w-[1280px] p-4 lg:p-10">
-                    <div class="relative flex min-h-[580px] flex-col justify-center rounded-xl bg-cover bg-center px-6 py-12 lg:px-20"
-                        style='background-image: linear-gradient(rgba(17, 33, 25, 0.7) 0%, rgba(17, 33, 25, 0.9) 100%), url("https://lh3.googleusercontent.com/aida-public/AB6AXuCdL2Qs6VYWFhcev68fcbZifnBtE4QulKa6GS5tZ1dhQhWdGwnKp7E_uXxwf-iUK4qH7Taf2aGhheje46nq4aVJAEjuhURxoOn9chj_m03I5n4UeiDpk0e_mXDUYtcikAfE2zbxNPKhirn_v-arsOFp0EXXeGaWyMsFp0xrwNpQQ4TSphS8FfPyaCDYawgDeTQT0VBU2fsq80OMmU13skRxaEjKESthJ87xIj0Lk6RrxC79JtILjxuydUvONrH8k2Z27at-4Za3h0H_");'>
-                        <div class="max-w-2xl">
-                            <h1
-                                class="text-4xl font-black leading-tight tracking-tight text-white sm:text-5xl lg:text-6xl">
-                                Empowering Our Members Through Financial Excellence
-                            </h1>
-                            <p class="mt-6 text-base font-normal leading-relaxed text-[#dce5e0] lg:text-lg">
-                                Experience competitive low-interest rates and exclusive member-owned benefits tailored
-                                specifically for Department of Environment and Natural Resources 10 employees.
-                            </p>
+            <section class="bg-background-dark py-12 lg:py-16">
+                <div class="mx-auto max-w-[1280px] px-6 lg:px-10">
+                    <div class="max-w-[1280px]">
+                        <h1 class="text-4xl font-black leading-tight tracking-tight text-white sm:text-5xl lg:text-6xl">
+                            Empowering Our Members Through <span class="text-primary">Financial Excellence</span>
+                        </h1>
+                        <p class="mt-6 text-base font-normal leading-relaxed text-[#dce5e0] lg:text-lg">
+                            Experience competitive low-interest rates and exclusive member-owned benefits tailored
+                            specifically for Department of Environment and Natural Resources 10 employees.
+                        </p>
 
-                            <div class="mt-10 flex flex-wrap gap-4">
-                                @auth
-                                    <a href="{{ route('dashboard') }}"
+                        <div class="mt-10 flex flex-wrap gap-4">
+                            @auth
+                                <a href="{{ route('dashboard') }}"
+                                    class="flex min-w-[180px] cursor-pointer items-center justify-center rounded-lg h-14 px-6 bg-primary text-[#112119] text-base font-extrabold tracking-tight hover:scale-105 transition-transform">
+                                    Go to Dashboard
+                                </a>
+                            @else
+                                @if (Route::has('login'))
+                                    <a href="{{ route('login') }}"
                                         class="flex min-w-[180px] cursor-pointer items-center justify-center rounded-lg h-14 px-6 bg-primary text-[#112119] text-base font-extrabold tracking-tight hover:scale-105 transition-transform">
-                                        Go to Dashboard
+                                        Member Login
+                                    </a>
+                                @endif
+
+                                @if (Route::has('register'))
+                                    <a href="{{ route('register') }}"
+                                        class="flex min-w-[200px] cursor-pointer items-center justify-center rounded-lg h-14 px-6 bg-white/10 backdrop-blur-md border border-white/20 text-white text-base font-extrabold tracking-tight hover:bg-white/20 transition-all">
+                                        Apply for Membership
                                     </a>
                                 @else
-                                    @if (Route::has('login'))
-                                        <a href="{{ route('login') }}"
-                                            class="flex min-w-[180px] cursor-pointer items-center justify-center rounded-lg h-14 px-6 bg-primary text-[#112119] text-base font-extrabold tracking-tight hover:scale-105 transition-transform">
-                                            Member Login
-                                        </a>
-                                    @endif
-
-                                    @if (Route::has('register'))
-                                        <a href="{{ route('register') }}"
-                                            class="flex min-w-[200px] cursor-pointer items-center justify-center rounded-lg h-14 px-6 bg-white/10 backdrop-blur-md border border-white/20 text-white text-base font-extrabold tracking-tight hover:bg-white/20 transition-all">
-                                            Apply for Membership
-                                        </a>
-                                    @else
-                                        <a href="#"
-                                            class="flex min-w-[200px] cursor-pointer items-center justify-center rounded-lg h-14 px-6 bg-white/10 backdrop-blur-md border border-white/20 text-white text-base font-extrabold tracking-tight hover:bg-white/20 transition-all">
-                                            Apply for Membership
-                                        </a>
-                                    @endif
-                                @endauth
-                            </div>
+                                    <a href="#"
+                                        class="flex min-w-[200px] cursor-pointer items-center justify-center rounded-lg h-14 px-6 bg-white/10 backdrop-blur-md border border-white/20 text-white text-base font-extrabold tracking-tight hover:bg-white/20 transition-all">
+                                        Apply for Membership
+                                    </a>
+                                @endif
+                            @endauth
                         </div>
-
                     </div>
                 </div>
             </section>
@@ -161,13 +158,30 @@
                         <h2 class="text-3xl lg:text-4xl font-black text-[#111814] dark:text-white mt-2">Interactive Loan
                             Calculator</h2>
                         <p class="text-[#638875] dark:text-[#a0b0a8] mt-3">Calculate your estimated repayment with our
-                            5.0% annual interest rate for Multi-Purpose Loans.</p>
+                            12.0% annual interest rate for Regular Loans.</p>
                     </div>
 
                     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
                         <div
                             class="lg:col-span-7 bg-[#f6f8f7] dark:bg-[#1a2e24] p-8 lg:p-10 rounded-2xl border border-[#dce5e0] dark:border-[#2a3a32]">
-                            <div class="flex flex-col gap-10">
+                            <div class="flex flex-col gap-8">
+
+                                <div class="flex flex-col gap-6">
+                                    <div class="flex items-center justify-between">
+                                        <label class="text-lg font-bold text-[#111814] dark:text-white">Loan
+                                            Type</label>
+
+                                        <select
+                                            class="bg-white dark:bg-[#2a3a32] border border-[#dce5e0] dark:border-[#354a3f] rounded-lg text-sm font-semibold p-2 focus:ring-primary focus:border-primary"
+                                            id="loan-type" onchange="updateCalculator()">
+                                            <option value="0.12">Regular (12.0%)</option>
+                                            <option value="0.045">Educational (4.5%)</option>
+                                            <option value="0.03">Appliance (3.0%)</option>
+                                            <option value="0.025">Grocery (2.5%)</option>
+                                        </select>
+                                    </div>
+                                </div>
+
                                 <div class="flex flex-col gap-6">
                                     <div class="flex items-center justify-between">
                                         <label class="text-lg font-bold text-[#111814] dark:text-white">Loan
@@ -175,11 +189,13 @@
                                         <span class="text-2xl font-black text-primary">₱ <span
                                                 id="amount-display">100,000</span></span>
                                     </div>
-                                    <input id="loan-amount" max="1000000" min="10000" oninput="updateCalculator()"
+
+                                    <input id="loan-amount" max="1000000" min="5000" oninput="updateCalculator()"
                                         step="5000" type="range" value="100000" />
+
                                     <div
                                         class="flex justify-between text-xs font-bold text-[#638875] dark:text-[#a0b0a8] uppercase tracking-wider">
-                                        <span>₱10,000</span>
+                                        <span>₱5,000</span>
                                         <span>₱1,000,000</span>
                                     </div>
                                 </div>
@@ -191,8 +207,10 @@
                                         <span class="text-2xl font-black text-primary"><span id="term-display">12</span>
                                             Months</span>
                                     </div>
+
                                     <input id="loan-term" max="36" min="6" oninput="updateCalculator()" step="6"
                                         type="range" value="12" />
+
                                     <div
                                         class="flex justify-between text-xs font-bold text-[#638875] dark:text-[#a0b0a8] uppercase tracking-wider">
                                         <span>6 Months</span>
@@ -203,10 +221,13 @@
                                 <div
                                     class="pt-4 border-t border-[#dce5e0] dark:border-[#2a3a32] flex items-center gap-3">
                                     <span class="material-symbols-outlined text-primary">info</span>
-                                    <p class="text-sm text-[#638875] dark:text-[#a0b0a8]">Calculation is based on a
-                                        standard 5.0% annual interest rate. Actual rates may vary based on loan type.
+                                    <p class="text-sm text-[#638875] dark:text-[#a0b0a8]">
+                                        Calculation is based on a <span class="font-bold" id="rate-display">12.0%</span>
+                                        annual interest rate.
+                                        Actual rates may vary based on loan type.
                                     </p>
                                 </div>
+
                             </div>
                         </div>
 
@@ -236,8 +257,8 @@
                             </div>
 
                             <div class="relative z-10">
-                                @if (Route::has('register'))
-                                    <a href="{{ route('register') }}"
+                                @if (Route::has('login'))
+                                    <a href="{{ route('login') }}"
                                         class="w-full py-5 bg-primary text-[#112119] rounded-xl font-black text-lg hover:brightness-110 shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-3 group">
                                         Apply Now
                                         <span
@@ -335,7 +356,7 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         @php
-                            $applyHref = Route::has('register') ? route('register') : '#';
+                            $applyHref = Route::has('login') ? route('login') : '#';
                         @endphp
 
                         <div
@@ -541,9 +562,9 @@
 
     <script>
         function updateCalculator() {
-            const amount = parseInt(document.getElementById('loan-amount').value);
-            const term = parseInt(document.getElementById('loan-term').value);
-            const annualRate = 0.05; // 5% fixed
+            const amount = parseInt(document.getElementById('loan-amount').value, 10);
+            const term = parseInt(document.getElementById('loan-term').value, 10);
+            const annualRate = parseFloat(document.getElementById('loan-type').value); // uses selected
 
             const totalInterest = amount * annualRate * (term / 12);
             const totalRepayment = amount + totalInterest;
@@ -554,9 +575,11 @@
             document.getElementById('monthly-amortization').innerText = Math.round(monthlyAmortization).toLocaleString();
             document.getElementById('total-interest').innerText = '₱' + totalInterest.toLocaleString(undefined, { minimumFractionDigits: 2 });
             document.getElementById('total-repayment').innerText = '₱' + totalRepayment.toLocaleString(undefined, { minimumFractionDigits: 2 });
+
+            document.getElementById('rate-display').innerText = (annualRate * 100).toFixed(1) + '%';
         }
 
-        window.onload = updateCalculator;
+        window.addEventListener('DOMContentLoaded', updateCalculator);
     </script>
 </body>
 

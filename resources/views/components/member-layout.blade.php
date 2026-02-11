@@ -13,7 +13,7 @@
     $isSecurity = request()->routeIs('password.edit') || request()->routeIs('password.update');
 
     // You don't have member.loans route yet
-    $isLoans = request()->is('member/loans');
+    $isLoans = request()->is('member/loans*') || request()->routeIs('member.loans.*');
 
     // Named slot support (optional)
     // If a page provides <x-slot name="header"> ... </x-slot>, we show it.
@@ -114,8 +114,8 @@
                 {{-- Loans link placeholder (no route yet) --}}
                 <li>
                     <a class="flex items-center gap-4 px-8 py-4 transition-all
-                        {{ $isLoans ? 'nav-item-active' : 'text-[#a0b0a8] hover:text-white hover:bg-white/5' }}"
-                        href="#" title="Loans page not added yet">
+        {{ $isLoans ? 'nav-item-active' : 'text-[#a0b0a8] hover:text-white hover:bg-white/5' }}"
+                        href="{{ route('member.loans.apply') }}">
                         <span class="material-symbols-outlined">payments</span>
                         <span class="{{ $isLoans ? 'font-bold' : 'font-medium' }}">Loans</span>
                     </a>

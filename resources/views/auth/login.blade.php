@@ -135,11 +135,6 @@
                         </div>
 
                         <div class="flex items-center justify-between">
-                            <label class="flex items-center gap-2 cursor-pointer">
-                                <input class="size-5 rounded border-[#dce5e0] text-primary focus:ring-primary"
-                                    type="checkbox" name="remember" {{ old('remember') ? 'checked' : '' }} />
-                                <span class="text-sm font-medium text-[#638875]">Remember Me</span>
-                            </label>
 
                             @if (Route::has('password.request'))
                                 <a class="text-sm font-bold text-primary hover:underline"

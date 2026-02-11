@@ -72,6 +72,21 @@
                                 Accomplished application form</li>
                         </ul>
                     </div>
+                    <div
+                        class="bg-white dark:bg-[#1a2e24] rounded-2xl p-8 border border-[#dce5e0] dark:border-[#2a3a32]">
+                        <p class="text-sm text-[#638875]">
+                            Already have an account?
+                            @if (Route::has('login'))
+                                <a class="font-bold text-primary hover:underline" href="{{ route('login') }}">
+                                    Login Here
+                                </a>
+                            @else
+                                <a class="font-bold text-primary hover:underline" href="#">
+                                    Login Here
+                                </a>
+                            @endif
+                        </p>
+                    </div>
                 </aside>
 
                 {{-- Right side --}}
