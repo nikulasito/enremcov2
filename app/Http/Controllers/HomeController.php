@@ -17,7 +17,7 @@ class HomeController extends Controller
         if (!$user)
             return redirect()->route('login');
 
-        // IMPORTANT: shares/savings.employees_id stores this value (ex: ENREMCO-000-004)
+
         $memberKey = $user->id;
 
         // SHARES
