@@ -3,6 +3,25 @@
         $sharesAmount = $totalShares ?? 0;
         $sharesMonths = $totalEntries ?? null;
 
+        $loanStatus = $pendingLoan?->status;
+        $loanStatusLabel = match ($loanStatus) {
+            'pending' => 'Pending',
+            'for_review' => 'In Review',
+            'for_approval' => 'For Approval',
+            'for_printing' => 'For Printing',
+            'approved' => 'Approved',
+            'rejected' => 'Rejected',
+            default => $loanStatus ? ucwords(str_replace('_', ' ', $loanStatus)) : null,
+        };
+        $loanStatusClass = match ($loanStatus) {
+            'pending' => 'bg-amber-100 text-amber-700 border border-amber-200',
+            'for_review', 'for_approval' => 'bg-blue-100 text-blue-700 border border-blue-200',
+            'for_printing' => 'bg-purple-100 text-purple-700 border border-purple-200',
+            'approved' => 'bg-green-100 text-green-700 border border-green-200',
+            'rejected' => 'bg-red-100 text-red-700 border border-red-200',
+            default => 'bg-slate-100 text-slate-700 border border-slate-200',
+        };
+
         $savingsAmount = $totalSavingsDisplayed ?? 0;
         $savingsMonths = $totalSavingsEntries ?? null;
 
@@ -47,11 +66,11 @@
                     <p class="text-xs font-bold text-slate-400 uppercase">Current Date</p>
                     <p class="text-sm font-bold text-slate-700">{{ $today }}</p>
                 </div>
-                <button
+                <!-- <button
                     class="flex size-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"
                     type="button">
                     <span class="material-symbols-outlined">notifications</span>
-                </button>
+                </button> -->
             </div>
         </div>
     </x-slot>
@@ -135,10 +154,11 @@
                         <div>
                             <div class="flex items-center gap-3 mb-1">
                                 <h4 class="text-lg font-bold text-slate-900">{{ $loanTypeLabel ?? 'Loan' }}</h4>
-                                <span
-                                    class="px-3 py-1 rounded-full bg-amber-100 text-amber-700 text-xs font-bold border border-amber-200">
-                                    Pending Approval
-                                </span>
+                                @if($loanStatusLabel)
+                                    <span class="px-3 py-1 rounded-full text-xs font-bold {{ $loanStatusClass }}">
+                                        {{ $loanStatusLabel }}
+                                    </span>
+                                @endif
                             </div>
                             <p class="text-sm text-slate-500">
                                 Application Reference:
@@ -158,11 +178,15 @@
                             <p class="text-sm font-bold text-slate-700">{{ $loanDateFmt ?? '—' }}</p>
                         </div>
                         <div class="col-span-2 md:col-span-1 flex items-center md:justify-end">
-                            <a class="inline-flex items-center gap-2 text-sm font-bold text-secondary hover:text-blue-700 transition-colors"
-                                href="#">
-                                View Details
-                                <span class="material-symbols-outlined text-lg">chevron_right</span>
-                            </a>
+                            @if($pendingLoan?->status === 'for_printing')
+                                <button type="button" onclick="openLoanDetailsModal({{ $pendingLoan->id }})"
+                                    class="inline-flex items-center gap-2 text-sm font-bold text-secondary hover:text-blue-700 transition-colors">
+                                    View Details
+                                    <span class="material-symbols-outlined text-lg">chevron_right</span>
+                                </button>
+                            @else
+                                <span class="text-sm font-bold text-slate-400">View Details</span>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -219,7 +243,7 @@
 
                     <a href="{{ route('member.loans.apply', ['type' => $loan['type']]) }}"
                         class="mt-6 w-full py-3 px-4 rounded-xl font-black text-sm transition-all hover:brightness-105 active:scale-95 shadow-md
-                                                {{ $loan['style'] === 'secondary' ? 'bg-secondary text-white shadow-secondary/10' : 'bg-primary text-background-dark shadow-primary/10' }}">
+                                                                                                {{ $loan['style'] === 'secondary' ? 'bg-secondary text-white shadow-secondary/10' : 'bg-primary text-background-dark shadow-primary/10' }}">
                         Apply Now
                     </a>
                 </div>
@@ -278,4 +302,127 @@
             </div>
         </div>
     </section>
+    {{-- Loan Details Modal --}}
+
+    <script>
+        function openLoanDetailsModal(id) {
+            const modal = document.getElementById('loanDetailsModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+
+            // reset
+            document.getElementById('ld_app_no').textContent = '—';
+            document.getElementById('ld_loan_type').textContent = '—';
+            document.getElementById('ld_amount').textContent = '—';
+            document.getElementById('ld_date').textContent = '—';
+            document.getElementById('ld_remarks').textContent = 'Loading…';
+            document.getElementById('ld_pdf').src = '';
+
+            fetch(`{{ url('member/loans') }}/${id}/details`, {
+                headers: { 'Accept': 'application/json' }
+            })
+                .then(r => r.json())
+                .then(data => {
+                    document.getElementById('ld_app_no').textContent = data.application_no ?? '—';
+                    document.getElementById('ld_loan_type').textContent = (data.loan_type ?? '—').toString().replaceAll('_', ' ');
+                    document.getElementById('ld_amount').textContent = `₱${Number(data.loan_amount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                    document.getElementById('ld_date').textContent = data.created_at ?? '—';
+
+                    // ✅ show admin approval notes
+                    document.getElementById('ld_remarks').textContent = data.remarks && data.remarks.trim()
+                        ? data.remarks
+                        : 'No approval notes were provided.';
+
+                    // ✅ PDF viewer
+                    document.getElementById('ld_pdf').src = data.pdf_url;
+                    document.getElementById('ld_open_new').href = data.pdf_url;
+                })
+                .catch(() => {
+                    document.getElementById('ld_remarks').textContent = 'Failed to load details.';
+                });
+        }
+
+        function closeLoanDetailsModal() {
+            const modal = document.getElementById('loanDetailsModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+
+            // stop PDF streaming when closed
+            document.getElementById('ld_pdf').src = '';
+        }
+    </script>
+
 </x-member-layout>
+<div id="loanDetailsModal" class="fixed inset-0 z-[100] hidden items-center justify-center p-4">
+    {{-- blur overlay --}}
+    <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onclick="closeLoanDetailsModal()"></div>
+
+    <div class="relative w-full max-w-5xl overflow-hidden rounded-2xl bg-white shadow-2xl max-h-[90vh] flex flex-col">
+        {{-- Header --}}
+        <div class="bg-sidebar-green p-6 flex items-start justify-between shrink-0 bg-[#fcfdfc]">
+            <div>
+                <h2 class="text-xl font-black">Loan Details</h2>
+                <p class="text-[10px] text-primary font-bold uppercase tracking-[0.2em] mt-1">
+                    Application No: <span id="ld_app_no">—</span>
+                </p>
+            </div>
+
+            <button type="button" class="text-white/60 hover:text-white transition-colors"
+                onclick="closeLoanDetailsModal()">
+                <span class="material-symbols-outlined text-slate-400">close</span>
+            </button>
+        </div>
+
+        {{-- Body --}}
+        <div class="flex-1 overflow-y-auto p-6 md:p-8 space-y-6">
+            {{-- Top info --}}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                    <p class="text-[10px] font-black uppercase tracking-widest text-slate-500">Loan Type</p>
+                    <p id="ld_loan_type" class="mt-1 text-lg font-black text-slate-900">—</p>
+
+                    <div class="mt-4">
+                        <p class="text-[10px] font-black uppercase tracking-widest text-slate-500">Amount</p>
+                        <p id="ld_amount" class="mt-1 text-2xl font-black text-slate-900">—</p>
+                    </div>
+
+                    <div class="mt-4">
+                        <p class="text-[10px] font-black uppercase tracking-widest text-slate-500">Date Applied</p>
+                        <p id="ld_date" class="mt-1 text-sm font-bold text-slate-700">—</p>
+                    </div>
+                </div>
+
+                {{-- Admin note --}}
+                <div class="rounded-2xl border border-primary/20 bg-primary/5 p-5">
+                    <div class="flex items-center justify-between">
+                        <p class="text-[10px] font-black uppercase tracking-widest text-slate-600">Admin Approval
+                            Notes</p>
+                        <span id="ld_status"
+                            class="px-3 py-1 rounded-full text-xs font-black bg-purple-100 text-purple-700 border border-purple-200">
+                            For Printing
+                        </span>
+                    </div>
+
+                    <p id="ld_remarks" class="mt-3 text-sm font-medium text-slate-700 leading-relaxed">
+                        —
+                    </p>
+                </div>
+            </div>
+
+            {{-- PDF Viewer --}}
+            <div class="rounded-2xl border border-slate-200 overflow-hidden">
+                <div class="px-5 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+                    <p class="text-xs font-black text-slate-600 uppercase tracking-widest">Document Preview</p>
+                    <a id="ld_open_new" href="#" target="_blank"
+                        class="text-xs font-black text-secondary hover:underline">
+                        Open in new tab
+                    </a>
+                </div>
+
+                <div class="h-[70vh] bg-white">
+                    <iframe id="ld_pdf" src="" class="w-full h-full" style="border:0;" title="Loan PDF Viewer"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

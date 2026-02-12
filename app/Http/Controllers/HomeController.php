@@ -58,7 +58,7 @@ class HomeController extends Controller
                 $q->where('user_id', $user->id)
                     ->orWhere('member_key', $memberKey);
             })
-            ->whereIn('status', ['pending', 'for_review', 'for_approval'])
+            ->whereIn('status', ['pending', 'for_review', 'for_approval', 'for_printing'])
             ->orderByDesc('created_at')
             ->first();
 

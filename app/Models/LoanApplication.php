@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class LoanApplication extends Model
 {
+    protected $table = 'loan_applications';
     protected $fillable = [
         'user_id',
         'application_no',
@@ -25,4 +26,9 @@ class LoanApplication extends Model
         'reviewed_at',
         'remarks',
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(\App\Models\User::class, 'user_id');
+    }
 }

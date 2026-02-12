@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\LoanApplication;
+use Dompdf\Dompdf;
+use Dompdf\Options;
 use App\Notifications\NewLoanApplicationNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
@@ -132,5 +134,51 @@ class MemberLoanController extends Controller
             ]);
 
         return response()->json($results);
+    }
+
+    public function print(LoanApplication $application)
+    {
+        // ✅ security: only the owner can view
+        abort_unless($application->user_id === auth()->id(), 403);
+
+        // Optional: allow only when for_printing
+        abort_unless($application->status === 'for_printing', 403);
+
+        $html = view('member.loans.print_regular', [
+            'app' => $application,
+        ])->render();
+
+        $options = new Options();
+        $options->set('isRemoteEnabled', true);
+
+        $dompdf = new Dompdf($options);
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+
+        $filename = 'Loan-' . ($application->application_no ?? $application->id) . '.pdf';
+
+        return response($dompdf->output(), 200)
+            ->header('Content-Type', 'application/pdf')
+            ->header('Content-Disposition', 'inline; filename="' . $filename . '"');
+    }
+
+    public function details(LoanApplication $application)
+    {
+        abort_unless($application->user_id === auth()->id(), 403);
+
+        return response()->json([
+            'id' => $application->id,
+            'application_no' => $application->application_no,
+            'full_name' => $application->full_name,
+            'address' => $application->address,
+            'member_key' => $application->member_key,
+            'loan_type' => $application->loan_type,
+            'loan_amount' => (float) $application->loan_amount,
+            'status' => $application->status,
+            'created_at' => optional($application->created_at)?->format('M d, Y'),
+            'remarks' => $application->remarks, // ✅ admin note
+            'pdf_url' => route('member.loans.print', $application->id), // ✅ PDF viewer source
+        ]);
     }
 }

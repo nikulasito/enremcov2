@@ -6,12 +6,15 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\LoanDetail;
+use App\Models\LoanApplication;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 use App\Models\LoanPayment;
 use App\Exports\LoanTemplateExport;
 use App\Imports\LoanImport;
 use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Support\Facades\Notification;
+use App\Notifications\LoanStatusUpdatedNotification;
 
 class LoansController extends Controller
 {
@@ -74,6 +77,38 @@ class LoansController extends Controller
 
         return view('admin.loans', compact('loans'));
     }
+
+    public function requestsQueue(Request $request)
+    {
+        $q = $request->get('q');
+        $loanType = $request->get('loan_type', 'all');
+        $status = $request->get('status', 'all');
+
+        $query = LoanApplication::query();
+
+        if ($q) {
+            $query->where(function ($qq) use ($q) {
+                $qq->where('full_name', 'like', "%{$q}%")
+                    ->orWhere('member_key', 'like', "%{$q}%")
+                    ->orWhere('application_no', 'like', "%{$q}%");
+            });
+        }
+
+        if ($loanType !== 'all') {
+            $query->where('loan_type', $loanType);
+        }
+
+        if ($status !== 'all') {
+            $query->where('status', $status);
+        }
+
+        $applications = $query->orderByDesc('created_at')
+            ->paginate(10)
+            ->withQueryString();
+
+        return view('admin.loans.requests', compact('applications', 'q', 'loanType', 'status'));
+    }
+
 
     public function store(Request $request)
     {
@@ -360,5 +395,103 @@ class LoansController extends Controller
             return back()->with('error', $e->getMessage());
         }
     }
+
+    public function loanRequestsIndex(Request $request)
+    {
+        $q = trim((string) $request->get('q', ''));
+        $loanType = $request->get('loan_type', 'all');
+        $status = $request->get('status', 'all');
+
+        $applications = LoanApplication::query()
+            ->when($q !== '', function ($query) use ($q) {
+                $query->where('full_name', 'like', "%{$q}%")
+                    ->orWhere('member_key', 'like', "%{$q}%")
+                    ->orWhere('application_no', 'like', "%{$q}%");
+            })
+            ->when($loanType !== 'all', fn($query) => $query->where('loan_type', $loanType))
+            ->when($status !== 'all', fn($query) => $query->where('status', $status))
+            ->orderByDesc('created_at')
+            ->paginate(10)
+            ->withQueryString();
+
+        return view('admin.loan_requests', compact('applications', 'q', 'loanType', 'status'));
+    }
+
+
+    public function loanRequestsShow(LoanApplication $application, Request $request)
+    {
+        // used by the modal fetch()
+        if ($request->wantsJson()) {
+            return response()->json([
+                'id' => $application->id,
+                'application_no' => $application->application_no,
+                'full_name' => $application->full_name,
+                'address' => $application->address,
+                'member_key' => $application->member_key,
+                'loan_type' => $application->loan_type,
+                'loan_amount' => (float) $application->loan_amount,
+                'status' => $application->status,
+                'created_at' => optional($application->created_at)?->format('M d, Y'),
+                'remarks' => $application->remarks,
+                // If you add these columns later, modal will auto-fill
+                'old_balance' => $application->old_balance ?? null,
+                'lpp' => $application->lpp ?? null,
+                'interest' => $application->interest ?? null,
+                'handling_fee' => $application->handling_fee ?? null,
+                'petty_cash_loan' => $application->petty_cash_loan ?? null,
+                'total_deduction' => $application->total_deduction ?? null,
+                'total_net' => $application->total_net ?? null,
+                'terms' => $application->terms ?? null,
+                'monthly_payment' => $application->monthly_payment ?? null,
+                'lv_no' => $application->lv_no ?? null,
+            ]);
+        }
+
+        return redirect()->route('admin.loan-requests.index');
+    }
+
+    public function loanRequestsApprove(Request $request, LoanApplication $application)
+    {
+        $request->validate([
+            'remarks' => 'nullable|string|max:1000',
+        ]);
+
+        $application->update([
+            'status' => 'for_printing',
+            'reviewed_by' => auth()->id(),
+            'reviewed_at' => now(),
+            'remarks' => $request->input('remarks'), // ✅ approval notes
+        ]);
+
+        // Notify member (requires notifications table)
+        if ($application->user) {
+            $application->user->notify(new LoanStatusUpdatedNotification($application));
+        }
+
+
+
+        return back()->with('success', 'Application approved and set to For Printing.');
+    }
+
+    public function loanRequestsReject(Request $request, LoanApplication $application)
+    {
+        $request->validate([
+            'remarks' => 'nullable|string|max:255',
+        ]);
+
+        $application->update([
+            'status' => 'rejected',
+            'reviewed_by' => auth()->id(),
+            'reviewed_at' => now(),
+            'remarks' => $request->input('remarks', 'Rejected by admin.'),
+        ]);
+
+        if ($application->user) {
+            $application->user->notify(new LoanStatusUpdatedNotification($application));
+        }
+
+        return back()->with('success', 'Application rejected.');
+    }
+
 
 }

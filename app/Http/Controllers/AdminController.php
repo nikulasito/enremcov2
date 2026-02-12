@@ -12,7 +12,9 @@ use Illuminate\Support\Facades\Log;    // for Log::error / w
 use App\Models\User;
 use App\Models\LoanDetail;
 use App\Models\LoanPayment;
+use App\Models\LoanApplication;
 use Illuminate\Support\Facades\Schema;
+
 
 
 class AdminController extends Controller
@@ -20,6 +22,8 @@ class AdminController extends Controller
     // Dashboard Method
     public function dashboard()
     {
+
+        $userId = auth()->id();
         $totalUsers = User::where('is_admin', '!=', 1)->count();
 
         $totalActiveMembers = User::where('is_admin', '!=', 1)
@@ -74,6 +78,23 @@ class AdminController extends Controller
             }
         }
 
+        // Pending / in-process loans
+        $pendingLoans = LoanApplication::where('user_id', $userId)
+            ->whereIn('status', ['pending', 'for_review', 'for_approval', 'for_printing'])
+            ->latest()
+            ->get();
+
+        // Optional: show loan history (approved/rejected too)
+        $loanHistory = LoanApplication::where('user_id', $userId)
+            ->latest()
+            ->take(5)
+            ->get();
+
+        $recentLoanEntries = LoanApplication::query()
+            ->latest()
+            ->take(5)
+            ->get();
+
         return view('admin.dashboard', compact(
             'totalUsers',
             'totalActiveMembers',
@@ -84,7 +105,9 @@ class AdminController extends Controller
             'pendingLoans',
             'recentMembershipRequests',
             'recentLoanEntries',
-            'borrowerNames'
+            'borrowerNames',
+            'pendingLoans',
+            'recentLoanEntries'
         ));
     }
 

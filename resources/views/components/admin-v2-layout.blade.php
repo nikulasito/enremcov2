@@ -14,6 +14,46 @@
     $adminRole = ($admin->is_admin ?? 1) ? 'Super Admin' : 'Admin';
 
     $navClass = fn (bool $active) => $active ? 'nav-item nav-item-active' : 'nav-item';
+
+    // ✅ Notifications (counts)
+    $pendingMemberCount = \App\Models\User::query()
+        ->where('is_admin', 0)
+        ->where('status', 0)   // <-- change this column if yours is different
+        ->count();
+
+    $pendingLoanCount = \App\Models\LoanApplication::query()
+        ->whereIn('status', ['pending', 'for_review', 'for_approval', 'for_printing'])
+        ->count();
+
+    $notifCount = $pendingMemberCount + $pendingLoanCount;
+
+    $notifItems = [];
+
+    if ($pendingMemberCount > 0) {
+        $notifItems[] = [
+            'title' => 'New Member Requests',
+            'message' => $pendingMemberCount . ' pending membership approval',
+            'count' => $pendingMemberCount,
+            'href' => route('admin.new-members'),
+            'icon' => 'person_add',
+            'pill' => 'bg-amber-100 text-amber-700 border border-amber-200',
+            'iconBg' => 'bg-amber-50',
+            'iconText' => 'text-amber-600',
+        ];
+    }
+
+    if ($pendingLoanCount > 0) {
+        $notifItems[] = [
+            'title' => 'Loan Requests',
+            'message' => $pendingLoanCount . ' loans pending action',
+            'count' => $pendingLoanCount,
+            'href' => route('admin.loan-requests.index', ['status' => 'pending']),
+            'icon' => 'checkbook',
+            'pill' => 'bg-blue-100 text-blue-700 border border-blue-200',
+            'iconBg' => 'bg-blue-50',
+            'iconText' => 'text-blue-600',
+        ];
+    }
 @endphp
 
 <!DOCTYPE html>
@@ -94,6 +134,10 @@
 
             <div class="mb-4">
                 <p class="px-6 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-600 mb-3">Loans</p>
+                <a class="{{ $navClass(request()->routeIs('admin.loan-requests.*')) }}" href="{{ route('admin.loan-requests.index') }}">
+                    <span class="material-symbols-outlined text-[22px]">checkbook</span>
+                    Loan Requests
+                </a>
                 <a class="{{ $navClass(request()->routeIs('admin.loans')) }}" href="{{ route('admin.loans') }}">
                     <span class="material-symbols-outlined text-[22px]">description</span>
                     Loan Details
@@ -137,10 +181,55 @@
 
             <div class="flex items-center gap-6">
                 <div class="flex items-center gap-2">
-                    <button type="button" class="relative p-2.5 text-slate-400 hover:text-primary hover:bg-slate-50 rounded-xl transition-all">
-                        <span class="material-symbols-outlined">notifications</span>
-                        <span class="absolute top-2.5 right-2.5 size-2 bg-primary rounded-full ring-2 ring-white"></span>
-                    </button>
+                    <div class="relative">
+    <button id="notifBtn" type="button"
+        class="relative p-2.5 text-slate-400 hover:text-primary hover:bg-slate-50 rounded-xl transition-all">
+        <span class="material-symbols-outlined">notifications</span>
+
+        @if($notifCount > 0)
+            <span
+                class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1.5 rounded-full bg-primary text-[#0d1a14]
+                       text-[10px] font-black flex items-center justify-center ring-2 ring-white">
+                {{ $notifCount }}
+            </span>
+        @endif
+    </button>
+
+    {{-- Dropdown --}}
+    <div id="notifMenu"
+        class="hidden absolute right-0 mt-3 w-[360px] bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden">
+        <div class="px-4 py-3 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+            <p class="text-[11px] font-black uppercase tracking-widest text-slate-600">Notifications</p>
+            <p class="text-[11px] font-bold text-slate-500">{{ $notifCount }} new</p>
+        </div>
+
+        <div class="max-h-[320px] overflow-y-auto custom-scrollbar">
+            @forelse($notifItems as $n)
+                <a href="{{ $n['href'] }}" class="block px-4 py-3 hover:bg-slate-50 transition-colors">
+                    <div class="flex items-start gap-3">
+                        <div class="size-9 rounded-xl {{ $n['iconBg'] }} flex items-center justify-center {{ $n['iconText'] }} shrink-0">
+                            <span class="material-symbols-outlined text-[20px]">{{ $n['icon'] }}</span>
+                        </div>
+
+                        <div class="min-w-0 flex-1">
+                            <p class="text-sm font-black text-slate-900">{{ $n['title'] }}</p>
+                            <p class="text-xs font-medium text-slate-500">{{ $n['message'] }}</p>
+                        </div>
+
+                        <span class="px-2 py-0.5 text-[10px] font-black rounded-full {{ $n['pill'] }}">
+                            {{ $n['count'] }}
+                        </span>
+                    </div>
+                </a>
+            @empty
+                <div class="px-4 py-6 text-sm font-medium text-slate-500">
+                    No new notifications.
+                </div>
+            @endforelse
+        </div>
+    </div>
+</div>
+
                     <a href="{{ route('profile.edit') }}" class="p-2.5 text-slate-400 hover:text-primary hover:bg-slate-50 rounded-xl transition-all">
                         <span class="material-symbols-outlined">settings</span>
                     </a>
@@ -175,5 +264,25 @@
     </main>
 
     @stack('scripts')
+    @push('scripts')
+<script>
+    (function () {
+        const btn = document.getElementById('notifBtn');
+        const menu = document.getElementById('notifMenu');
+        if (!btn || !menu) return;
+
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            menu.classList.toggle('hidden');
+        });
+
+        document.addEventListener('click', () => menu.classList.add('hidden'));
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') menu.classList.add('hidden');
+        });
+    })();
+</script>
+@endpush
+
 </body>
 </html>

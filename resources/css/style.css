@@ -1267,3 +1267,7 @@ h1 {
 .info-label {
     font-weight: bold;
 }
+
+div#loanDetailsModal {
+    margin-top: 0;
+}

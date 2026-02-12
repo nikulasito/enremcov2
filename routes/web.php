@@ -252,6 +252,19 @@ Route::middleware('auth')->prefix('member')->name('member.')->group(function () 
     // ✅ move comaker search here
     Route::get('/loans/comakers/search', [MemberLoanController::class, 'searchComakers'])
         ->name('loans.comakers.search');
+
+    Route::get('/loans/{application}/print', [MemberLoanController::class, 'print'])
+        ->name('loans.print');
+
+    Route::get('/loans/{application}/details', [MemberLoanController::class, 'details'])
+        ->name('loans.details');
+});
+
+Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () {
+    Route::get('/loan-requests', [LoansController::class, 'loanRequestsIndex'])->name('loan-requests.index');
+    Route::get('/loan-requests/{application}', [LoansController::class, 'loanRequestsShow'])->name('loan-requests.show');
+    Route::patch('/loan-requests/{application}/approve', [LoansController::class, 'loanRequestsApprove'])->name('loan-requests.approve');
+    Route::patch('/loan-requests/{application}/reject', [LoansController::class, 'loanRequestsReject'])->name('loan-requests.reject');
 });
 
 Route::get('/admin/new-members', [AdminController::class, 'newMembers'])->name('admin.new-members');

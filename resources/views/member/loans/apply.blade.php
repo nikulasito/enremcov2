@@ -41,9 +41,10 @@
                         <div class="space-y-2">
                             <label class="text-sm font-bold text-slate-700" for="full-name">Full Name</label>
                             <input
-                                class="w-full rounded-xl border-slate-200 bg-slate-50 text-slate-900 px-4 py-3 font-medium focus:bg-white"
+                                class="w-full rounded-xl border-slate-200 bg-slate-50 text-slate-400 px-4 py-3 font-medium cursor-not-allowed"
                                 id="full-name" name="full_name" type="text"
-                                value="{{ old('full_name', auth()->user()->name) }}" />
+                                value="{{ old('full_name', auth()->user()->name) }}" readonly />
+
                             @error('full_name') <p class="text-xs text-red-600 font-semibold">{{ $message }}</p>
                             @enderror
                         </div>
@@ -59,9 +60,10 @@
                         <div class="md:col-span-2 space-y-2">
                             <label class="text-sm font-bold text-slate-700" for="address">Residential Address</label>
                             <input
-                                class="w-full rounded-xl border-slate-200 bg-slate-50 text-slate-900 px-4 py-3 font-medium focus:bg-white"
+                                class="w-full rounded-xl border-slate-200 bg-slate-50 text-slate-400 px-4 py-3 font-medium cursor-not-allowed"
                                 id="address" name="address" type="text"
-                                value="{{ old('address', auth()->user()->address ?? '') }}" />
+                                value="{{ old('address', auth()->user()->address ?? '') }}" readonly />
+
                             @error('address') <p class="text-xs text-red-600 font-semibold">{{ $message }}</p> @enderror
                         </div>
                     </div>
@@ -279,15 +281,15 @@
                     }
 
                     box.innerHTML = items.map((item) => `
-                    <button type="button"
-                        class="w-full text-left px-3 py-2 hover:bg-slate-50 flex items-center justify-between gap-3">
-                        <div class="min-w-0">
-                            <div class="text-sm font-semibold text-slate-800 truncate">${escapeHtml(item.name)}</div>
-                            <div class="text-xs text-slate-500 truncate">${escapeHtml(item.position || '—')}</div>
-                        </div>
-                        <span class="text-xs font-bold text-slate-400">Select</span>
-                    </button>
-                `).join('');
+                                <button type="button"
+                                    class="w-full text-left px-3 py-2 hover:bg-slate-50 flex items-center justify-between gap-3">
+                                    <div class="min-w-0">
+                                        <div class="text-sm font-semibold text-slate-800 truncate">${escapeHtml(item.name)}</div>
+                                        <div class="text-xs text-slate-500 truncate">${escapeHtml(item.position || '—')}</div>
+                                    </div>
+                                    <span class="text-xs font-bold text-slate-400">Select</span>
+                                </button>
+                            `).join('');
 
                     [...box.querySelectorAll('button')].forEach((btn, idx) => {
                         btn.addEventListener('click', () => onPick(items[idx]));
