@@ -36,7 +36,6 @@
             ? \Illuminate\Support\Carbon::parse($latestSavingsDate)->format('M d, Y')
             : 'N/A';
 
-
         $today = now()->format('F d, Y');
 
         $loanTypeLabel = $pendingLoan?->loan_type ?? $pendingLoan?->type ?? null;
@@ -243,7 +242,7 @@
 
                     <a href="{{ route('member.loans.apply', ['type' => $loan['type']]) }}"
                         class="mt-6 w-full py-3 px-4 rounded-xl font-black text-sm transition-all hover:brightness-105 active:scale-95 shadow-md
-                                                                                                {{ $loan['style'] === 'secondary' ? 'bg-secondary text-white shadow-secondary/10' : 'bg-primary text-background-dark shadow-primary/10' }}">
+                                                                                                    {{ $loan['style'] === 'secondary' ? 'bg-secondary text-white shadow-secondary/10' : 'bg-primary text-background-dark shadow-primary/10' }}">
                         Apply Now
                     </a>
                 </div>
