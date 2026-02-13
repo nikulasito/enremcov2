@@ -8,6 +8,9 @@
 ])
 
 @php
+
+use Illuminate\Support\Facades\DB;
+    use Illuminate\Support\Facades\Schema;
     $searchAction = $searchAction ?? route('admin.members');
     $admin = auth()->user();
     $adminName = $admin->name ?? 'Administrator';
@@ -18,12 +21,20 @@
     // ✅ Notifications (counts)
     $pendingMemberCount = \App\Models\User::query()
         ->where('is_admin', 0)
-        ->where('status', 0)   // <-- change this column if yours is different
+        ->whereIn(DB::raw('LOWER(status)'), [
+            'awaiting approval',  // your newMembers() uses this
+            'pending',
+        ])
         ->count();
 
-    $pendingLoanCount = \App\Models\LoanApplication::query()
-        ->whereIn('status', ['pending', 'for_review', 'for_approval', 'for_printing'])
-        ->count();
+    $pendingLoanCount = Schema::hasTable('loan_applications')
+        ? \App\Models\LoanApplication::query()
+            ->whereIn(DB::raw('LOWER(status)'), [
+                'pending',
+                'in_review',        // include if you want “review queue” counted too
+            ])
+            ->count()
+        : 0;
 
     $notifCount = $pendingMemberCount + $pendingLoanCount;
 
@@ -47,7 +58,7 @@
             'title' => 'Loan Requests',
             'message' => $pendingLoanCount . ' loans pending action',
             'count' => $pendingLoanCount,
-            'href' => route('admin.loan-requests.index', ['status' => 'pending']),
+            'href' => route('admin.loan-requests.index'), // or add ?status=pending if your page supports it
             'icon' => 'checkbook',
             'pill' => 'bg-blue-100 text-blue-700 border border-blue-200',
             'iconBg' => 'bg-blue-50',
@@ -263,26 +274,27 @@
         </footer>
     </main>
 
-    @stack('scripts')
-    @push('scripts')
+@stack('scripts')
+
+@once
 <script>
-    (function () {
-        const btn = document.getElementById('notifBtn');
-        const menu = document.getElementById('notifMenu');
-        if (!btn || !menu) return;
+(function () {
+    const btn = document.getElementById('notifBtn');
+    const menu = document.getElementById('notifMenu');
+    if (!btn || !menu) return;
 
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            menu.classList.toggle('hidden');
-        });
+    btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        menu.classList.toggle('hidden');
+    });
 
-        document.addEventListener('click', () => menu.classList.add('hidden'));
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') menu.classList.add('hidden');
-        });
-    })();
+    document.addEventListener('click', () => menu.classList.add('hidden'));
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') menu.classList.add('hidden');
+    });
+})();
 </script>
-@endpush
+@endonce
 
 </body>
 </html>

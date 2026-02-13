@@ -4,6 +4,7 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
@@ -41,9 +42,18 @@ class AdminController extends Controller
         $totalShares = \App\Models\Share::sum('amount');
         $totalSavings = \App\Models\Saving::sum('amount');
 
-        $pendingLoans = (Schema::hasTable('loan_details') && Schema::hasColumn('loan_details', 'date_approved'))
-            ? \App\Models\LoanDetail::whereNull('date_approved')->count()
+        // Count ALL pending/in_review loan applications (admin dashboard is global)
+        $pendingLoansCount = Schema::hasTable('loan_applications')
+            ? LoanApplication::whereIn(DB::raw('LOWER(status)'), ['pending', 'in_review'])->count()
             : 0;
+
+        // Optional: list latest pending/in_review (for table/preview)
+        $pendingLoans = Schema::hasTable('loan_applications')
+            ? LoanApplication::whereIn(DB::raw('LOWER(status)'), ['pending', 'in_review'])
+                ->latest()
+                ->take(5)
+                ->get()
+            : collect();
 
         $recentMembershipRequests = User::where('is_admin', '!=', 1)
             ->whereIn('status', ['Inactive', 'inactive', 'Pending', 'pending'])
@@ -51,38 +61,14 @@ class AdminController extends Controller
             ->limit(5)
             ->get();
 
-        $recentLoanEntries = \App\Models\LoanDetail::query()
-            ->when(
-                Schema::hasTable('loan_details') && Schema::hasColumn('loan_details', 'created_at'),
-                fn($q) => $q->orderByDesc('created_at'),
-                fn($q) => $q->orderByDesc('loan_id')
-            )
-            ->limit(5)
+        $recentLoanEntries = LoanApplication::query()
+            ->with('user')
+            ->latest()
+            ->take(5)
             ->get();
 
-        // Map borrower names safely (depending on your users table employee id column)
-        $borrowerNames = collect();
-        $loanEmployeeIDs = $recentLoanEntries->pluck('employee_ID')->filter()->unique()->values();
-
-        if ($loanEmployeeIDs->isNotEmpty()) {
-            $empColumn = null;
-            foreach (['employee_ID', 'employees_id', 'employee_id'] as $col) {
-                if (Schema::hasColumn('users', $col)) {
-                    $empColumn = $col;
-                    break;
-                }
-            }
-
-            if ($empColumn) {
-                $borrowerNames = User::whereIn($empColumn, $loanEmployeeIDs)->pluck('name', $empColumn);
-            }
-        }
 
         // Pending / in-process loans
-        $pendingLoans = LoanApplication::where('user_id', $userId)
-            ->whereIn('status', ['pending', 'for_review', 'for_approval', 'for_printing'])
-            ->latest()
-            ->get();
 
         // Optional: show loan history (approved/rejected too)
         $loanHistory = LoanApplication::where('user_id', $userId)
@@ -102,11 +88,9 @@ class AdminController extends Controller
             'newMembersLast30Days',
             'totalShares',
             'totalSavings',
+            'pendingLoansCount',
             'pendingLoans',
             'recentMembershipRequests',
-            'recentLoanEntries',
-            'borrowerNames',
-            'pendingLoans',
             'recentLoanEntries'
         ));
     }
