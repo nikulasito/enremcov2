@@ -19,6 +19,7 @@ class HomeController extends Controller
 
 
         $memberKey = $user->id;
+        $userId = $user->id;
 
         // SHARES
         $totalShares = DB::table('shares')
@@ -53,14 +54,21 @@ class HomeController extends Controller
             ->value('latest_date');
 
         // OPTIONAL: to prevent "undefined variable" in blade
-        $pendingLoan = DB::table('loan_applications')
-            ->where(function ($q) use ($user, $memberKey) {
-                $q->where('user_id', $user->id)
-                    ->orWhere('member_key', $memberKey);
+        $memberKey = $user->employee_ID
+            ?? $user->employees_id
+            ?? $user->employee_id
+            ?? null;
+
+        $loanApplications = DB::table('loan_applications')
+            ->where(function ($q) use ($userId, $memberKey) {
+                $q->where('user_id', $userId);
+
+                if (!empty($memberKey)) {
+                    $q->orWhere('member_key', (string) $memberKey);
+                }
             })
-            ->whereIn('status', ['pending', 'for_review', 'for_approval', 'for_printing'])
             ->orderByDesc('created_at')
-            ->first();
+            ->get();
 
         $recentTransactions = []; // keep empty for now if you don't have this yet
 
@@ -71,7 +79,7 @@ class HomeController extends Controller
             'totalSavingsDisplayed',
             'totalSavingsEntries',
             'latestSavingsDate',
-            'pendingLoan',
+            'loanApplications',
             'recentTransactions'
         ));
     }

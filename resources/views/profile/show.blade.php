@@ -48,6 +48,8 @@
                             <div class="memdtls-mydtls">
                                 <div class="d-none d-md-block">
                                     <div class="row g-3 pt-2 pb-4">
+                                        <div class="col-5 border-bottom">Name</div>
+                                        <div class="col-7 border-bottom">{{ $user->name }}</div>
                                         <div class="col-5 border-bottom">Local Home Address</div>
                                         <div class="col-7 border-bottom">{{ $user->address }}</div>
                                         <div class="col-5 border-bottom border-bottom">Email:</div>
@@ -89,6 +91,8 @@
                                         <div class="col-7 border-bottom">{{ $user->annual_income }}</div>
                                         <div class="col-5 border-bottom">Account No.</div>
                                         <div class="col-7 border-bottom">{{ $user->employee_ID }}</div>
+                                        <div class="col-5 border-bottom">Beneficiaries:</div>
+                                        <div class="col-7 border-bottom">{{ $user->beneficiaries }}</div>
                                     </div>
                                 </div>
                             </div>

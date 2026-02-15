@@ -9,10 +9,10 @@
     $isProfile = request()->routeIs('member.profile');
     $isContributions = request()->routeIs('member.contributions');
 
-    // ✅ Security routes you already have:
+    // Security routes
     $isSecurity = request()->routeIs('password.edit') || request()->routeIs('password.update');
 
-    // You don't have member.loans route yet
+    // Member loans routes
     $isLoans = request()->is('member/loans*') || request()->routeIs('member.loans.*');
 
     // Named slot support (optional)
@@ -111,18 +111,18 @@
                     </a>
                 </li>
 
-                {{-- Loans link placeholder (no route yet) --}}
+                {{-- Loans --}}
                 <li>
                     <a class="flex items-center gap-4 px-8 py-4 transition-all
         {{ $isLoans ? 'nav-item-active' : 'text-[#a0b0a8] hover:text-white hover:bg-white/5' }}"
-                        href="{{ route('member.loans.apply') }}">
+                        href="{{ route('member.loans.index') }}">
                         <span class="material-symbols-outlined">payments</span>
-                        <span class="{{ $isLoans ? 'font-bold' : 'font-medium' }}">Loans</span>
+                        <span class="{{ $isLoans ? 'font-bold' : 'font-medium' }}">View Loans</span>
                     </a>
                 </li>
 
                 <hr>
-                {{-- ✅ NEW: Security --}}
+                {{-- Security --}}
                 <li>
                     <a class="flex items-center gap-4 px-8 py-4 transition-all
                         {{ $isSecurity ? 'nav-item-active' : 'text-[#a0b0a8] hover:text-white hover:bg-white/5' }}"
@@ -163,7 +163,7 @@
     <main class="flex-1 overflow-y-auto">
 
         {{-- Header (custom per page OR default Welcome header) --}}
-        <header class="bg-white border-b border-slate-200 px-10 py-8">
+        <header class="bg-white border-b border-slate-200 px-10 py-8 sticky top-0 z-10">
             @if($hasCustomHeader)
                 {{ $header }}
             @else

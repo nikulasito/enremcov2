@@ -246,6 +246,7 @@ Route::get('/contact', function () {
 })->name('contact');
 
 Route::middleware('auth')->prefix('member')->name('member.')->group(function () {
+    Route::get('/loans', [MemberLoanController::class, 'index'])->name('loans.index');
     Route::get('/loans/apply', fn() => view('member.loans.apply'))->name('loans.apply');
     Route::post('/loans/store', [MemberLoanController::class, 'store'])->name('loans.store');
 
@@ -378,4 +379,3 @@ Route::get('/admin/get-user-details/{id}', [AdminController::class, 'getUserDeta
 
 
 require __DIR__ . '/auth.php';
-

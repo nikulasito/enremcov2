@@ -3,25 +3,6 @@
         $sharesAmount = $totalShares ?? 0;
         $sharesMonths = $totalEntries ?? null;
 
-        $loanStatus = $pendingLoan?->status;
-        $loanStatusLabel = match ($loanStatus) {
-            'pending' => 'Pending',
-            'for_review' => 'In Review',
-            'for_approval' => 'For Approval',
-            'for_printing' => 'For Printing',
-            'approved' => 'Approved',
-            'rejected' => 'Rejected',
-            default => $loanStatus ? ucwords(str_replace('_', ' ', $loanStatus)) : null,
-        };
-        $loanStatusClass = match ($loanStatus) {
-            'pending' => 'bg-amber-100 text-amber-700 border border-amber-200',
-            'for_review', 'for_approval' => 'bg-blue-100 text-blue-700 border border-blue-200',
-            'for_printing' => 'bg-purple-100 text-purple-700 border border-purple-200',
-            'approved' => 'bg-green-100 text-green-700 border border-green-200',
-            'rejected' => 'bg-red-100 text-red-700 border border-red-200',
-            default => 'bg-slate-100 text-slate-700 border border-slate-200',
-        };
-
         $savingsAmount = $totalSavingsDisplayed ?? 0;
         $savingsMonths = $totalSavingsEntries ?? null;
 
@@ -38,13 +19,9 @@
 
         $today = now()->format('F d, Y');
 
-        $loanTypeLabel = $pendingLoan?->loan_type ?? $pendingLoan?->type ?? null;
-        $loanTypeLabel = $loanTypeLabel ? ucwords(str_replace('_', ' ', $loanTypeLabel)) : null;
-
-        $loanRef = $pendingLoan?->application_no ?? $pendingLoan?->loan_id ?? $pendingLoan?->id ?? null;
-        $loanAmt = (float) ($pendingLoan?->loan_amount ?? $pendingLoan?->amount ?? 0);
-        $loanDate = $pendingLoan?->created_at ?? $pendingLoan?->date_created ?? null;
-        $loanDateFmt = $loanDate ? \Illuminate\Support\Carbon::parse($loanDate)->format('F d, Y') : null;
+        $minRequired = 5000;
+        $totalContrib = (float) ($sharesAmount ?? 0) + (float) ($savingsAmount ?? 0);
+        $canApplyLoan = $totalContrib >= $minRequired;
     @endphp
 
     {{-- Custom header to match your new design --}}
@@ -143,7 +120,34 @@
         </div>
 
         <div class="bg-white rounded-2xl border border-slate-200 card-shadow overflow-hidden">
-            @if($pendingLoan)
+            @forelse($loanApplications as $loanApplication)
+                @php
+                    $loanStatus = $loanApplication->status;
+                    $loanStatusLabel = match ($loanStatus) {
+                        'pending' => 'Pending',
+                        'for_review' => 'In Review',
+                        'for_approval' => 'For Approval',
+                        'for_printing' => 'For Printing',
+                        'approved' => 'Approved',
+                        'rejected' => 'Rejected',
+                        default => $loanStatus ? ucwords(str_replace('_', ' ', $loanStatus)) : null,
+                    };
+                    $loanStatusClass = match ($loanStatus) {
+                        'pending' => 'bg-amber-100 text-amber-700 border border-amber-200',
+                        'for_review', 'for_approval' => 'bg-blue-100 text-blue-700 border border-blue-200',
+                        'for_printing' => 'bg-purple-100 text-purple-700 border border-purple-200',
+                        'approved' => 'bg-green-100 text-green-700 border border-green-200',
+                        'rejected' => 'bg-red-100 text-red-700 border border-red-200',
+                        default => 'bg-slate-100 text-slate-700 border border-slate-200',
+                    };
+                    $loanTypeLabel = $loanApplication->loan_type ?? $loanApplication->type ?? null;
+                    $loanTypeLabel = $loanTypeLabel ? ucwords(str_replace('_', ' ', $loanTypeLabel)) : null;
+
+                    $loanRef = $loanApplication->application_no ?? $loanApplication->loan_id ?? $loanApplication->id ?? null;
+                    $loanAmt = (float) ($loanApplication->loan_amount ?? $loanApplication->amount ?? 0);
+                    $loanDate = $loanApplication->created_at ?? $loanApplication->date_created ?? null;
+                    $loanDateFmt = $loanDate ? \Illuminate\Support\Carbon::parse($loanDate)->format('F d, Y') : null;
+                @endphp
                 <div class="p-6 flex flex-col md:flex-row items-center justify-between gap-6">
                     <div class="flex items-center gap-5 w-full md:w-auto">
                         <div
@@ -177,8 +181,8 @@
                             <p class="text-sm font-bold text-slate-700">{{ $loanDateFmt ?? '—' }}</p>
                         </div>
                         <div class="col-span-2 md:col-span-1 flex items-center md:justify-end">
-                            @if($pendingLoan?->status === 'for_printing')
-                                <button type="button" onclick="openLoanDetailsModal({{ $pendingLoan->id }})"
+                            @if($loanApplication->status === 'for_printing')
+                                <button type="button" onclick="openLoanDetailsModal({{ $loanApplication->id }})"
                                     class="inline-flex items-center gap-2 text-sm font-bold text-secondary hover:text-blue-700 transition-colors">
                                     View Details
                                     <span class="material-symbols-outlined text-lg">chevron_right</span>
@@ -189,25 +193,32 @@
                         </div>
                     </div>
                 </div>
-            @else
+            @empty
                 <div class="p-6 flex items-center justify-between">
                     <div class="flex items-center gap-4">
                         <div class="size-14 rounded-full bg-slate-50 flex items-center justify-center text-slate-400">
                             <span class="material-symbols-outlined text-2xl">check_circle</span>
                         </div>
                         <div>
-                            <h4 class="text-lg font-bold text-slate-900">No Pending Loan</h4>
-                            <p class="text-sm text-slate-500">You currently have no loan applications under review.</p>
+                            <h4 class="text-lg font-bold text-slate-900">No Loan Applications</h4>
+                            <p class="text-sm text-slate-500">You currently have no loan applications.</p>
                         </div>
                     </div>
 
-                    <a href="{{ route('member.loans.apply') }}"
-                        class="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-primary text-background-dark font-black text-sm hover:brightness-105 active:scale-95 transition-all">
-                        Apply Now
-                        <span class="material-symbols-outlined text-lg">arrow_forward</span>
-                    </a>
+                    @if($canApplyLoan)
+                        <a href="{{ route('member.loans.apply') }}"
+                            class="mt-6 w-full py-3 px-4 rounded-xl font-black text-sm transition-all hover:brightness-105 active:scale-95 shadow-md bg-primary text-background-dark shadow-primary/10">
+                            Apply Now
+                        </a>
+                    @else
+                        <button type="button"
+                            class="mt-6 w-full py-3 px-4 rounded-xl font-black text-sm bg-slate-200 text-slate-500 cursor-not-allowed"
+                            title="Requires ₱{{ number_format($minRequired, 0) }} combined Shares + Savings">
+                            Locked (₱{{ number_format($minRequired, 0) }} required)
+                        </button>
+                    @endif
                 </div>
-            @endif
+            @endforelse
         </div>
     </section>
 
@@ -240,18 +251,30 @@
                     <h4 class="text-lg font-bold text-slate-900">{{ $loan['title'] }}</h4>
                     <p class="mt-2 text-sm text-slate-500 leading-relaxed min-h-[40px]">{{ $loan['desc'] }}</p>
 
-                    <a href="{{ route('member.loans.apply', ['type' => $loan['type']]) }}"
-                        class="mt-6 w-full py-3 px-4 rounded-xl font-black text-sm transition-all hover:brightness-105 active:scale-95 shadow-md
-                                                                                                    {{ $loan['style'] === 'secondary' ? 'bg-secondary text-white shadow-secondary/10' : 'bg-primary text-background-dark shadow-primary/10' }}">
-                        Apply Now
-                    </a>
+                    @if($canApplyLoan)
+                        <a href="{{ route('member.loans.apply', ['type' => $loan['type']]) }}"
+                            class="mt-6 w-full py-3 px-4 rounded-xl font-black text-sm transition-all hover:brightness-105 active:scale-95 shadow-md
+                                                    {{ $loan['style'] === 'secondary' ? 'bg-secondary text-white shadow-secondary/10' : 'bg-primary text-background-dark shadow-primary/10' }}">
+                            Apply Now
+                        </a>
+                    @else
+                        <button type="button" disabled class="mt-6 w-full py-3 px-4 rounded-xl font-black text-sm shadow-md
+                                                           bg-slate-100 text-slate-400 cursor-not-allowed">
+                            Apply Now
+                        </button>
+
+                        <p class="mt-2 text-[11px] font-bold text-amber-600">
+                            Need ₱{{ number_format($minRequired, 2) }} total Shares + Savings to apply.
+                        </p>
+                    @endif
                 </div>
             @endforeach
         </div>
+
     </section>
 
     {{-- Recent Transactions --}}
-    <section class="pb-10">
+    <!-- <section class="pb-10">
         <div class="bg-white rounded-2xl border border-slate-200 card-shadow overflow-hidden">
             <div class="p-6 border-b border-slate-100 flex items-center justify-between">
                 <h3 class="text-lg font-bold text-slate-800">Recent Transactions</h3>
@@ -287,7 +310,7 @@
                                         {{ $tx['status'] }}
                                     </span>
                                 </td>
-                                <td class="px-6 py-4 text-sm font-black text-slate-900 text-right">
+                                <td class=".px-6 py-4 text-sm font-black text-slate-900 text-right">
                                     ₱{{ number_format((float) $tx['amount'], 2) }}
                                 </td>
                             </tr>
@@ -300,8 +323,23 @@
                 </table>
             </div>
         </div>
-    </section>
+    </section> -->
     {{-- Loan Details Modal --}}
+
+    <footer class="pt-6">
+        <div class="border-t border-[#dce5e0] pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
+            <p class="text-xs text-[#a0b0a8]">© {{ now()->format('Y') }} ENVIRONMENT AND NATURAL RESOURCES MULTI-PURPOSE
+                CREDIT COOPERATIVE. All rights reserved.</p>
+            <div class="flex gap-6">
+                <a class="text-xs font-bold text-[#638875] hover:text-primary transition-colors" href="#">Privacy
+                    Policy</a>
+                <a class="text-xs font-bold text-[#638875] hover:text-primary transition-colors" href="#">Terms of
+                    Service</a>
+                <a class="text-xs font-bold text-[#638875] hover:text-primary transition-colors" href="#">Help
+                    Center</a>
+            </div>
+        </div>
+    </footer>
 
     <script>
         function openLoanDetailsModal(id) {

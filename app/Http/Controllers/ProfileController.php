@@ -87,50 +87,24 @@ class ProfileController extends Controller
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        $user = auth()->user();
+        $user = $request->user();
+        $validatedData = $request->validated();
 
-        $validatedData = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users,email,' . auth()->id(),
-            'password' => 'nullable|string|confirmed|min:8',
-            'position' => 'nullable|string|max:255',
-            'office' => 'nullable|string|max:255',
-            'address' => 'nullable|string|max:255',
-            'religion' => 'nullable|string|max:255',
-            'sex' => 'nullable|in:Male,Female,Other',
-            'marital_status' => 'nullable|in:Single,Married,Divorced,Widowed',
-            'annual_income' => 'nullable|numeric|min:0',
-            'contact_no' => 'nullable|numeric|min:11',
-            'beneficiaries' => 'nullable|string|max:255',
-            'birthdate' => 'nullable|date',
-            'education' => 'nullable|string|max:255',
-            'employee_ID' => 'nullable|string|max:255',
-            'shares' => 'nullable|numeric|min:0',
-            'savings' => 'nullable|numeric|min:0',
-            'username' => 'nullable|string|max:255',
-            'photo' => 'nullable|image|mimes:jpg,png,jpeg,gif|max:2048', // Validate photo
-            // Add validation rules for other fields
-        ]);
+        // Handle the profile photo
+        if ($request->hasFile('photo')) {
+            // Delete old photo if exists
+            if ($user->photo && \Storage::disk('public')->exists($user->photo)) {
+                \Storage::disk('public')->delete($user->photo);
+            }
 
-    // Handle the profile photo
-    if ($request->hasFile('photo')) {
-        // Delete old photo if exists
-        if ($user->photo && \Storage::disk('public')->exists($user->photo)) {
-            \Storage::disk('public')->delete($user->photo);
+            // Move new photo to public storage
+            $photoPath = $request->file('photo')->store('photos', 'public');
+            $validatedData['photo'] = $photoPath;
         }
 
-        // Move new photo to public storage
-        $photoPath = $request->file('photo')->store('photos', 'public');
-        $validatedData['photo'] = $photoPath;
-    }
-    
-       // Update user fields
-        // $user->update($validatedData);
-         $request->user()->update($validatedData);
+        $user->update($validatedData);
 
-        auth()->setUser(auth()->user()->fresh());
-
-    return redirect()->route('profile.edit')->with('status', 'profile-updated');
+        return redirect()->route('profile.edit')->with('status', 'profile-updated');
     }
 
     /**

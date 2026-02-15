@@ -4,14 +4,187 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\LoanApplication;
+use App\Models\LoanDetail;
 use Dompdf\Dompdf;
 use Dompdf\Options;
 use App\Notifications\NewLoanApplicationNotification;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Carbon;
 
 class MemberLoanController extends Controller
 {
+    private function canAccessApplication(LoanApplication $application): bool
+    {
+        $user = auth()->user();
+        if (!$user) {
+            return false;
+        }
+
+        if ((int) $application->user_id === (int) $user->id) {
+            return true;
+        }
+
+        $memberKeys = collect([
+            $user->employee_ID ?? null,
+            $user->employees_id ?? null,
+            $user->employee_id ?? null,
+            (string) $user->id,
+        ])
+            ->filter(fn($v) => $v !== null && $v !== '')
+            ->map(fn($v) => (string) $v)
+            ->unique();
+
+        return $memberKeys->contains((string) ($application->member_key ?? ''));
+    }
+
+    public function index(Request $request)
+    {
+        $user = auth()->user();
+        $historySearch = trim((string) $request->query('q', ''));
+        $perPage = 10;
+        $page = max(1, (int) $request->query('page', 1));
+
+        $memberKeys = collect([
+            $user->employee_ID ?? null,
+            $user->employees_id ?? null,
+            $user->employee_id ?? null,
+            (string) $user->id,
+        ])
+            ->filter(fn($v) => $v !== null && $v !== '')
+            ->map(fn($v) => (string) $v)
+            ->unique()
+            ->values();
+
+        $loanApplications = collect();
+        if (Schema::hasTable('loan_applications')) {
+            $loanApplications = LoanApplication::query()
+                ->where(function ($q) use ($user, $memberKeys) {
+                    $q->where('user_id', $user->id);
+
+                    if ($memberKeys->isNotEmpty()) {
+                        $q->orWhereIn('member_key', $memberKeys->all());
+                    }
+                })
+                ->orderByDesc('created_at')
+                ->get();
+        }
+
+        $activeLoans = collect();
+        $historyItems = collect();
+
+        if (Schema::hasTable('loan_details')) {
+            $loanMemberColumn = null;
+            foreach (['employee_ID', 'employees_id', 'employee_id'] as $col) {
+                if (Schema::hasColumn('loan_details', $col)) {
+                    $loanMemberColumn = $col;
+                    break;
+                }
+            }
+
+            $query = LoanDetail::query()
+                ->with('latestPayment')
+                ->withSum('loanPayments as total_paid', 'total_payments');
+
+            if ($loanMemberColumn !== null) {
+                if ($memberKeys->isNotEmpty()) {
+                    $query->whereIn($loanMemberColumn, $memberKeys->all());
+                } else {
+                    $query->whereRaw('1 = 0');
+                }
+            } else {
+                $query->whereRaw('1 = 0');
+            }
+
+            if ($historySearch !== '') {
+                $canSearchLoanId = Schema::hasColumn('loan_details', 'loan_id');
+                $canSearchLoanType = Schema::hasColumn('loan_details', 'loan_type');
+
+                if ($canSearchLoanId || $canSearchLoanType) {
+                    $query->where(function ($q) use ($historySearch, $canSearchLoanId, $canSearchLoanType) {
+                        if ($canSearchLoanId) {
+                            $q->where('loan_id', 'like', "%{$historySearch}%");
+                        }
+
+                        if ($canSearchLoanType) {
+                            $canSearchLoanId
+                                ? $q->orWhere('loan_type', 'like', "%{$historySearch}%")
+                                : $q->where('loan_type', 'like', "%{$historySearch}%");
+                        }
+                    });
+                }
+            }
+
+            $orderBy = Schema::hasColumn('loan_details', 'date_approved')
+                ? 'date_approved'
+                : (Schema::hasColumn('loan_details', 'created_at') ? 'created_at' : 'loan_id');
+
+            $historyItems = $query
+                ->orderByDesc($orderBy)
+                ->get()
+                ->map(function ($loan) {
+                    $loanAmount = (float) ($loan->loan_amount ?? 0);
+                    $totalPaid = (float) ($loan->total_paid ?? 0);
+                    $latestOutstanding = optional($loan->latestPayment)->outstanding_balance;
+
+                    $remainingBalance = $latestOutstanding === null
+                        ? max($loanAmount - $totalPaid, 0)
+                        : max((float) $latestOutstanding, 0);
+
+                    $approvedAt = $loan->date_approved
+                        ? Carbon::parse($loan->date_approved)
+                        : null;
+
+                    $maturityAt = null;
+                    if (!empty($loan->last_payment)) {
+                        $maturityAt = Carbon::parse($loan->last_payment);
+                    } elseif ($approvedAt && is_numeric($loan->terms) && (int) $loan->terms > 0) {
+                        $maturityAt = (clone $approvedAt)->addMonths((int) $loan->terms);
+                    }
+
+                    $latestRemit = optional($loan->latestPayment)->date_of_remittance;
+                    $nextDueAt = $latestRemit ? Carbon::parse($latestRemit)->addMonth() : null;
+
+                    $loan->remaining_balance = $remainingBalance;
+                    $loan->is_paid = $remainingBalance <= 0.009;
+                    $loan->loan_type_label = ucwords(str_replace('_', ' ', strtolower((string) $loan->loan_type)));
+                    $loan->approved_date_label = $approvedAt ? $approvedAt->format('M d, Y') : 'N/A';
+                    $loan->maturity_date_label = $maturityAt ? $maturityAt->format('M d, Y') : 'N/A';
+                    $loan->next_due_date_label = $nextDueAt ? $nextDueAt->format('M d, Y') : 'N/A';
+
+                    return $loan;
+                })
+                ->values();
+
+            $activeLoans = $historyItems
+                ->filter(fn($loan) => !$loan->is_paid)
+                ->values();
+        }
+
+        $historyTotal = $historyItems->count();
+        $historyPageItems = $historyItems->forPage($page, $perPage)->values();
+
+        $loanHistory = new LengthAwarePaginator(
+            $historyPageItems,
+            $historyTotal,
+            $perPage,
+            $page,
+            [
+                'path' => $request->url(),
+                'query' => $request->query(),
+            ]
+        );
+
+        return view('member.loans.index', [
+            'loanApplications' => $loanApplications,
+            'activeLoans' => $activeLoans,
+            'loanHistory' => $loanHistory,
+            'historySearch' => $historySearch,
+        ]);
+    }
+
     public function store(Request $request)
     {
         $data = $request->validate([
@@ -33,6 +206,28 @@ class MemberLoanController extends Controller
         $user = auth()->user();
 
         $memberKey = $user->employee_ID ?? $user->employees_id ?? $user->employee_id ?? (string) $user->id;
+
+        $user = auth()->user();
+
+        // ✅ Eligibility check: Shares + Savings must be >= 5000
+        $min = 5000;
+
+        $sharesSum = Schema::hasTable('shares')
+            ? (float) DB::table('shares')->where('employees_id', $user->id)->sum('amount')
+            : 0.0;
+
+        $savingsSum = Schema::hasTable('savings')
+            ? (float) DB::table('savings')->where('employees_id', $user->id)->sum('amount')
+            : 0.0;
+
+        if (($sharesSum + $savingsSum) < $min) {
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'loan_amount' => "Loan application is locked. Minimum combined Shares + Savings is ₱" . number_format($min, 0) . "."
+                ]);
+        }
+
 
         // 1) SAVE as pending
         $loan = LoanApplication::create([
@@ -83,9 +278,8 @@ class MemberLoanController extends Controller
 
     public function searchComakers(Request $request)
     {
-        $q = trim((string) $request->query('q', ''));
-
-        if (mb_strlen($q) < 2) {
+        $q = trim((string) $request->get('q', ''));
+        if ($q === '' || mb_strlen($q) < 2) {
             return response()->json([]);
         }
 
@@ -122,24 +316,78 @@ class MemberLoanController extends Controller
             $select[] = DB::raw("'' as position");
         }
 
-        $results = $query
+        $users = $query
             ->select($select)
             ->orderBy('name')
             ->limit(10)
-            ->get()
-            ->map(fn($u) => [
+            ->get();
+
+        // ==========================
+        // ✅ Co-maker limit check
+        // ==========================
+        $counts = collect(); // id => count
+
+        $hasLoansTable = Schema::hasTable('loan_applications');
+        $hasStatusCol = $hasLoansTable && Schema::hasColumn('loan_applications', 'status');
+        $hasCm1Col = $hasLoansTable && Schema::hasColumn('loan_applications', 'comaker1_user_id');
+        $hasCm2Col = $hasLoansTable && Schema::hasColumn('loan_applications', 'comaker2_user_id');
+
+        if ($hasLoansTable && $hasStatusCol && ($hasCm1Col || $hasCm2Col) && $users->isNotEmpty()) {
+            $ids = $users->pluck('id')->values();
+
+            // statuses you consider "active" for co-maker limit
+            $activeStatuses = ['pending', 'in_review', 'for_review', 'for_approval', 'for_printing', 'approved'];
+
+            $activeStatuses = ['pending', 'in_review', 'for_review', 'for_approval', 'for_printing', 'approved'];
+            $activeStatuses = array_map('strtolower', $activeStatuses);
+
+            $loanRows = LoanApplication::query()
+                ->whereIn(DB::raw('LOWER(status)'), $activeStatuses)
+                ->where(function ($q) use ($ids, $hasCm1Col, $hasCm2Col) {
+                    if ($hasCm1Col) {
+                        $q->whereIn('comaker1_user_id', $ids);
+                    }
+                    if ($hasCm2Col) {
+                        $hasCm1Col
+                            ? $q->orWhereIn('comaker2_user_id', $ids)
+                            : $q->whereIn('comaker2_user_id', $ids);
+                    }
+                })
+                ->get(array_values(array_filter([
+                    $hasCm1Col ? 'comaker1_user_id' : null,
+                    $hasCm2Col ? 'comaker2_user_id' : null,
+                ])));
+
+
+            $counts = $loanRows
+                ->flatMap(fn($r) => [
+                    $hasCm1Col ? $r->comaker1_user_id : null,
+                    $hasCm2Col ? $r->comaker2_user_id : null,
+                ])
+                ->filter()
+                ->countBy(); // returns collection: [user_id => count]
+        }
+
+        $results = $users->map(function ($u) use ($counts) {
+            $c = (int) ($counts[$u->id] ?? 0);
+
+            return [
                 'id' => $u->id,
                 'name' => $u->name,
                 'position' => $u->position ?? '',
-            ]);
+                'co_maker_count' => $c,
+                'limit_reached' => $c >= 3,
+            ];
+        });
 
-        return response()->json($results);
+        return response()->json($results->values());
     }
+
 
     public function print(LoanApplication $application)
     {
         // ✅ security: only the owner can view
-        abort_unless($application->user_id === auth()->id(), 403);
+        abort_unless($this->canAccessApplication($application), 403);
 
         // Optional: allow only when for_printing
         abort_unless($application->status === 'for_printing', 403);
@@ -165,7 +413,7 @@ class MemberLoanController extends Controller
 
     public function details(LoanApplication $application)
     {
-        abort_unless($application->user_id === auth()->id(), 403);
+        abort_unless($this->canAccessApplication($application), 403);
 
         return response()->json([
             'id' => $application->id,

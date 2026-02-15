@@ -5,33 +5,33 @@
 @push('styles')
     <style type="text/tailwindcss">
         .section-card { @apply bg-white rounded-2xl border border-slate-200 overflow-hidden card-shadow; }
-          .section-header { @apply px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-white; }
-          .section-title { @apply font-black text-lg uppercase tracking-tight text-slate-800 flex items-center gap-2; }
+                  .section-header { @apply px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-white; }
+                  .section-title { @apply font-black text-lg uppercase tracking-tight text-slate-800 flex items-center gap-2; }
 
-          .field-label { @apply text-xs font-bold uppercase tracking-wider text-slate-400; }
-          .field-help { @apply text-xs text-slate-400 mt-1; }
+                  .field-label { @apply text-xs font-bold uppercase tracking-wider text-slate-400; }
+                  .field-help { @apply text-xs text-slate-400 mt-1; }
 
-          .input-base {
-            @apply mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3
-            text-sm font-semibold text-slate-900 placeholder-slate-400
-            focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary;
-          }
-          .select-base {
-            @apply mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3
-            text-sm font-semibold text-slate-900
-            focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary;
-          }
-          .error-text { @apply mt-2 text-xs font-bold text-red-600; }
+                  .input-base {
+                    @apply mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3
+                    text-sm font-semibold text-slate-900 placeholder-slate-400
+                    focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary;
+                  }
+                  .select-base {
+                    @apply mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3
+                    text-sm font-semibold text-slate-900
+                    focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary;
+                  }
+                  .error-text { @apply mt-2 text-xs font-bold text-red-600; }
 
-          .btn-primary {
-            @apply inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-background-dark
-            font-black hover:brightness-105 transition-all shadow-md shadow-primary/10;
-          }
-          .btn-secondary {
-            @apply inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-slate-200 bg-white
-            font-bold text-slate-900 hover:bg-slate-50 transition-all;
-          }
-        </style>
+                  .btn-primary {
+                    @apply inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-background-dark
+                    font-black hover:brightness-105 transition-all shadow-md shadow-primary/10;
+                  }
+                  .btn-secondary {
+                    @apply inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-slate-200 bg-white
+                    font-bold text-slate-900 hover:bg-slate-50 transition-all;
+                  }
+                </style>
 @endpush
 
 @php
@@ -52,7 +52,7 @@
 @endphp
 
 @section('header')
-    <header class="bg-white border-b border-slate-200 px-10 py-8">
+    <header class="bg-white border-b border-slate-200 px-10 py-8 sticky top-0 z-10">
         <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
                 <h1 class="text-3xl font-black text-slate-900">Edit Profile</h1>
@@ -87,32 +87,32 @@
 
     {{-- Breadcrumb --}}
     <!-- <div class="mb-6">
-            <nav aria-label="Breadcrumb" class="flex">
-                <ol class="inline-flex items-center space-x-1 md:space-x-3">
-                    <li class="inline-flex items-center">
-                        <a class="text-sm font-medium text-slate-500 hover:text-primary transition-colors"
-                            href="{{ route('dashboard') }}">
-                            Dashboard
-                        </a>
-                    </li>
-                    <li>
-                        <div class="flex items-center">
-                            <span class="material-symbols-outlined text-base text-slate-300">chevron_right</span>
-                            <a class="ml-1 text-sm font-medium text-slate-500 hover:text-primary transition-colors"
-                                href="{{ route('member.profile') }}">
-                                My Profile
-                            </a>
-                        </div>
-                    </li>
-                    <li>
-                        <div class="flex items-center">
-                            <span class="material-symbols-outlined text-base text-slate-300">chevron_right</span>
-                            <span class="ml-1 text-sm font-bold text-slate-900">Edit</span>
-                        </div>
-                    </li>
-                </ol>
-            </nav>
-        </div> -->
+                    <nav aria-label="Breadcrumb" class="flex">
+                        <ol class="inline-flex items-center space-x-1 md:space-x-3">
+                            <li class="inline-flex items-center">
+                                <a class="text-sm font-medium text-slate-500 hover:text-primary transition-colors"
+                                    href="{{ route('dashboard') }}">
+                                    Dashboard
+                                </a>
+                            </li>
+                            <li>
+                                <div class="flex items-center">
+                                    <span class="material-symbols-outlined text-base text-slate-300">chevron_right</span>
+                                    <a class="ml-1 text-sm font-medium text-slate-500 hover:text-primary transition-colors"
+                                        href="{{ route('member.profile') }}">
+                                        My Profile
+                                    </a>
+                                </div>
+                            </li>
+                            <li>
+                                <div class="flex items-center">
+                                    <span class="material-symbols-outlined text-base text-slate-300">chevron_right</span>
+                                    <span class="ml-1 text-sm font-bold text-slate-900">Edit</span>
+                                </div>
+                            </li>
+                        </ol>
+                    </nav>
+                </div> -->
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {{-- LEFT: FORM --}}
@@ -175,6 +175,16 @@
                                 <input id="email" name="email" type="email" class="input-base"
                                     value="{{ old('email', $user->email) }}" autocomplete="username" />
                                 @foreach($errors->get('email') as $msg)
+                                    <p class="error-text">{{ $msg }}</p>
+                                @endforeach
+                            </div>
+
+                            {{-- Username --}}
+                            <div>
+                                <label class="field-label" for="username">Username</label>
+                                <input id="username" name="username" type="text" class="input-base"
+                                    value="{{ old('username', $user->username) }}" autocomplete="username" />
+                                @foreach($errors->get('username') as $msg)
                                     <p class="error-text">{{ $msg }}</p>
                                 @endforeach
                             </div>
@@ -285,6 +295,37 @@
                                         @endforeach
                                     </div>
 
+                                    {{-- Contact Number --}}
+                                    <div>
+                                        <label class="field-label" for="contact_no">Contact Number</label>
+                                        <input id="contact_no" name="contact_no" type="text" class="input-base"
+                                            value="{{ old('contact_no', $user->contact_no) }}" autocomplete="tel" />
+                                        @foreach($errors->get('contact_no') as $msg)
+                                            <p class="error-text">{{ $msg }}</p>
+                                        @endforeach
+                                    </div>
+
+                                    {{-- Education --}}
+                                    <div>
+                                        <label class="field-label" for="education">Education</label>
+                                        <input id="education" name="education" type="text" class="input-base"
+                                            value="{{ old('education', $user->education) }}" autocomplete="education" />
+                                        @foreach($errors->get('education') as $msg)
+                                            <p class="error-text">{{ $msg }}</p>
+                                        @endforeach
+                                    </div>
+
+                                    {{-- Beneficiaries --}}
+                                    <div>
+                                        <label class="field-label" for="beneficiaries">Beneficiary/ies</label>
+                                        <input id="beneficiaries" name="beneficiaries" type="text" class="input-base"
+                                            value="{{ old('beneficiaries', $user->beneficiaries) }}"
+                                            autocomplete="beneficiaries" />
+                                        @foreach($errors->get('beneficiaries') as $msg)
+                                            <p class="error-text">{{ $msg }}</p>
+                                        @endforeach
+                                    </div>
+
                                 </div>
                             </div>
                         </section>
@@ -340,16 +381,7 @@
                                         @endforeach
                                     </div>
 
-                                    {{-- Beneficiaries --}}
-                                    <div>
-                                        <label class="field-label" for="beneficiaries">Beneficiary/ies</label>
-                                        <input id="beneficiaries" name="beneficiaries" type="text" class="input-base"
-                                            value="{{ old('beneficiaries', $user->beneficiaries) }}"
-                                            autocomplete="beneficiaries" />
-                                        @foreach($errors->get('beneficiaries') as $msg)
-                                            <p class="error-text">{{ $msg }}</p>
-                                        @endforeach
-                                    </div>
+
 
                                 </div>
                             </div>

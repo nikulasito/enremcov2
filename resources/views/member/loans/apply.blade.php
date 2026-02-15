@@ -144,6 +144,7 @@
                                 <div id="cm1-suggestions"
                                     class="hidden absolute z-30 mt-1 w-full rounded-xl border border-slate-200 bg-white shadow-lg overflow-hidden">
                                 </div>
+                                <p id="cm1-limit-msg" class="mt-1 text-xs font-semibold text-red-600 hidden"></p>
                             </div>
 
                             <div class="space-y-2">
@@ -180,6 +181,7 @@
                                 <div id="cm2-suggestions"
                                     class="hidden absolute z-30 mt-1 w-full rounded-xl border border-slate-200 bg-white shadow-lg overflow-hidden">
                                 </div>
+                                <p id="cm2-limit-msg" class="mt-1 text-xs font-semibold text-red-600 hidden"></p>
                             </div>
 
                             <div class="space-y-2">
@@ -273,30 +275,51 @@
                     };
                 }
 
-                function renderSuggestions(box, items, onPick) {
+                function renderSuggestions(box, items, onPick, onBlocked) {
                     if (!items.length) {
                         box.innerHTML = `<div class="px-3 py-2 text-xs text-slate-500">No matches found</div>`;
                         box.classList.remove('hidden');
                         return;
                     }
 
-                    box.innerHTML = items.map((item) => `
-                                <button type="button"
-                                    class="w-full text-left px-3 py-2 hover:bg-slate-50 flex items-center justify-between gap-3">
-                                    <div class="min-w-0">
-                                        <div class="text-sm font-semibold text-slate-800 truncate">${escapeHtml(item.name)}</div>
-                                        <div class="text-xs text-slate-500 truncate">${escapeHtml(item.position || '—')}</div>
+                    box.innerHTML = items.map((item) => {
+                        const locked = !!item.limit_reached;
+                        const badge = locked
+                            ? `<span class="text-[10px] font-black px-2 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-100">
+                                    Limit reached
+                               </span>`
+                            : `<span class="text-xs font-bold text-slate-400">Select</span>`;
+
+                        return `
+                            <button type="button"
+                                data-locked="${locked ? '1' : '0'}"
+                                class="w-full text-left px-3 py-2 hover:bg-slate-50 flex items-center justify-between gap-3 ${locked ? 'opacity-60' : ''}">
+                                <div class="min-w-0">
+                                    <div class="text-sm font-semibold text-slate-800 truncate">${escapeHtml(item.name)}</div>
+                                    <div class="text-xs text-slate-500 truncate">
+                                        ${escapeHtml(item.position || '—')}
+                                        ${locked ? ` • ${Number(item.co_maker_count || 0)}/3 loans` : ''}
                                     </div>
-                                    <span class="text-xs font-bold text-slate-400">Select</span>
-                                </button>
-                            `).join('');
+                                </div>
+                                ${badge}
+                            </button>
+                        `;
+                    }).join('');
 
                     [...box.querySelectorAll('button')].forEach((btn, idx) => {
-                        btn.addEventListener('click', () => onPick(items[idx]));
+                        btn.addEventListener('click', () => {
+                            const picked = items[idx];
+                            if (picked.limit_reached) {
+                                onBlocked?.(picked);
+                                return;
+                            }
+                            onPick(picked);
+                        });
                     });
 
                     box.classList.remove('hidden');
                 }
+
 
                 function hideSuggestions(box) {
                     box.classList.add('hidden');
@@ -312,17 +335,51 @@
                         .replaceAll("'", '&#039;');
                 }
 
-                function wireCoMaker({ nameInputId, posInputId, userIdInputId, boxId }) {
+                function wireCoMaker({ nameInputId, posInputId, userIdInputId, boxId, limitMsgId }) {
                     const nameEl = document.getElementById(nameInputId);
                     const posEl = document.getElementById(posInputId);
                     const userIdEl = document.getElementById(userIdInputId);
                     const boxEl = document.getElementById(boxId);
+                    const msgEl = document.getElementById(limitMsgId);
 
                     if (!nameEl || !posEl || !userIdEl || !boxEl) return;
+
+                    // inline warning text under the input
+                    let warnEl = nameEl.parentElement.querySelector('.cm-warn');
+                    if (!warnEl) {
+                        warnEl = document.createElement('p');
+                        warnEl.className = 'cm-warn mt-2 text-xs font-semibold text-red-600 hidden';
+                        nameEl.parentElement.appendChild(warnEl);
+                    }
+
+                    function showWarn(msg) {
+                        warnEl.textContent = msg;
+                        warnEl.classList.remove('hidden');
+                    }
+
+                    function hideWarn() {
+                        warnEl.textContent = '';
+                        warnEl.classList.add('hidden');
+                    }
+
+
+                    const clearLimit = () => {
+                        if (!msgEl) return;
+                        msgEl.textContent = '';
+                        msgEl.classList.add('hidden');
+                    };
+
+                    const showLimit = (text) => {
+                        if (!msgEl) return;
+                        msgEl.textContent = text;
+                        msgEl.classList.remove('hidden');
+                    };
 
                     let abortCtrl = null;
 
                     const doSearch = debounce(async () => {
+                        clearLimit();
+
                         const q = nameEl.value.trim();
 
                         userIdEl.value = '';
@@ -336,6 +393,8 @@
                         if (abortCtrl) abortCtrl.abort();
                         abortCtrl = new AbortController();
 
+                        hideWarn();
+
                         try {
                             const res = await fetch(`${endpoint}?q=${encodeURIComponent(q)}`, {
                                 headers: { 'Accept': 'application/json' },
@@ -346,12 +405,22 @@
 
                             const items = await res.json();
 
-                            renderSuggestions(boxEl, items, (picked) => {
-                                nameEl.value = picked.name;
-                                posEl.value = picked.position || '';
-                                userIdEl.value = picked.id;
-                                hideSuggestions(boxEl);
-                            });
+                            renderSuggestions(
+                                boxEl,
+                                items,
+                                (picked) => {
+                                    nameEl.value = picked.name;
+                                    posEl.value = picked.position || '';
+                                    userIdEl.value = picked.id;
+                                    hideWarn();
+                                    hideSuggestions(boxEl);
+                                },
+                                (picked) => {
+                                    // ✅ blocked selection message
+                                    showWarn('Limit reached, please select another co-maker.');
+                                }
+                            );
+
                         } catch (e) {
                             if (e.name !== 'AbortError') hideSuggestions(boxEl);
                         }
@@ -368,10 +437,24 @@
                     });
                 }
 
-                wireCoMaker({ nameInputId: 'cm1-name', posInputId: 'cm1-position', userIdInputId: 'cm1-user-id', boxId: 'cm1-suggestions' });
-                wireCoMaker({ nameInputId: 'cm2-name', posInputId: 'cm2-position', userIdInputId: 'cm2-user-id', boxId: 'cm2-suggestions' });
+                wireCoMaker({
+                    nameInputId: 'cm1-name',
+                    posInputId: 'cm1-position',
+                    userIdInputId: 'cm1-user-id',
+                    boxId: 'cm1-suggestions',
+                    limitMsgId: 'cm1-limit-msg'
+                });
+
+                wireCoMaker({
+                    nameInputId: 'cm2-name',
+                    posInputId: 'cm2-position',
+                    userIdInputId: 'cm2-user-id',
+                    boxId: 'cm2-suggestions',
+                    limitMsgId: 'cm2-limit-msg'
+                });
             })();
         </script>
+
 
         <script>
             // ✅ Modal close script (safe even if modal doesn't exist)

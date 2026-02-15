@@ -172,22 +172,22 @@
                     </ul>
                 </div>
 
-                <div class="bg-sidebar-green rounded-2xl p-6 text-white relative overflow-hidden">
+                <div class="rounded-2xl bg-primary/5 border border-primary/20 p-6">
                     <div class="absolute -right-4 -top-4 size-24 bg-white/5 rounded-full blur-2xl"></div>
-                    <h4 class="text-sm font-bold text-primary uppercase mb-2">Pro Tip</h4>
-                    <p class="text-sm text-[#dce5e0] leading-relaxed">
+                    <h4 class="font-bold text-slate-900 mb-2">Pro Tip</h4>
+                    <p class="text-sm text-slate-500 mb-4">
                         We recommend updating your password every 90 days to ensure the highest level of security for
                         your cooperative account.
                     </p>
 
-                    <div class="mt-4 flex items-center gap-2 text-xs font-bold text-white/50">
+                    <div class="text-sm font-black text-primary hover:underline inline-flex items-center gap-1">
                         <span class="material-symbols-outlined text-sm">schedule</span>
                         Last changed: —
                     </div>
                 </div>
 
                 {{-- Mini profile card (optional) --}}
-                <div class="bg-white rounded-2xl border border-[#dce5e0] p-6 flex items-center gap-3">
+                <!-- <div class="bg-white rounded-2xl border border-[#dce5e0] p-6 flex items-center gap-3">
                     <div
                         class="size-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-black">
                         {{ $initials ?: 'U' }}
@@ -196,23 +196,25 @@
                         <p class="text-sm font-black text-[#111814] truncate">{{ $u->name }}</p>
                         <p class="text-[10px] text-primary font-black uppercase truncate">Member ID: {{ $memberId }}</p>
                     </div>
-                </div>
+                </div> -->
             </div>
         </div>
-
-        <footer class="p-10 border-t border-[#dce5e0] mt-10">
-            <div class="flex flex-col md:flex-row items-center justify-between gap-4">
-                <p class="text-sm text-[#a0b0a8]">© {{ now()->format('Y') }} ENREMCO Cooperative. All rights reserved.
-                </p>
-                <div class="flex gap-6">
-                    <a class="text-sm font-bold text-[#638875] hover:text-primary transition-colors" href="#">Support
-                        Center</a>
-                    <a class="text-sm font-bold text-[#638875] hover:text-primary transition-colors" href="#">Security
-                        Policy</a>
-                </div>
-            </div>
-        </footer>
     </div>
+
+    <footer class="pt-6">
+        <div class="border-t border-[#dce5e0] pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
+            <p class="text-xs text-[#a0b0a8]">© {{ now()->format('Y') }} ENVIRONMENT AND NATURAL RESOURCES MULTI-PURPOSE
+                CREDIT COOPERATIVE. All rights reserved.</p>
+            <div class="flex gap-6">
+                <a class="text-xs font-bold text-[#638875] hover:text-primary transition-colors" href="#">Privacy
+                    Policy</a>
+                <a class="text-xs font-bold text-[#638875] hover:text-primary transition-colors" href="#">Terms of
+                    Service</a>
+                <a class="text-xs font-bold text-[#638875] hover:text-primary transition-colors" href="#">Help
+                    Center</a>
+            </div>
+        </div>
+    </footer>
     @push('scripts')
         <script>
             document.addEventListener('DOMContentLoaded', () => {

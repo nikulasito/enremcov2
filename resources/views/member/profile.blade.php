@@ -3,10 +3,10 @@
     @push('styles')
         <style type="text/tailwindcss">
             .info-label { @apply text-xs font-bold uppercase tracking-wider text-slate-400 mb-1; }
-                                                    .info-value { @apply text-base font-semibold text-slate-900; }
-                                                    .section-card { @apply bg-white rounded-2xl border border-slate-200 overflow-hidden; }
-                                                    .section-header { @apply px-6 py-4 border-b border-slate-100 bg-white; }
-                                                </style>
+                                                                                                    .info-value { @apply text-base font-semibold text-slate-900; }
+                                                                                                    .section-card { @apply bg-white rounded-2xl border border-slate-200 overflow-hidden; }
+                                                                                                    .section-header { @apply px-6 py-4 border-b border-slate-100 bg-white; }
+                                                                                                </style>
     @endpush
 
     @php
@@ -14,17 +14,17 @@
         $fullName = $user->name ?? 'N/A';
         $memberId = $user->employee_ID ?? $user->employees_id ?? $user->employee_id ?? 'N/A';
 
-        $dob = $user->date_of_birth ?? null;
+        $dob = $user->birthdate ?? null;
         $tin = $user->tin ?? null;
         $sss = $user->sss_gsis ?? $user->gsis ?? $user->sss ?? null;
         $address = $user->address ?? null;
         $contact = $user->contact_no ?? $user->contact ?? null;
         $email = $user->email ?? null;
-        $civilStatus = $user->civil_status ?? null;
+        $civilStatus = $user->marital_status ?? null;
 
         $office = $user->office ?? null;
         $position = $user->position ?? null;
-        $salary = $user->salary ?? null;
+        $salary = $user->annual_income ?? null;
         $yearJoined = $user->year_joined ?? null;
         $employmentStatus = $user->employment_status ?? null;
         $workLocation = $user->work_location ?? null;
@@ -42,11 +42,11 @@
         {{-- LEFT CONTENT --}}
         <div class="lg:col-span-2 space-y-8">
             <div class="flex items-center gap-3">
-                <button onclick="window.print()"
+                <!-- <button onclick="window.print()"
                     class="flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 font-bold text-slate-900 bg-white hover:bg-slate-50 transition-all text-sm">
                     <span class="material-symbols-outlined text-lg">print</span>
                     Print Record
-                </button>
+                </button> -->
 
                 <a href="{{ route('profile.edit') }}"
                     class="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-background-dark font-black hover:brightness-105 transition-all shadow-md shadow-primary/10 text-sm">
@@ -79,16 +79,6 @@
                         <div>
                             <p class="info-label">Date of Birth</p>
                             <p class="info-value">{{ $dob ? \Carbon\Carbon::parse($dob)->format('F d, Y') : 'N/A' }}</p>
-                        </div>
-
-                        <div>
-                            <p class="info-label">Tax Identification Number (TIN)</p>
-                            <p class="info-value">{{ $tin ?? 'N/A' }}</p>
-                        </div>
-
-                        <div>
-                            <p class="info-label">GSIS / SSS Number</p>
-                            <p class="info-value">{{ $sss ?? 'N/A' }}</p>
                         </div>
 
                         <div>
@@ -141,25 +131,10 @@
                         </div>
 
                         <div>
-                            <p class="info-label">Basic Monthly Salary</p>
+                            <p class="info-label">Annual Income</p>
                             <p class="info-value">
                                 {{ $salary !== null ? '₱ ' . number_format((float) $salary, 2) : 'N/A' }}
                             </p>
-                        </div>
-
-                        <div>
-                            <p class="info-label">Year Joined</p>
-                            <p class="info-value">{{ $yearJoined ?? 'N/A' }}</p>
-                        </div>
-
-                        <div>
-                            <p class="info-label">Employment Status</p>
-                            <p class="info-value">{{ $employmentStatus ?? 'N/A' }}</p>
-                        </div>
-
-                        <div>
-                            <p class="info-label">Work Location</p>
-                            <p class="info-value">{{ $workLocation ?? 'N/A' }}</p>
                         </div>
                     </div>
                 </div>
@@ -198,24 +173,24 @@
                             </p>
                         </div>
 
-                        <div>
+                        <!-- <div>
                             <p class="text-xs font-bold uppercase tracking-widest text-white/60 mb-1">Membership Type
                             </p>
                             <p class="font-bold">{{ $membershipType }}</p>
-                        </div>
+                        </div> -->
 
-                        <div>
+                        <!-- <div>
                             <p class="text-xs font-bold uppercase tracking-widest text-white/60 mb-1">Share Capital</p>
                             <p class="text-primary text-xl font-black">
                                 {{ $shareCapital !== null ? '₱ ' . number_format((float) $shareCapital, 2) : 'N/A' }}
                             </p>
-                        </div>
+                        </div> -->
                     </div>
 
-                    <div class="rounded-xl bg-white/5 p-4 border border-white/10 text-center">
+                    <!-- <div class="rounded-xl bg-white/5 p-4 border border-white/10 text-center">
                         <p class="text-[10px] font-bold text-white/60 uppercase mb-1">Next Renewal</p>
                         <p class="text-sm font-bold">{{ $nextRenewal ?? 'N/A' }}</p>
-                    </div>
+                    </div> -->
                 </div>
             </section>
 
@@ -231,5 +206,20 @@
         </div>
 
     </div>
+
+    <footer class="pt-6">
+        <div class="border-t border-[#dce5e0] pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
+            <p class="text-xs text-[#a0b0a8]">© {{ now()->format('Y') }} ENVIRONMENT AND NATURAL RESOURCES MULTI-PURPOSE
+                CREDIT COOPERATIVE. All rights reserved.</p>
+            <div class="flex gap-6">
+                <a class="text-xs font-bold text-[#638875] hover:text-primary transition-colors" href="#">Privacy
+                    Policy</a>
+                <a class="text-xs font-bold text-[#638875] hover:text-primary transition-colors" href="#">Terms of
+                    Service</a>
+                <a class="text-xs font-bold text-[#638875] hover:text-primary transition-colors" href="#">Help
+                    Center</a>
+            </div>
+        </div>
+    </footer>
 
 </x-member-layout>

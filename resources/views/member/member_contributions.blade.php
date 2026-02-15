@@ -54,12 +54,12 @@
     @endphp
 
     <!-- Header -->
-        <div class="mb-6 flex items-center justify-between">
-            <h3 class="text-xl font-black text-slate-800 flex items-center gap-2">
-                <span class="material-symbols-outlined text-primary">analytics</span>
-                My Contributions
-            </h3>
-        </div>
+    <div class="mb-6 flex items-center justify-between">
+        <h3 class="text-xl font-black text-slate-800 flex items-center gap-2">
+            <span class="material-symbols-outlined text-primary">analytics</span>
+            My Contributions
+        </h3>
+    </div>
 
     <div class="space-y-8">
 
@@ -70,10 +70,6 @@
                     <div>
                         <p class="text-sm font-bold text-[#638875] uppercase tracking-wider">Total Share Capital</p>
                         <h3 class="text-3xl font-black text-background-dark mt-2">₱{{ $money($totalShareAmount) }}</h3>
-                        <div class="mt-4 flex items-center gap-2 text-primary-dark">
-                            <span class="material-symbols-outlined text-sm">trending_up</span>
-                            <span class="text-xs font-bold">+₱{{ $money($shareThisMonth) }} this month</span>
-                        </div>
                     </div>
                     <div class="size-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
                         <span class="material-symbols-outlined text-2xl">account_balance</span>
@@ -87,10 +83,6 @@
                         <p class="text-sm font-bold text-[#638875] uppercase tracking-wider">Total Savings Deposit</p>
                         <h3 class="text-3xl font-black text-background-dark mt-2">₱{{ $money($totalSavingsAmount) }}
                         </h3>
-                        <div class="mt-4 flex items-center gap-2 text-primary-dark">
-                            <span class="material-symbols-outlined text-sm">trending_up</span>
-                            <span class="text-xs font-bold">+₱{{ $money($savingsThisMonth) }} this month</span>
-                        </div>
                     </div>
                     <div class="size-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
                         <span class="material-symbols-outlined text-2xl">savings</span>
@@ -115,7 +107,7 @@
                 </h3>
 
                 <div class="mt-4 flex items-center gap-4">
-                    <div class="flex-1">
+                    <!-- <div class="flex-1">
                         <p class="text-[10px] text-white/50 uppercase">Reference</p>
                         <p class="text-sm font-bold">
                             @if($latest)
@@ -124,7 +116,7 @@
                                 —
                             @endif
                         </p>
-                    </div>
+                    </div> -->
                     <a href="#history"
                         class="bg-primary text-background-dark px-4 py-2 rounded-lg text-xs font-bold hover:brightness-105 active:scale-95 transition-all">
                         View History
@@ -255,7 +247,8 @@
                                     <p class="text-[10px] font-black uppercase tracking-widest text-[#638875]">Total Months
                                         Contributed</p>
                                     <p class="text-2xl font-black text-background-dark mt-1">
-                                        {{ $totalSavingsEntries ?? ($totalEntries ?? 0) }}</p>
+                                        {{ $totalSavingsEntries ?? ($totalEntries ?? 0) }}
+                                    </p>
                                 </div>
                                 <div class="bg-white rounded-xl border border-[#dce5e0] p-4">
                                     <p class="text-[10px] font-black uppercase tracking-widest text-[#638875]">Total Savings
@@ -310,8 +303,9 @@
         <!-- Footer -->
         <footer class="pt-6">
             <div class="border-t border-[#dce5e0] pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
-                <p class="text-xs text-[#a0b0a8]">© {{ now()->format('Y') }} ENREMCO Cooperative Member Portal. All
-                    rights reserved.</p>
+                <p class="text-xs text-[#a0b0a8]">© {{ now()->format('Y') }} ENVIRONMENT AND NATURAL RESOURCES
+                    MULTI-PURPOSE
+                    CREDIT COOPERATIVE. All rights reserved.</p>
                 <div class="flex gap-6">
                     <a class="text-xs font-bold text-[#638875] hover:text-primary transition-colors" href="#">Privacy
                         Policy</a>
