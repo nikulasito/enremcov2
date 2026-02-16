@@ -10,10 +10,26 @@ use App\Models\Share;
 use App\Models\Saving;
 use App\Models\LoanDetail;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 class MemberContributionsController extends Controller
 {
     public function index()
+    {
+        return $this->renderContributionPage('contributions');
+    }
+
+    public function sharesPage()
+    {
+        return $this->renderContributionPage('shares');
+    }
+
+    public function savingsPage()
+    {
+        return $this->renderContributionPage('savings');
+    }
+
+    private function renderContributionPage(string $page)
     {
         $user = Auth::user();
 
@@ -88,6 +104,66 @@ class MemberContributionsController extends Controller
         $totalSavingsDisplayed = $savings->sum('total');
         $totalSavingsEntries = $savings->sum('months_contributed');
 
+        // ✅ Fetch Withdrawals grouped by year and month
+        $withdrawals = collect();
+        if (Schema::hasTable('withdrawals')) {
+            $withdrawalsQuery = DB::table('withdrawals')
+                ->select(
+                    DB::raw('COALESCE(withdrawals.covered_year, YEAR(withdrawals.date_of_withdrawal)) as year'),
+                    DB::raw('SUM(CASE WHEN COALESCE(withdrawals.covered_month, MONTH(withdrawals.date_of_withdrawal)) = 1 THEN withdrawals.amount_withdrawn ELSE 0 END) AS jan'),
+                    DB::raw('SUM(CASE WHEN COALESCE(withdrawals.covered_month, MONTH(withdrawals.date_of_withdrawal)) = 2 THEN withdrawals.amount_withdrawn ELSE 0 END) AS feb'),
+                    DB::raw('SUM(CASE WHEN COALESCE(withdrawals.covered_month, MONTH(withdrawals.date_of_withdrawal)) = 3 THEN withdrawals.amount_withdrawn ELSE 0 END) AS mar'),
+                    DB::raw('SUM(CASE WHEN COALESCE(withdrawals.covered_month, MONTH(withdrawals.date_of_withdrawal)) = 4 THEN withdrawals.amount_withdrawn ELSE 0 END) AS apr'),
+                    DB::raw('SUM(CASE WHEN COALESCE(withdrawals.covered_month, MONTH(withdrawals.date_of_withdrawal)) = 5 THEN withdrawals.amount_withdrawn ELSE 0 END) AS may'),
+                    DB::raw('SUM(CASE WHEN COALESCE(withdrawals.covered_month, MONTH(withdrawals.date_of_withdrawal)) = 6 THEN withdrawals.amount_withdrawn ELSE 0 END) AS jun'),
+                    DB::raw('SUM(CASE WHEN COALESCE(withdrawals.covered_month, MONTH(withdrawals.date_of_withdrawal)) = 7 THEN withdrawals.amount_withdrawn ELSE 0 END) AS jul'),
+                    DB::raw('SUM(CASE WHEN COALESCE(withdrawals.covered_month, MONTH(withdrawals.date_of_withdrawal)) = 8 THEN withdrawals.amount_withdrawn ELSE 0 END) AS aug'),
+                    DB::raw('SUM(CASE WHEN COALESCE(withdrawals.covered_month, MONTH(withdrawals.date_of_withdrawal)) = 9 THEN withdrawals.amount_withdrawn ELSE 0 END) AS sep'),
+                    DB::raw('SUM(CASE WHEN COALESCE(withdrawals.covered_month, MONTH(withdrawals.date_of_withdrawal)) = 10 THEN withdrawals.amount_withdrawn ELSE 0 END) AS oct'),
+                    DB::raw('SUM(CASE WHEN COALESCE(withdrawals.covered_month, MONTH(withdrawals.date_of_withdrawal)) = 11 THEN withdrawals.amount_withdrawn ELSE 0 END) AS nov'),
+                    DB::raw('SUM(CASE WHEN COALESCE(withdrawals.covered_month, MONTH(withdrawals.date_of_withdrawal)) = 12 THEN withdrawals.amount_withdrawn ELSE 0 END) AS `dec`'),
+                    DB::raw('SUM(withdrawals.amount_withdrawn) as total'),
+                    DB::raw('COUNT(DISTINCT COALESCE(withdrawals.covered_month, MONTH(withdrawals.date_of_withdrawal))) as months_contributed')
+                )
+                ->where('withdrawals.employees_id', $user->id);
+
+            // Filter withdrawals by reference_no category per page.
+            if ($page === 'shares') {
+                $withdrawalsQuery->whereRaw('LOWER(COALESCE(withdrawals.reference_no, "")) LIKE ?', ['%shares%']);
+            } elseif ($page === 'savings') {
+                $withdrawalsQuery->whereRaw('LOWER(COALESCE(withdrawals.reference_no, "")) LIKE ?', ['%savings%']);
+            }
+
+            $withdrawals = $withdrawalsQuery
+                ->groupBy(DB::raw('COALESCE(withdrawals.covered_year, YEAR(withdrawals.date_of_withdrawal))'))
+                ->orderBy('year', 'desc')
+                ->get();
+        }
+
+        $totalWithdrawalsDisplayed = $withdrawals->sum('total');
+        $totalWithdrawalsEntries = $withdrawals->sum('months_contributed');
+
+        $secondaryRows = $savings;
+        $secondaryLabel = 'Savings';
+        $secondaryTotalDisplayed = $totalSavingsDisplayed;
+        $secondaryTotalEntries = $totalSavingsEntries;
+        $secondaryEmptyText = 'No savings contributions available.';
+
+        if (in_array($page, ['shares', 'savings'], true)) {
+            $secondaryRows = $withdrawals;
+            $secondaryLabel = 'Withdrawals';
+            $secondaryTotalDisplayed = $totalWithdrawalsDisplayed;
+            $secondaryTotalEntries = $totalWithdrawalsEntries;
+            $secondaryEmptyText = 'No withdrawal records available.';
+        }
+
+        if ($page === 'savings') {
+            $shares = $savings;
+            $totalDisplayed = $totalSavingsDisplayed;
+            $totalEntries = $totalSavingsEntries;
+            $totalShareAmount = $totalSavingsDisplayed;
+        }
+
         // ✅ Return the view with all required data
         return view('member.member_contributions', compact(
             'contributions',
@@ -99,7 +175,16 @@ class MemberContributionsController extends Controller
             'totalEntries',
             'savings',
             'totalSavingsDisplayed',
-            'totalSavingsEntries'
+            'totalSavingsEntries',
+            'withdrawals',
+            'totalWithdrawalsDisplayed',
+            'totalWithdrawalsEntries',
+            'secondaryRows',
+            'secondaryLabel',
+            'secondaryTotalDisplayed',
+            'secondaryTotalEntries',
+            'secondaryEmptyText',
+            'page'
         ));
     }
 

@@ -11,6 +11,7 @@ use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Validator;
 use App\Imports\SharesImport;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\DB;
 
 class SharesController extends Controller
 {
@@ -38,6 +39,7 @@ class SharesController extends Controller
         $perPage = (int) $request->input('per_page', 10);
         $search = trim((string) $request->input('search', ''));
         $office = (string) $request->input('office', '');
+        $monthlyAmount = trim((string) $request->input('monthly_amount', ''));
 
         $query = User::query()
             ->where('is_admin', '!=', 1)
@@ -53,6 +55,10 @@ class SharesController extends Controller
 
         if ($office !== '') {
             $query->where('office', $office);
+        }
+
+        if ($monthlyAmount !== '' && is_numeric($monthlyAmount)) {
+            $query->where('shares', (float) $monthlyAmount);
         }
 
         $members = $query->orderBy('name')->paginate($perPage)->withQueryString();
@@ -224,6 +230,7 @@ class SharesController extends Controller
         $perPage = (int) $request->input('per_page', 10);
         $search = trim((string) $request->input('search', ''));
         $office = trim((string) $request->input('office', ''));
+        $monthlyAmount = trim((string) $request->input('monthly_amount', ''));
 
         $q = User::query()
             ->where('status', 'Active')
@@ -239,6 +246,10 @@ class SharesController extends Controller
                     ->orWhere('employee_ID', 'like', "%{$search}%")
                     ->orWhere('office', 'like', "%{$search}%");
             });
+        }
+
+        if ($monthlyAmount !== '' && is_numeric($monthlyAmount)) {
+            $q->where('shares', (float) $monthlyAmount);
         }
 
         $members = $q->orderBy('name')->paginate($perPage)->withQueryString();

@@ -19,6 +19,9 @@
     </x-slot>
 
     <div class="w-full">
+        @php
+            $resolvedLoanType = old('loan_type', $selectedLoanType ?? '');
+        @endphp
         <div class="mb-6 flex items-center justify-between">
             <h3 class="text-xl font-black text-slate-800 flex items-center gap-2">
                 <span class="material-symbols-outlined text-primary">description</span>
@@ -82,12 +85,12 @@
                             <select
                                 class="w-full rounded-xl border-slate-200 bg-white text-slate-900 px-4 py-3 font-medium"
                                 id="loan-type" name="loan_type">
-                                <option value="regular" @selected(old('loan_type') === 'regular')>Regular Loan</option>
-                                <option value="educational" @selected(old('loan_type') === 'educational')>Educational Loan
+                                <option value="regular" @selected($resolvedLoanType === 'regular')>Regular Loan</option>
+                                <option value="educational" @selected($resolvedLoanType === 'educational')>Educational Loan
                                 </option>
-                                <option value="appliance" @selected(old('loan_type') === 'appliance')>Appliance Loan
+                                <option value="appliance" @selected($resolvedLoanType === 'appliance')>Appliance Loan
                                 </option>
-                                <option value="grocery" @selected(old('loan_type') === 'grocery')>Grocery Loan</option>
+                                <option value="grocery" @selected($resolvedLoanType === 'grocery')>Grocery Loan</option>
                             </select>
                             @error('loan_type') <p class="text-xs text-red-600 font-semibold">{{ $message }}</p>
                             @enderror
@@ -404,6 +407,15 @@
                             if (!res.ok) throw new Error('Search failed');
 
                             const items = await res.json();
+                            const qLower = q.toLowerCase();
+                            const exactLocked = Array.isArray(items)
+                                ? items.find((it) => String(it.name || '').toLowerCase() === qLower && it.limit_reached)
+                                : null;
+                            if (exactLocked) {
+                                showWarn('This co-maker already reached the 3-loan limit. Please select another co-maker.');
+                            } else {
+                                hideWarn();
+                            }
 
                             renderSuggestions(
                                 boxEl,

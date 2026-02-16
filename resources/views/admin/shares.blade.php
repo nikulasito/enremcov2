@@ -102,7 +102,7 @@
                         class="w-full rounded-lg border-[#dce5e0] dark:border-[#2a3a32] bg-white dark:bg-[#112119] py-2.5 px-4 text-sm">
                     <button id="addSharesBtn"
                         class="shrink-0 rounded-lg bg-primary px-4 py-2.5 text-sm font-black text-[#112119] hover:brightness-110">
-                        Add
+                        Add Monthly Shares
                     </button>
                 </div>
             </div>
@@ -216,74 +216,14 @@
                     </tr>
                 </thead>
 
-                <tbody class="divide-y divide-[#dce5e0] dark:divide-[#2a3a32]">
-                    @foreach($members as $member)
-                        @if($member->is_admin != 1)
-                            @php
-                                $totalShares = \App\Models\Share::where('employees_id', $member->id)->sum('amount');
-                                $monthsContributed = \App\Models\Share::where('employees_id', $member->id)->whereNotNull('covered_month')->count();
-                                $firstRemittance = \App\Models\Share::where('employees_id', $member->id)->orderBy('date_remittance', 'asc')->value('date_remittance');
-                                $latestRemittance = \App\Models\Share::where('employees_id', $member->id)->orderBy('date_remittance', 'desc')->value('date_remittance');
-                                $lastUpdated = \App\Models\Share::where('employees_id', $member->id)->max('date_updated');
-                            @endphp
-
-                            <tr class="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors memberRow"
-                                data-name="{{ strtolower($member->name) }}" data-id="{{ strtolower($member->employee_ID) }}"
-                                data-office="{{ strtolower($member->office) }}" data-shares="{{ $member->shares }}">
-                                <td class="px-6 py-4">
-                                    <input type="checkbox" class="memberCheckbox" value="{{ $member->id }}">
-                                </td>
-                                <td class="px-6 py-4 font-medium">
-                                    {{ ($members->currentPage() - 1) * $members->perPage() + $loop->iteration }}
-                                </td>
-                                <td class="px-6 py-4 font-black text-primary">{{ $member->employee_ID }}</td>
-                                <td class="px-6 py-4 font-black">{{ $member->name }}</td>
-                                <td class="px-6 py-4">{{ $member->office }}</td>
-                                <td class="px-6 py-4 current-shares">{{ $member->shares }}</td>
-                                <td class="px-6 py-4 text-[#638875] dark:text-[#a0b0a8]">{{ $firstRemittance ?? '—' }}</td>
-                                <td class="px-6 py-4 text-[#638875] dark:text-[#a0b0a8]">{{ $latestRemittance ?? '—' }}</td>
-                                <td class="px-6 py-4 font-black">{{ number_format($totalShares, 2) }}</td>
-                                <td class="px-6 py-4">{{ $monthsContributed }}</td>
-                                <td class="px-6 py-4 text-[#638875] dark:text-[#a0b0a8]">
-                                    {{ $lastUpdated ? \Carbon\Carbon::parse($lastUpdated)->format('Y-m-d') : '—' }}
-                                </td>
-                                <td class="px-6 py-4">
-                                    <div class="flex flex-col gap-2 min-w-0">
-                                        <button type="button"
-                                            class="w-full inline-flex items-center justify-center rounded-lg bg-primary px-3 py-2 text-xs font-black text-[#112119] hover:brightness-110 transition"
-                                            data-open-modal="updateDetailsModal" data-id="{{ $member->id }}"
-                                            data-employee_id="{{ $member->employee_ID }}" data-name="{{ $member->name }}"
-                                            data-office="{{ $member->office }}" data-contribution="{{ $member->shares }}"
-                                            data-first-remittance="{{ $firstRemittance ?? 'N/A' }}"
-                                            data-latest-remittance="{{ $latestRemittance ?? 'N/A' }}"
-                                            data-total-shares="{{ $totalShares }}"
-                                            data-months-contributed="{{ $monthsContributed }}">
-                                            Update
-                                        </button>
-
-                                        <button type="button"
-                                            class="w-full inline-flex items-center justify-center rounded-lg bg-[#112119] px-3 py-2 text-xs font-black text-white hover:opacity-90 transition"
-                                            data-open-modal="viewDetailsModal" data-id="{{ $member->id }}"
-                                            data-employee_id="{{ $member->employee_ID }}" data-name="{{ $member->name }}"
-                                            data-office="{{ $member->office }}" data-contribution="{{ $member->shares }}"
-                                            data-first-remittance="{{ $firstRemittance ?? '—' }}"
-                                            data-latest-remittance="{{ $latestRemittance ?? '—' }}"
-                                            data-total-shares="{{ $totalShares }}"
-                                            data-months-contributed="{{ $monthsContributed }}">
-                                            View Contributions
-                                        </button>
-
-                                    </div>
-                                </td>
-                            </tr>
-                        @endif
-                    @endforeach
+                <tbody id="sharesTableBody" class="divide-y divide-[#dce5e0] dark:divide-[#2a3a32]">
+                    @include('admin.shares._rows')
                 </tbody>
             </table>
         </div>
 
-        <div class="p-6 border-t border-[#dce5e0] dark:border-[#2a3a32]">
-            {{ $members->appends(request()->except('page'))->links() }}
+        <div id="sharesPagination" class="p-6 border-t border-[#dce5e0] dark:border-[#2a3a32]">
+            @include('admin.shares._pagination')
         </div>
     </div>
 
@@ -692,64 +632,64 @@
                     const requestUrl = `/admin/get-contributions/${encodeURIComponent(userId)}/${encodeURIComponent(query || 'all')}`;
 
                     remittanceResult.innerHTML = `
-                                                                                <div class="mt-4 text-sm font-bold text-[#638875] dark:text-[#a0b0a8]">
-                                                                                    Loading records...
-                                                                                </div>
-                                                                            `;
+                                                                                    <div class="mt-4 text-sm font-bold text-[#638875] dark:text-[#a0b0a8]">
+                                                                                        Loading records...
+                                                                                    </div>
+                                                                                `;
 
                     fetch(requestUrl)
                         .then(r => r.json())
                         .then(data => {
                             if (!data.success || !Array.isArray(data.contributions) || data.contributions.length === 0) {
                                 remittanceResult.innerHTML = `
-                                                                                            <div class="mt-4 rounded-xl border border-[#dce5e0] dark:border-[#2a3a32] bg-white dark:bg-[#0d1a14] p-5 text-sm font-bold text-[#638875] dark:text-[#a0b0a8]">
-                                                                                                ${data.message || 'No contributions found.'}
-                                                                                            </div>
-                                                                                        `;
+                                                                                                <div class="mt-4 rounded-xl border border-[#dce5e0] dark:border-[#2a3a32] bg-white dark:bg-[#0d1a14] p-5 text-sm font-bold text-[#638875] dark:text-[#a0b0a8]">
+                                                                                                    ${data.message || 'No contributions found.'}
+                                                                                                </div>
+                                                                                            `;
                                 saveBtn.classList.add('hidden');
                                 return;
                             }
 
                             let html = `
-                                                                                        <div class="mt-5 overflow-x-auto rounded-xl border border-[#dce5e0] dark:border-[#2a3a32]">
-                                                                                            <table class="w-full text-left">
-                                                                                                <thead>
-                                                                                                    <tr class="bg-[#f6f8f7] dark:bg-[#0d1a14]/50 border-b border-[#dce5e0] dark:border-[#2a3a32]">
-                                                                                                        <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-[#638875] dark:text-[#a0b0a8]">Date</th>
-                                                                                                        <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-[#638875] dark:text-[#a0b0a8]">Remittance No.</th>
-                                                                                                        <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-[#638875] dark:text-[#a0b0a8]">Month</th>
-                                                                                                        <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-[#638875] dark:text-[#a0b0a8]">Year</th>
-                                                                                                        <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-[#638875] dark:text-[#a0b0a8]">Amount</th>
-                                                                                                    </tr>
-                                                                                                </thead>
-                                                                                                <tbody class="divide-y divide-[#dce5e0] dark:divide-[#2a3a32] bg-white dark:bg-[#0d1a14]">
-                                                                                    `;
+                                                                                            <div class="mt-5 overflow-x-auto rounded-xl border border-[#dce5e0] dark:border-[#2a3a32]">
+                                                                                                <table class="w-full text-left">
+                                                                                                    <thead>
+                                                                                                        <tr class="bg-[#f6f8f7] dark:bg-[#0d1a14]/50 border-b border-[#dce5e0] dark:border-[#2a3a32]">
+                                                                                                            <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-[#638875] dark:text-[#a0b0a8]">Date</th>
+                                                                                                            <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-[#638875] dark:text-[#a0b0a8]">Remittance No.</th>
+                                                                                                            <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-[#638875] dark:text-[#a0b0a8]">Month</th>
+                                                                                                            <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-[#638875] dark:text-[#a0b0a8]">Year</th>
+                                                                                                            <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-[#638875] dark:text-[#a0b0a8]">Amount</th>
+                                                                                                        </tr>
+                                                                                                    </thead>
+                                                                                                    <tbody class="divide-y divide-[#dce5e0] dark:divide-[#2a3a32] bg-white dark:bg-[#0d1a14]">
+                                                                                        `;
 
                             data.contributions.forEach((c, i) => {
                                 html += `
-                                                                                            <tr data-share-id="${c.shares_id}">
-                                                                                                <td class="px-6 py-3">
-                                                                                                    <input type="date" name="date_remittance_${i}" value="${c.date_remittance || ''}"
-                                                                                                        class="w-full rounded-lg border border-[#dce5e0] dark:border-[#2a3a32] bg-white dark:bg-[#112119] text-sm py-2 px-3 focus:ring-2 focus:ring-primary">
-                                                                                                </td>
-                                                                                                <td class="px-6 py-3">
-                                                                                                    <input type="text" name="remittance_no_${i}" value="${c.remittance_no || ''}"
-                                                                                                        class="w-full rounded-lg border border-[#dce5e0] dark:border-[#2a3a32] bg-white dark:bg-[#112119] text-sm py-2 px-3 focus:ring-2 focus:ring-primary">
-                                                                                                </td>
-                                                                                                <td class="px-6 py-3">
-                                                                                                    <input type="text" name="month_name_${i}" value="${c.month_name || ''}"
-                                                                                                        class="w-full rounded-lg border border-[#dce5e0] dark:border-[#2a3a32] bg-white dark:bg-[#112119] text-sm py-2 px-3 focus:ring-2 focus:ring-primary">
-                                                                                                </td>
-                                                                                                <td class="px-6 py-3">
-                                                                                                    <input type="text" name="covered_year_${i}" value="${c.covered_year || ''}"
-                                                                                                        class="w-full rounded-lg border border-[#dce5e0] dark:border-[#2a3a32] bg-white dark:bg-[#112119] text-sm py-2 px-3 focus:ring-2 focus:ring-primary">
-                                                                                                </td>
-                                                                                                <td class="px-6 py-3">
-                                                                                                    <input type="number" step="any" min="0" name="amount_${i}" value="${c.amount || ''}"
-                                                                                                        class="w-full rounded-lg border border-[#dce5e0] dark:border-[#2a3a32] bg-white dark:bg-[#112119] text-sm py-2 px-3 focus:ring-2 focus:ring-primary">
-                                                                                                </td>
-                                                                                            </tr>
-                                                                                        `;
+                                                                                                <tr data-share-id="${c.shares_id}">
+                                                                                                    <td class="px-6 py-3">
+                                                                                                        <input type="date" name="date_remittance_${i}" value="${c.date_remittance || ''}"
+                                                                                                            class="w-full rounded-lg border border-[#dce5e0] dark:border-[#2a3a32] bg-white dark:bg-[#112119] text-sm py-2 px-3 focus:ring-2 focus:ring-primary">
+                                                                                                    </td>
+                                                                                                    <td class="px-6 py-3">
+                                                                                                        <input type="text" name="remittance_no_${i}" value="${c.remittance_no || ''}"
+                                                                                                            class="w-full rounded-lg border border-[#dce5e0] dark:border-[#2a3a32] bg-white dark:bg-[#112119] text-sm py-2 px-3 focus:ring-2 focus:ring-primary">
+                                                                                                    </td>
+                                                                                                    <td class="px-6 py-3">
+                                                                                                        <input type="text" name="month_name_${i}" value="${c.month_name || ''}"
+                                                                                                            class="w-full rounded-lg border border-[#dce5e0] dark:border-[#2a3a32] bg-white dark:bg-[#112119] text-sm py-2 px-3 focus:ring-2 focus:ring-primary">
+                                                                                                    </td>
+                                                                                                    <td class="px-6 py-3">
+                                                                                                        <input type="text" name="covered_year_${i}" value="${c.covered_year || ''}"
+                                                                                                            class="w-full rounded-lg border border-[#dce5e0] dark:border-[#2a3a32] bg-white dark:bg-[#112119] text-sm py-2 px-3 focus:ring-2 focus:ring-primary">
+                                                                                                    </td>
+                                                                                                    <td class="px-6 py-3">
+                                                                                                        <input type="number" step="any" min="0" name="amount_${i}" value="${c.amount || ''}"
+                                                                                                            class="w-full rounded-lg border border-[#dce5e0] dark:border-[#2a3a32] bg-white dark:bg-[#112119] text-sm py-2 px-3 focus:ring-2 focus:ring-primary">
+                                                                                                    </td>
+                                                                                                </tr>
+                                                                                            `;
                             });
 
                             html += `</tbody></table></div>`;
@@ -760,10 +700,10 @@
                         .catch(err => {
                             console.error(err);
                             remittanceResult.innerHTML = `
-                                                                                        <div class="mt-4 rounded-xl border border-red-200 bg-red-50 p-5 text-sm font-bold text-red-700">
-                                                                                            Failed to load contributions.
-                                                                                        </div>
-                                                                                    `;
+                                                                                            <div class="mt-4 rounded-xl border border-red-200 bg-red-50 p-5 text-sm font-bold text-red-700">
+                                                                                                Failed to load contributions.
+                                                                                            </div>
+                                                                                        `;
                             saveBtn.classList.add('hidden');
                         });
                 };
@@ -827,38 +767,38 @@
                 const renderViewTable = (list) => {
                     if (!Array.isArray(list) || list.length === 0) {
                         contributionsResult.innerHTML = `
-                                                                            <div class="mt-4 rounded-xl border border-[#dce5e0] dark:border-[#2a3a32] bg-white dark:bg-[#0d1a14] p-5 text-sm font-bold text-[#638875] dark:text-[#a0b0a8]">
-                                                                                No contributions found.
-                                                                            </div>
-                                                                            `;
+                                                                                <div class="mt-4 rounded-xl border border-[#dce5e0] dark:border-[#2a3a32] bg-white dark:bg-[#0d1a14] p-5 text-sm font-bold text-[#638875] dark:text-[#a0b0a8]">
+                                                                                    No contributions found.
+                                                                                </div>
+                                                                                `;
                         return;
                     }
 
                     let html = `
-                                                                                    <div class="mt-5 overflow-x-auto rounded-xl border border-[#dce5e0] dark:border-[#2a3a32]">
-                                                                                    <table class="w-full text-left">
-                                                                                        <thead>
-                                                                                        <tr class="bg-[#f6f8f7] dark:bg-[#0d1a14]/50 border-b border-[#dce5e0] dark:border-[#2a3a32]">
-                                                                                            <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-[#638875] dark:text-[#a0b0a8]">Date</th>
-                                                                                            <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-[#638875] dark:text-[#a0b0a8]">Remittance No.</th>
-                                                                                            <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-[#638875] dark:text-[#a0b0a8]">Month</th>
-                                                                                            <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-[#638875] dark:text-[#a0b0a8]">Year</th>
-                                                                                            <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-[#638875] dark:text-[#a0b0a8]">Amount</th>
-                                                                                        </tr>
-                                                                                        </thead>
-                                                                                        <tbody class="divide-y divide-[#dce5e0] dark:divide-[#2a3a32] bg-white dark:bg-[#0d1a14]">
-                                                                                `;
+                                                                                        <div class="mt-5 overflow-x-auto rounded-xl border border-[#dce5e0] dark:border-[#2a3a32]">
+                                                                                        <table class="w-full text-left">
+                                                                                            <thead>
+                                                                                            <tr class="bg-[#f6f8f7] dark:bg-[#0d1a14]/50 border-b border-[#dce5e0] dark:border-[#2a3a32]">
+                                                                                                <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-[#638875] dark:text-[#a0b0a8]">Date</th>
+                                                                                                <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-[#638875] dark:text-[#a0b0a8]">Remittance No.</th>
+                                                                                                <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-[#638875] dark:text-[#a0b0a8]">Month</th>
+                                                                                                <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-[#638875] dark:text-[#a0b0a8]">Year</th>
+                                                                                                <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-[#638875] dark:text-[#a0b0a8]">Amount</th>
+                                                                                            </tr>
+                                                                                            </thead>
+                                                                                            <tbody class="divide-y divide-[#dce5e0] dark:divide-[#2a3a32] bg-white dark:bg-[#0d1a14]">
+                                                                                    `;
 
                     list.forEach((c) => {
                         html += `
-                                                                                    <tr class="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
-                                                                                        <td class="px-6 py-4 text-sm text-[#111814] dark:text-white">${c.date_remittance || '—'}</td>
-                                                                                        <td class="px-6 py-4 text-sm text-[#638875] dark:text-[#a0b0a8]">${c.remittance_no || '—'}</td>
-                                                                                        <td class="px-6 py-4 text-sm text-[#638875] dark:text-[#a0b0a8]">${c.month_name || '—'}</td>
-                                                                                        <td class="px-6 py-4 text-sm text-[#638875] dark:text-[#a0b0a8]">${c.covered_year || '—'}</td>
-                                                                                        <td class="px-6 py-4 text-sm font-black text-[#111814] dark:text-white">${c.amount ?? '—'}</td>
-                                                                                    </tr>
-                                                                                    `;
+                                                                                        <tr class="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                                                                                            <td class="px-6 py-4 text-sm text-[#111814] dark:text-white">${c.date_remittance || '—'}</td>
+                                                                                            <td class="px-6 py-4 text-sm text-[#638875] dark:text-[#a0b0a8]">${c.remittance_no || '—'}</td>
+                                                                                            <td class="px-6 py-4 text-sm text-[#638875] dark:text-[#a0b0a8]">${c.month_name || '—'}</td>
+                                                                                            <td class="px-6 py-4 text-sm text-[#638875] dark:text-[#a0b0a8]">${c.covered_year || '—'}</td>
+                                                                                            <td class="px-6 py-4 text-sm font-black text-[#111814] dark:text-white">${c.amount ?? '—'}</td>
+                                                                                        </tr>
+                                                                                        `;
                     });
 
                     html += `</tbody></table></div>`;
@@ -873,18 +813,18 @@
                     const requestUrl = `/admin/get-contributions/${encodeURIComponent(currentViewUserId)}/${encodeURIComponent(year || 'all')}`;
 
                     contributionsResult.innerHTML = `
-                                                                                <div class="p-5 text-sm font-bold text-[#638875] dark:text-[#a0b0a8]">Loading...</div>
-                                                                            `;
+                                                                                    <div class="p-5 text-sm font-bold text-[#638875] dark:text-[#a0b0a8]">Loading...</div>
+                                                                                `;
 
                     fetch(requestUrl)
                         .then(r => r.json())
                         .then(data => {
                             if (!data.success) {
                                 contributionsResult.innerHTML = `
-                                                                                            <div class="p-5 text-sm font-bold text-red-700 bg-red-50 border border-red-200">
-                                                                                                ${data.message || 'Failed to load.'}
-                                                                                            </div>
-                                                                                        `;
+                                                                                                <div class="p-5 text-sm font-bold text-red-700 bg-red-50 border border-red-200">
+                                                                                                    ${data.message || 'Failed to load.'}
+                                                                                                </div>
+                                                                                            `;
                                 return;
                             }
                             renderViewTable(data.contributions || []);
@@ -892,16 +832,157 @@
                         .catch(err => {
                             console.error(err);
                             contributionsResult.innerHTML = `
-                                                                                        <div class="p-5 text-sm font-bold text-red-700 bg-red-50 border border-red-200">
-                                                                                            Failed to load contributions.
-                                                                                        </div>
-                                                                                    `;
+                                                                                            <div class="p-5 text-sm font-bold text-red-700 bg-red-50 border border-red-200">
+                                                                                                Failed to load contributions.
+                                                                                            </div>
+                                                                                        `;
                         });
                 };
 
                 viewYearBtn?.addEventListener('click', runViewYear);
                 yearFilter?.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter') runViewYear();
+                });
+
+                // ===== LIVE SEARCH (Shares Ledger) =====
+                const filtersForm = document.getElementById('sharesFiltersForm');
+                const ledgerSearch = document.getElementById('searchShares');
+                const ledgerOffice = document.getElementById('officeFilter');
+                const ledgerPerPage = document.getElementById('per_page');
+                const monthlyAmountInput = document.getElementById('sharesAmount');
+                const addMonthlyBtn = document.getElementById('addSharesBtn');
+
+                const tbody = document.getElementById('sharesTableBody');
+                const pager = document.getElementById('sharesPagination');
+
+                let t = null;
+                let abortCtrl = null;
+
+                function buildParams(page = 1) {
+                    return new URLSearchParams({
+                        search: ledgerSearch?.value || '',
+                        office: ledgerOffice?.value || '',
+                        per_page: ledgerPerPage?.value || 10,
+                        monthly_amount: monthlyAmountInput?.value || '',
+                        page: page
+                    });
+                }
+
+                function syncUrl(params) {
+                    const base = filtersForm?.action || window.location.pathname;
+                    history.replaceState({}, '', `${base}?${params.toString()}`);
+                }
+
+                function fetchLedger(page = 1) {
+                    const params = buildParams(page);
+                    syncUrl(params);
+
+                    if (abortCtrl) abortCtrl.abort();
+                    abortCtrl = new AbortController();
+
+                    fetch(`{{ route('admin.shares.partial') }}?${params.toString()}`, {
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                        signal: abortCtrl.signal
+                    })
+                        .then(r => r.json())
+                        .then(res => {
+                            tbody.innerHTML = res.tbody;
+                            pager.innerHTML = res.pagination;
+
+                            const selectAll = document.getElementById('selectAll');
+                            if (selectAll) selectAll.checked = false;
+                        })
+                        .catch(err => {
+                            if (err.name !== 'AbortError') console.error(err);
+                        });
+                }
+
+                filtersForm?.addEventListener('submit', (e) => e.preventDefault());
+
+                ledgerSearch?.addEventListener('input', () => {
+                    clearTimeout(t);
+                    t = setTimeout(() => fetchLedger(1), 300);
+                });
+
+                ledgerOffice?.addEventListener('change', () => fetchLedger(1));
+                ledgerPerPage?.addEventListener('change', () => fetchLedger(1));
+                monthlyAmountInput?.addEventListener('input', () => {
+                    clearTimeout(t);
+                    t = setTimeout(() => fetchLedger(1), 300);
+                });
+
+                document.addEventListener('click', (e) => {
+                    const link = e.target.closest('#sharesPagination a');
+                    if (!link) return;
+                    e.preventDefault();
+                    const url = new URL(link.href);
+                    fetchLedger(url.searchParams.get('page') || 1);
+                });
+
+                // ===== Bulk Add Monthly Shares =====
+                document.getElementById('selectAll')?.addEventListener('change', (e) => {
+                    document.querySelectorAll('#sharesTableBody .memberCheckbox').forEach(cb => {
+                        cb.checked = e.target.checked;
+                    });
+                });
+
+                addMonthlyBtn?.addEventListener('click', async (e) => {
+                    e.preventDefault();
+
+                    const selected = Array.from(document.querySelectorAll('#sharesTableBody .memberCheckbox:checked'))
+                        .map(cb => cb.value);
+
+                    const amount = monthlyAmountInput?.value?.trim();
+                    const dateRemittance = document.getElementById('latestRemittanceDate')?.value;
+                    const remittanceNo = document.getElementById('remittanceNo')?.value?.trim();
+                    const coveredMonth = document.getElementById('covered_month')?.value;
+                    const coveredYear = document.getElementById('covered_year')?.value;
+
+                    if (!selected.length) return alert('Please select at least one member.');
+                    if (!amount || Number(amount) <= 0) return alert('Please enter a valid monthly shares amount.');
+                    if (!dateRemittance || !remittanceNo || !coveredMonth || !coveredYear) {
+                        return alert('Please complete all remittance fields.');
+                    }
+
+                    const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                    if (!csrf) return alert('Missing CSRF token.');
+
+                    addMonthlyBtn.disabled = true;
+                    try {
+                        const res = await fetch(`{{ route('admin.bulk-add-shares') }}`, {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': csrf,
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                member_ids: selected,
+                                amount: amount,
+                                date_remittance: dateRemittance,
+                                remittance_no: remittanceNo,
+                                covered_month: coveredMonth,
+                                covered_year: coveredYear,
+                            }),
+                        });
+
+                        const data = await res.json();
+                        if (!res.ok) {
+                            throw new Error(data?.error || 'Failed to add monthly shares.');
+                        }
+
+                        if (Array.isArray(data.duplicates) && data.duplicates.length) {
+                            alert('Some selected members were skipped because remittance entries already exist.');
+                        } else {
+                            alert('Monthly shares added successfully.');
+                        }
+
+                        fetchLedger(1);
+                    } catch (err) {
+                        alert(err.message || 'Failed to add monthly shares.');
+                    } finally {
+                        addMonthlyBtn.disabled = false;
+                    }
                 });
             });
         </script>

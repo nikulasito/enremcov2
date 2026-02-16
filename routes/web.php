@@ -199,6 +199,12 @@ Route::middleware(['auth', IsAdmin::class])->group(function () {
 Route::get('/member/contributions', [MemberContributionsController::class, 'index'])
     ->middleware(['auth']) // Ensures only logged-in users can access
     ->name('member.contributions');
+Route::get('/member/contributions/shares', [MemberContributionsController::class, 'sharesPage'])
+    ->middleware(['auth'])
+    ->name('member.contributions.shares');
+Route::get('/member/contributions/savings', [MemberContributionsController::class, 'savingsPage'])
+    ->middleware(['auth'])
+    ->name('member.contributions.savings');
 
 Route::get('/admin/get-contributions/{employeeID}/{year}', [MemberContributionsController::class, 'getContributions']);
 Route::get('/admin/get-savings/{employee_id}/{year}', [MemberContributionsController::class, 'getSavings']);
@@ -264,6 +270,7 @@ Route::middleware('auth')->prefix('member')->name('member.')->group(function () 
 Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () {
     Route::get('/loan-requests', [LoansController::class, 'loanRequestsIndex'])->name('loan-requests.index');
     Route::get('/loan-requests/{application}', [LoansController::class, 'loanRequestsShow'])->name('loan-requests.show');
+    Route::patch('/loan-requests/{application}/status', [LoansController::class, 'loanRequestsSetStatus'])->name('loan-requests.status');
     Route::patch('/loan-requests/{application}/approve', [LoansController::class, 'loanRequestsApprove'])->name('loan-requests.approve');
     Route::patch('/loan-requests/{application}/reject', [LoansController::class, 'loanRequestsReject'])->name('loan-requests.reject');
 });

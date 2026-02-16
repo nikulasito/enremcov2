@@ -195,47 +195,50 @@
                             </td>
 
                             <td class="px-6 py-5">
-                                <div class="flex items-center justify-end gap-2">
-                                    {{-- Review --}}
-                                    <button type="button"
-                                        class="js-open-loan-modal flex items-center justify-center p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition-all"
-                                        title="Review" data-id="{{ $app->id }}"
-                                        data-application-no="{{ $app->application_no }}"
-                                        data-full-name="{{ e($app->full_name) }}"
-                                        data-address="{{ e($app->address ?? '') }}"
-                                        data-member-key="{{ e($app->member_key ?? '') }}"
-                                        data-loan-type="{{ e($app->loan_type ?? '') }}"
-                                        data-loan-amount="{{ (float) $app->loan_amount }}"
-                                        data-created="{{ \Illuminate\Support\Carbon::parse($app->created_at)->format('M d, Y') }}">
-                                        <span class="material-symbols-outlined text-[20px]">visibility</span>
-                                    </button>
-
-
-                                    {{-- Approve --}}
-                                    <form method="POST" action="{{ route('admin.loan-requests.approve', $app->id) }}"
-                                        onsubmit="return confirm('Approve this application?');">
-                                        @csrf
-                                        @method('PATCH')
-                                        <button type="submit"
-                                            class="flex items-center justify-center p-2 rounded-lg text-emerald-600 hover:bg-emerald-50 transition-all"
-                                            title="Approve">
-                                            <span class="material-symbols-outlined text-[20px]">check_circle</span>
+                                @if($app->status !== 'approved')
+                                    <div class="flex items-center justify-end gap-2">
+                                        {{-- Review --}}
+                                        <button type="button"
+                                            class="js-open-loan-modal flex items-center justify-center p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition-all"
+                                            title="Review" data-id="{{ $app->id }}"
+                                            data-application-no="{{ $app->application_no }}"
+                                            data-full-name="{{ e($app->full_name) }}"
+                                            data-address="{{ e($app->address ?? '') }}"
+                                            data-member-key="{{ e($app->member_key ?? '') }}"
+                                            data-loan-type="{{ e($app->loan_type ?? '') }}"
+                                            data-loan-amount="{{ (float) $app->loan_amount }}"
+                                            data-created="{{ \Illuminate\Support\Carbon::parse($app->created_at)->format('M d, Y') }}">
+                                            <span class="material-symbols-outlined text-[20px]">visibility</span>
                                         </button>
-                                    </form>
 
-                                    {{-- Reject --}}
-                                    <form method="POST" action="{{ route('admin.loan-requests.reject', $app->id) }}"
-                                        onsubmit="return confirm('Reject this application?');">
-                                        @csrf
-                                        @method('PATCH')
-                                        <input type="hidden" name="remarks" value="Rejected by admin.">
-                                        <button type="submit"
-                                            class="flex items-center justify-center p-2 rounded-lg text-red-600 hover:bg-red-50 transition-all"
-                                            title="Reject">
-                                            <span class="material-symbols-outlined text-[20px]">cancel</span>
-                                        </button>
-                                    </form>
-                                </div>
+                                        {{-- Approve --}}
+                                        <form method="POST" action="{{ route('admin.loan-requests.approve', $app->id) }}"
+                                            onsubmit="return confirm('Approve this application?');">
+                                            @csrf
+                                            @method('PATCH')
+                                            <button type="submit"
+                                                class="flex items-center justify-center p-2 rounded-lg text-emerald-600 hover:bg-emerald-50 transition-all"
+                                                title="Approve">
+                                                <span class="material-symbols-outlined text-[20px]">check_circle</span>
+                                            </button>
+                                        </form>
+
+                                        {{-- Reject --}}
+                                        <form method="POST" action="{{ route('admin.loan-requests.reject', $app->id) }}"
+                                            onsubmit="return confirm('Reject this application?');">
+                                            @csrf
+                                            @method('PATCH')
+                                            <input type="hidden" name="remarks" value="Rejected by admin.">
+                                            <button type="submit"
+                                                class="flex items-center justify-center p-2 rounded-lg text-red-600 hover:bg-red-50 transition-all"
+                                                title="Reject">
+                                                <span class="material-symbols-outlined text-[20px]">cancel</span>
+                                            </button>
+                                        </form>
+                                    </div>
+                                @else
+                                    <div class="text-right text-xs font-bold text-slate-400">No actions</div>
+                                @endif
                             </td>
                         </tr>
                     @empty
@@ -276,7 +279,7 @@
             {{-- Header --}}
             <div class="bg-[#0d1a14] p-6 flex justify-between items-center shrink-0">
                 <div>
-                    <h2 class="text-xl font-black text-white">Review Regular Loan Application</h2>
+                    <h2 class="text-xl font-black text-white">Review Loan Application</h2>
                     <p class="text-[10px] text-primary font-black uppercase tracking-[0.2em] mt-1">
                         Application ID: <span id="m_app_no">â€”</span>
                     </p>
@@ -471,22 +474,49 @@
                                 rows="3" placeholder="Notes for approval (optional)..."></textarea>
                         </div>
                     </form>
+
+                    <form id="statusForm" method="POST" action="#">
+                        @csrf
+                        @method('PATCH')
+                        <input type="hidden" id="status_action_value" name="status" value="">
+                        <input type="hidden" id="status_action_remarks" name="remarks" value="">
+                    </form>
                 </div>
             </div>
 
             {{-- Footer buttons --}}
             <div class="p-6 bg-slate-50 border-t border-slate-100 flex justify-end gap-3 shrink-0">
+                <button type="button" data-loan-status="for_review"
+                    class="js-set-loan-status px-5 py-3 rounded-xl border border-blue-200 bg-blue-50 text-blue-700 text-sm font-black hover:bg-blue-100 transition-all">
+                    For Review
+                </button>
+
+                <button type="button" data-loan-status="for_approval"
+                    class="js-set-loan-status px-5 py-3 rounded-xl border border-indigo-200 bg-indigo-50 text-indigo-700 text-sm font-black hover:bg-indigo-100 transition-all">
+                    For Approval
+                </button>
+
+                <button type="button" data-loan-status="for_printing"
+                    class="js-set-loan-status px-5 py-3 rounded-xl border border-purple-200 bg-purple-50 text-purple-700 text-sm font-black hover:bg-purple-100 transition-all">
+                    For Printing
+                </button>
+
+                <button type="button" data-loan-status="approved"
+                    class="js-set-loan-status px-5 py-3 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 text-sm font-black hover:bg-emerald-100 transition-all">
+                    Approved
+                </button>
+
                 <button type="submit" form="rejectForm"
                     class="px-8 py-3 rounded-xl border-2 border-red-500 text-red-500 text-sm font-black hover:bg-red-50 transition-all flex items-center gap-2">
                     <span class="material-symbols-outlined text-[20px]">cancel</span>
                     Reject Application
                 </button>
 
-                <button type="submit" form="approveForm"
+                <!-- <button type="submit" form="approveForm"
                     class="px-8 py-3 rounded-xl bg-primary text-[#0d1a14] text-sm font-black hover:bg-[#15c26b] transition-all shadow-lg shadow-primary/20 flex items-center gap-2">
                     <span class="material-symbols-outlined text-[20px]">check_circle</span>
                     Save
-                </button>
+                </button> -->
             </div>
         </div>
     </div>
@@ -498,10 +528,12 @@
 
                 const approveForm = document.getElementById('approveForm');
                 const rejectForm = document.getElementById('rejectForm');
+                const statusForm = document.getElementById('statusForm');
 
                 // Route templates (replace __ID__ dynamically)
                 const approveUrlTpl = "{{ route('admin.loan-requests.approve', '__ID__') }}";
                 const rejectUrlTpl = "{{ route('admin.loan-requests.reject', '__ID__') }}";
+                const statusUrlTpl = "{{ route('admin.loan-requests.status', '__ID__') }}";
                 const showUrlTpl = "{{ route('admin.loan-requests.show', '__ID__') }}";
 
                 // modal fields
@@ -560,6 +592,7 @@
                     // set form actions
                     approveForm.action = approveUrlTpl.replace('__ID__', payload.id);
                     rejectForm.action = rejectUrlTpl.replace('__ID__', payload.id);
+                    statusForm.action = statusUrlTpl.replace('__ID__', payload.id);
 
                     // reset inputs (optional)
                     m('old_balance').value = payload.old_balance ?? 0;
@@ -635,6 +668,22 @@
                 // recalc on input
                 ['approved_amount', 'old_balance', 'lpp', 'interest', 'handling_fee', 'petty_cash_loan', 'terms'].forEach(id => {
                     m(id)?.addEventListener('input', recalc);
+                });
+
+                document.querySelectorAll('.js-set-loan-status').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const status = btn.dataset.loanStatus || '';
+                        if (!status || !statusForm?.action || statusForm.action.endsWith('#'))
+                            return;
+
+                        const statusInput = m('status_action_value');
+                        const remarksInput = m('status_action_remarks');
+                        const approveRemarks = m('approve_remarks')?.value ?? '';
+
+                        statusInput.value = status;
+                        remarksInput.value = approveRemarks;
+                        statusForm.submit();
+                    });
                 });
             })();
         </script>

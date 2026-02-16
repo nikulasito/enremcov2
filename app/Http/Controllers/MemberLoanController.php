@@ -16,6 +16,34 @@ use Illuminate\Support\Carbon;
 
 class MemberLoanController extends Controller
 {
+    private function coMakerActiveLoanCount(int $userId): int
+    {
+        $hasLoansTable = Schema::hasTable('loan_applications');
+        $hasStatusCol = $hasLoansTable && Schema::hasColumn('loan_applications', 'status');
+        $hasCm1Col = $hasLoansTable && Schema::hasColumn('loan_applications', 'comaker1_user_id');
+        $hasCm2Col = $hasLoansTable && Schema::hasColumn('loan_applications', 'comaker2_user_id');
+
+        if (!$hasLoansTable || !$hasStatusCol || (!$hasCm1Col && !$hasCm2Col)) {
+            return 0;
+        }
+
+        $activeStatuses = ['pending', 'in_review', 'for_review', 'for_approval', 'for_printing', 'approved'];
+
+        return (int) LoanApplication::query()
+            ->whereIn(DB::raw('LOWER(status)'), $activeStatuses)
+            ->where(function ($q) use ($userId, $hasCm1Col, $hasCm2Col) {
+                if ($hasCm1Col) {
+                    $q->where('comaker1_user_id', $userId);
+                }
+                if ($hasCm2Col) {
+                    $hasCm1Col
+                        ? $q->orWhere('comaker2_user_id', $userId)
+                        : $q->where('comaker2_user_id', $userId);
+                }
+            })
+            ->count();
+    }
+
     private function resolveMemberKeys($user): array
     {
         if (!$user) {
@@ -314,7 +342,7 @@ class MemberLoanController extends Controller
         ]);
     }
 
-    public function apply()
+    public function apply(Request $request)
     {
         $eligibility = $this->getLoanEligibilityData(auth()->user());
 
@@ -326,7 +354,15 @@ class MemberLoanController extends Controller
                 ]);
         }
 
-        return view('member.loans.apply');
+        $allowedTypes = ['regular', 'educational', 'appliance', 'grocery'];
+        $selectedLoanType = strtolower((string) $request->query('type', ''));
+        if (!in_array($selectedLoanType, $allowedTypes, true)) {
+            $selectedLoanType = '';
+        }
+
+        return view('member.loans.apply', [
+            'selectedLoanType' => $selectedLoanType,
+        ]);
     }
 
     public function store(Request $request)
@@ -357,6 +393,24 @@ class MemberLoanController extends Controller
                 ->withInput()
                 ->withErrors([
                     'loan_amount' => implode(' ', $eligibility['reasons']),
+                ]);
+        }
+
+        $cm1Count = $this->coMakerActiveLoanCount((int) $data['comaker1_user_id']);
+        if ($cm1Count >= 3) {
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'comaker1_name' => 'Selected co-maker already reached the 3-loan limit. Please choose another co-maker.',
+                ]);
+        }
+
+        $cm2Count = $this->coMakerActiveLoanCount((int) $data['comaker2_user_id']);
+        if ($cm2Count >= 3) {
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'comaker2_name' => 'Selected co-maker already reached the 3-loan limit. Please choose another co-maker.',
                 ]);
         }
 
@@ -467,9 +521,6 @@ class MemberLoanController extends Controller
 
         if ($hasLoansTable && $hasStatusCol && ($hasCm1Col || $hasCm2Col) && $users->isNotEmpty()) {
             $ids = $users->pluck('id')->values();
-
-            // statuses you consider "active" for co-maker limit
-            $activeStatuses = ['pending', 'in_review', 'for_review', 'for_approval', 'for_printing', 'approved'];
 
             $activeStatuses = ['pending', 'in_review', 'for_review', 'for_approval', 'for_printing', 'approved'];
             $activeStatuses = array_map('strtolower', $activeStatuses);

@@ -58,9 +58,9 @@
                 <span class="material-symbols-outlined text-primary">analytics</span>
                 Summary of Contributions
             </h3>
-            <a href="{{ route('member.contributions') }}" class="text-sm font-bold text-secondary hover:underline">
+            <!-- <a href="{{ route('member.contributions') }}" class="text-sm font-bold text-secondary hover:underline">
                 View History
-            </a>
+            </a> -->
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -207,7 +207,7 @@
 
                     @if($canApplyLoan)
                         <a href="{{ route('member.loans.apply') }}"
-                            class="mt-6 w-full py-3 px-4 rounded-xl font-black text-sm transition-all hover:brightness-105 active:scale-95 shadow-md bg-primary text-background-dark shadow-primary/10">
+                            class="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-background-dark font-black hover:brightness-105 transition-all shadow-md shadow-primary/10 text-sm">
                             Apply Now
                         </a>
                     @else
@@ -254,19 +254,19 @@
                     @if($canApplyLoan)
                         <a href="{{ route('member.loans.apply', ['type' => $loan['type']]) }}"
                             class="mt-6 w-full py-3 px-4 rounded-xl font-black text-sm transition-all hover:brightness-105 active:scale-95 shadow-md
-                                                                                            {{ $loan['style'] === 'secondary' ? 'bg-secondary text-white shadow-secondary/10' : 'bg-primary text-background-dark shadow-primary/10' }}">
+                                                                                                            {{ $loan['style'] === 'secondary' ? 'bg-secondary text-white shadow-secondary/10' : 'bg-primary text-background-dark shadow-primary/10' }}">
                             Apply Now
                         </a>
                     @else
                         <button type="button" disabled
                             class="mt-6 w-full py-3 px-4 rounded-xl font-black text-sm shadow-md
-                                                                                                   bg-slate-100 text-slate-400 cursor-not-allowed">
+                                                                                                                   bg-slate-100 text-slate-400 cursor-not-allowed">
                             Apply Now
                         </button>
 
                         <!-- <p class="mt-2 text-[11px] font-bold text-amber-600">
-                                                            Need ₱{{ number_format($minRequired, 2) }} total Shares + Savings to apply.
-                                                        </p> -->
+                                                                            Need ₱{{ number_format($minRequired, 2) }} total Shares + Savings to apply.
+                                                                        </p> -->
                     @endif
                 </div>
             @endforeach
@@ -378,6 +378,8 @@
             document.getElementById('ld_net_cash').textContent = '�';
             document.getElementById('ld_date').textContent = '�';
             document.getElementById('ld_remarks').textContent = 'Loading...';
+            document.getElementById('ld_approved_wrap').classList.add('hidden');
+            document.getElementById('ld_net_cash_wrap').classList.add('hidden');
 
             const statusEl = document.getElementById('ld_status');
             statusEl.textContent = 'N/A';
@@ -392,6 +394,8 @@
             })
                 .then(r => r.json())
                 .then(data => {
+                    const rawStatus = (data.status || '').toString().toLowerCase();
+                    const isApproved = rawStatus === 'approved';
                     document.getElementById('ld_app_no').textContent = data.application_no ?? '�';
                     document.getElementById('ld_loan_type').textContent = (data.loan_type ?? '�').toString().replaceAll('_', ' ');
                     document.getElementById('ld_amount').textContent =
@@ -404,6 +408,14 @@
 
                     statusEl.textContent = formatLoanStatus(data.status);
                     statusEl.className = `px-3 py-1 rounded-full text-xs font-black ${loanStatusClass(data.status)}`;
+
+                    if (isApproved) {
+                        document.getElementById('ld_approved_wrap').classList.remove('hidden');
+                        document.getElementById('ld_net_cash_wrap').classList.remove('hidden');
+                    } else {
+                        document.getElementById('ld_approved_wrap').classList.add('hidden');
+                        document.getElementById('ld_net_cash_wrap').classList.add('hidden');
+                    }
 
                     document.getElementById('ld_remarks').textContent = data.remarks && data.remarks.trim()
                         ? data.remarks
@@ -465,11 +477,11 @@
                         <p class="text-[10px] font-black uppercase tracking-widest text-slate-500">Requested Amount</p>
                         <p id="ld_amount" class="mt-1 text-2xl font-black text-slate-900">—</p>
                     </div>
-                    <div class="mt-4">
+                    <div id="ld_approved_wrap" class="mt-4 hidden">
                         <p class="text-[10px] font-black uppercase tracking-widest text-slate-500">Approved Amount</p>
                         <p id="ld_approved_amount" class="mt-1 text-lg font-black text-slate-900">—</p>
                     </div>
-                    <div class="mt-4">
+                    <div id="ld_net_cash_wrap" class="mt-4 hidden">
                         <p class="text-[10px] font-black uppercase tracking-widest text-slate-500">Net Cash Received</p>
                         <p id="ld_net_cash" class="mt-1 text-lg font-black text-primary">—</p>
                     </div>
@@ -505,3 +517,4 @@
         </div>
     </div>
 </div>
+

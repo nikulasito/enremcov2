@@ -8,6 +8,19 @@
         // Compute totals (fallback if controller didn't pass them)
         $totalShareAmount = $totalDisplayed ?? 0;
         $totalSavingsAmount = $totalSavingsDisplayed ?? 0;
+        $page = $page ?? 'contributions';
+        $secondaryRows = $secondaryRows ?? ($savings ?? collect());
+        $secondaryLabel = $secondaryLabel ?? 'Savings';
+        $secondaryTotalDisplayed = $secondaryTotalDisplayed ?? $totalSavingsAmount;
+        $secondaryTotalEntries = $secondaryTotalEntries ?? ($totalSavingsEntries ?? 0);
+        $secondaryEmptyText = $secondaryEmptyText ?? 'No savings contributions available.';
+        $secondaryLabelLower = strtolower($secondaryLabel);
+        $primaryHistoryLabel = $page === 'savings' ? 'Savings' : 'Shares';
+        $pageHeading = match ($page) {
+            'shares' => 'My Share Contributions',
+            'savings' => 'My Savings Contributions',
+            default => 'My Contributions',
+        };
 
         // Latest month contribution (best-effort: last year row, last non-zero month)
         $monthKeys = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
@@ -28,7 +41,7 @@
         };
 
         $latestShare = $latestContribution($shares ?? collect());
-        $latestSavings = $latestContribution($savings ?? collect());
+        $latestSecondary = $latestContribution($secondaryRows ?? collect());
 
         $initials = collect(explode(' ', trim($u->name ?? 'User')))
             ->filter()
@@ -42,10 +55,10 @@
         $curMonthKey = strtolower($now->format('M')); // jan, feb, etc.
 
         $curShareRow = ($shares ?? collect())->firstWhere('year', $curYear);
-        $curSavingsRow = ($savings ?? collect())->firstWhere('year', $curYear);
+        $curSecondaryRow = ($secondaryRows ?? collect())->firstWhere('year', $curYear);
 
         $shareThisMonth = ($curShareRow && isset($curShareRow->$curMonthKey)) ? (float) $curShareRow->$curMonthKey : 0;
-        $savingsThisMonth = ($curSavingsRow && isset($curSavingsRow->$curMonthKey)) ? (float) $curSavingsRow->$curMonthKey : 0;
+        $secondaryThisMonth = ($curSecondaryRow && isset($curSecondaryRow->$curMonthKey)) ? (float) $curSecondaryRow->$curMonthKey : 0;
 
         // Optional: your member id field
         $memberId = $u->employees_id ?? ($u->member_id ?? '—');
@@ -57,7 +70,7 @@
     <div class="mb-6 flex items-center justify-between">
         <h3 class="text-xl font-black text-slate-800 flex items-center gap-2">
             <span class="material-symbols-outlined text-primary">analytics</span>
-            My Contributions
+            {{ $pageHeading }}
         </h3>
     </div>
 
@@ -68,8 +81,9 @@
             <div class="bg-white p-6 rounded-2xl card-shadow border border-[#dce5e0] relative overflow-hidden group">
                 <div class="relative z-10 flex items-start justify-between">
                     <div>
-                        <p class="text-sm font-bold text-[#638875] uppercase tracking-wider">Total Share Capital</p>
-                        <h3 class="text-3xl font-black text-background-dark mt-2">₱{{ $money($totalShareAmount) }}</h3>
+                        <p class="text-sm font-bold text-[#638875] uppercase tracking-wider">Total Shares Capital</p>
+                        <h3 class="text-3xl font-black text-background-dark mt-2">₱{{ $money($totalShareAmount) }}
+                        </h3>
                     </div>
                     <div class="size-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
                         <span class="material-symbols-outlined text-2xl">account_balance</span>
@@ -80,8 +94,10 @@
             <div class="bg-white p-6 rounded-2xl card-shadow border border-[#dce5e0] relative overflow-hidden group">
                 <div class="relative z-10 flex items-start justify-between">
                     <div>
-                        <p class="text-sm font-bold text-[#638875] uppercase tracking-wider">Total Savings Deposit</p>
-                        <h3 class="text-3xl font-black text-background-dark mt-2">₱{{ $money($totalSavingsAmount) }}
+                        <p class="text-sm font-bold text-[#638875] uppercase tracking-wider">Total {{ $secondaryLabel }}
+                        </p>
+                        <h3 class="text-3xl font-black text-background-dark mt-2">
+                            ₱{{ $money($secondaryTotalDisplayed) }}
                         </h3>
                     </div>
                     <div class="size-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
@@ -94,8 +110,8 @@
                 <p class="text-sm font-bold text-primary uppercase tracking-wider">Latest Contribution</p>
 
                 @php
-                    // pick whichever latest exists and bigger "recency": just show share if exists else savings
-                    $latest = $latestShare ?? $latestSavings;
+                    // pick whichever latest exists: show shares first else secondary series
+                    $latest = $latestShare ?? $latestSecondary;
                 @endphp
 
                 <h3 class="text-3xl font-black mt-2">
@@ -107,7 +123,7 @@
                 </h3>
 
                 <div class="mt-4 flex items-center gap-4">
-                    <!-- <div class="flex-1">
+                    <div class="flex-1">
                         <p class="text-[10px] text-white/50 uppercase">Reference</p>
                         <p class="text-sm font-bold">
                             @if($latest)
@@ -116,7 +132,7 @@
                                 —
                             @endif
                         </p>
-                    </div> -->
+                    </div>
                     <a href="#history"
                         class="bg-primary text-background-dark px-4 py-2 rounded-lg text-xs font-bold hover:brightness-105 active:scale-95 transition-all">
                         View History
@@ -130,26 +146,32 @@
             <div class="p-6 border-b border-[#dce5e0] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <h4 class="text-lg font-black text-background-dark uppercase">Contribution History</h4>
-                    <p class="text-sm text-[#638875]">Yearly breakdown of shares and savings</p>
+                    <p class="text-sm text-[#638875]">Yearly breakdown of shares and {{ $secondaryLabelLower }}</p>
                 </div>
 
-                <!-- Tabs -->
-                <div class="flex items-center gap-2">
-                    <button type="button"
-                        class="tab-btn px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider bg-primary text-background-dark"
-                        data-tab="sharesTab">
-                        Shares
-                    </button>
-                    <button type="button"
-                        class="tab-btn px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider bg-[#f6f8f7] border border-[#dce5e0] text-background-dark"
-                        data-tab="savingsTab">
-                        Savings
-                    </button>
-                </div>
+                @if(in_array($page, ['shares', 'savings'], true))
+                    <div class="flex items-center gap-2">
+                        <button type="button" id="historyTabShares"
+                            class="history-tab-btn px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider bg-primary text-background-dark border border-primary"
+                            data-target="sharesTab">
+                            {{ $primaryHistoryLabel }}
+                        </button>
+                        <button type="button" id="historyTabWithdrawal"
+                            class="history-tab-btn px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider bg-[#f6f8f7] border border-[#dce5e0] text-background-dark"
+                            data-target="savingsTab">
+                            Withdrawal
+                        </button>
+                    </div>
+                @else
+                    <div
+                        class="px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider bg-[#f6f8f7] border border-[#dce5e0] text-background-dark">
+                        {{ $pageHeading }}
+                    </div>
+                @endif
             </div>
 
-            <!-- Shares Tab -->
-            <div id="sharesTab" class="tab-panel">
+            <!-- Shares Section -->
+            <div id="sharesTab">
                 <div class="overflow-x-auto">
                     @if(($shares ?? collect())->isEmpty())
                         <div class="p-10 text-center text-sm text-[#638875] font-bold">No share contributions available.
@@ -185,30 +207,30 @@
                             </tbody>
                         </table>
 
-                        <div class="p-6 bg-[#f6f8f7]/30 border-t border-[#dce5e0]">
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div class="bg-white rounded-xl border border-[#dce5e0] p-4">
-                                    <p class="text-[10px] font-black uppercase tracking-widest text-[#638875]">Total Months
-                                        Contributed</p>
-                                    <p class="text-2xl font-black text-background-dark mt-1">{{ $totalEntries ?? 0 }}</p>
-                                </div>
-                                <div class="bg-white rounded-xl border border-[#dce5e0] p-4">
-                                    <p class="text-[10px] font-black uppercase tracking-widest text-[#638875]">Total Share
-                                        Capital</p>
-                                    <p class="text-2xl font-black text-background-dark mt-1">
-                                        ₱{{ $money($totalShareAmount) }}</p>
-                                </div>
-                            </div>
-                        </div>
+                        <!-- <div class="p-6 bg-[#f6f8f7]/30 border-t border-[#dce5e0]">
+                                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                            <div class="bg-white rounded-xl border border-[#dce5e0] p-4">
+                                                                <p class="text-[10px] font-black uppercase tracking-widest text-[#638875]">Total Months
+                                                                    Contributed</p>
+                                                                <p class="text-2xl font-black text-background-dark mt-1">{{ $totalEntries ?? 0 }}</p>
+                                                            </div>
+                                                            <div class="bg-white rounded-xl border border-[#dce5e0] p-4">
+                                                                <p class="text-[10px] font-black uppercase tracking-widest text-[#638875]">Total Share
+                                                                    Capital</p>
+                                                                <p class="text-2xl font-black text-background-dark mt-1">
+                                                                    ₱{{ $money($totalShareAmount) }}</p>
+                                                            </div>
+                                                        </div>
+                                                    </div> -->
                     @endif
                 </div>
             </div>
 
-            <!-- Savings Tab -->
-            <div id="savingsTab" class="tab-panel hidden">
+            <!-- Secondary Section -->
+            <div id="savingsTab" class="{{ in_array($page, ['shares', 'savings'], true) ? 'hidden' : '' }}">
                 <div class="overflow-x-auto">
-                    @if(($savings ?? collect())->isEmpty())
-                        <div class="p-10 text-center text-sm text-[#638875] font-bold">No savings contributions available.
+                    @if(($secondaryRows ?? collect())->isEmpty())
+                        <div class="p-10 text-center text-sm text-[#638875] font-bold">{{ $secondaryEmptyText }}
                         </div>
                     @else
                         <table class="w-full text-left">
@@ -221,7 +243,7 @@
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-[#dce5e0]">
-                                @foreach($savings as $row)
+                                @foreach($secondaryRows as $row)
                                     <tr class="hover:bg-[#f6f8f7]/50 transition-colors">
                                         <td class="px-6 py-4 text-sm font-black text-background-dark">{{ $row->year }}</td>
                                         <td class="px-6 py-4 text-sm font-bold text-[#111814]">₱{{ $money($row->jan) }}</td>
@@ -241,23 +263,22 @@
                             </tbody>
                         </table>
 
-                        <div class="p-6 bg-[#f6f8f7]/30 border-t border-[#dce5e0]">
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div class="bg-white rounded-xl border border-[#dce5e0] p-4">
-                                    <p class="text-[10px] font-black uppercase tracking-widest text-[#638875]">Total Months
-                                        Contributed</p>
-                                    <p class="text-2xl font-black text-background-dark mt-1">
-                                        {{ $totalSavingsEntries ?? ($totalEntries ?? 0) }}
-                                    </p>
-                                </div>
-                                <div class="bg-white rounded-xl border border-[#dce5e0] p-4">
-                                    <p class="text-[10px] font-black uppercase tracking-widest text-[#638875]">Total Savings
-                                        Deposit</p>
-                                    <p class="text-2xl font-black text-background-dark mt-1">
-                                        ₱{{ $money($totalSavingsAmount) }}</p>
-                                </div>
-                            </div>
-                        </div>
+                        <!-- <div class="p-6 bg-[#f6f8f7]/30 border-t border-[#dce5e0]">
+                                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                            <div class="bg-white rounded-xl border border-[#dce5e0] p-4">
+                                                                <p class="text-[10px] font-black uppercase tracking-widest text-[#638875]">Total Months
+                                                                    Contributed</p>
+                                                                <p class="text-2xl font-black text-background-dark mt-1">
+                                                                    {{ $secondaryTotalEntries ?? ($totalEntries ?? 0) }}
+                                                                </p>
+                                                            </div>
+                                                            <div class="bg-white rounded-xl border border-[#dce5e0] p-4">
+                                                                <p class="text-[10px] font-black uppercase tracking-widest text-[#638875]">Total {{ $secondaryLabel }}</p>
+                                                                <p class="text-2xl font-black text-background-dark mt-1">
+                                                                    ₱{{ $money($secondaryTotalDisplayed) }}</p>
+                                                            </div>
+                                                        </div>
+                                                    </div> -->
                     @endif
                 </div>
             </div>
@@ -318,24 +339,36 @@
         </footer>
     </div>
 
-    <!-- Simple Tabs Script -->
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const btns = document.querySelectorAll('.tab-btn');
-            const panels = document.querySelectorAll('.tab-panel');
+    @if(in_array($page, ['shares', 'savings'], true))
+        @push('scripts')
+            <script>
+                (function () {
+                    const sharesBtn = document.getElementById('historyTabShares');
+                    const withdrawalBtn = document.getElementById('historyTabWithdrawal');
+                    const sharesPanel = document.getElementById('sharesTab');
+                    const withdrawalPanel = document.getElementById('savingsTab');
+                    if (!sharesBtn || !withdrawalBtn || !sharesPanel || !withdrawalPanel) return;
 
-            btns.forEach(btn => {
-                btn.addEventListener('click', () => {
-                    btns.forEach(b => b.classList.remove('bg-primary', 'text-background-dark'));
-                    btns.forEach(b => b.classList.add('bg-[#f6f8f7]', 'border', 'border-[#dce5e0]', 'text-background-dark'));
+                    function setActive(target) {
+                        const showShares = target === 'shares';
+                        sharesPanel.classList.toggle('hidden', !showShares);
+                        withdrawalPanel.classList.toggle('hidden', showShares);
 
-                    btn.classList.add('bg-primary', 'text-background-dark');
-                    btn.classList.remove('bg-[#f6f8f7]');
+                        sharesBtn.className = showShares
+                            ? 'history-tab-btn px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider bg-primary text-background-dark border border-primary'
+                            : 'history-tab-btn px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider bg-[#f6f8f7] border border-[#dce5e0] text-background-dark';
 
-                    panels.forEach(p => p.classList.add('hidden'));
-                    document.getElementById(btn.dataset.tab).classList.remove('hidden');
-                });
-            });
-        });
-    </script>
+                        withdrawalBtn.className = !showShares
+                            ? 'history-tab-btn px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider bg-primary text-background-dark border border-primary'
+                            : 'history-tab-btn px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider bg-[#f6f8f7] border border-[#dce5e0] text-background-dark';
+                    }
+
+                    sharesBtn.addEventListener('click', () => setActive('shares'));
+                    withdrawalBtn.addEventListener('click', () => setActive('withdrawal'));
+                    setActive('shares');
+                })();
+            </script>
+        @endpush
+    @endif
+
 </x-member-layout>

@@ -7,7 +7,10 @@
     // ACTIVE STATES (based on your routes/web.php)
     $isDashboard = request()->routeIs('dashboard');
     $isProfile = request()->routeIs('member.profile');
-    $isContributions = request()->routeIs('member.contributions');
+    $isContributionsMain = request()->routeIs('member.contributions');
+    $isContributionsShares = request()->routeIs('member.contributions.shares');
+    $isContributionsSavings = request()->routeIs('member.contributions.savings');
+    $isContributions = $isContributionsMain || $isContributionsShares || $isContributionsSavings;
 
     // Security routes
     $isSecurity = request()->routeIs('password.edit') || request()->routeIs('password.update');
@@ -66,6 +69,7 @@
         .nav-item-active { @apply bg-primary/10 text-primary border-r-4 border-primary; }
         .card-shadow { box-shadow: 0 4px 20px -2px rgba(0,0,0,0.05); }
         #applicationModal,#loanRecordModal {    margin-top: 0;}
+        .main-header {z-index: 99;}
     </style>
 
     @stack('head')
@@ -105,14 +109,42 @@
                     </a>
                 </li>
 
-                {{-- Contributions --}}
+                {{-- Contributions + Submenu --}}
                 <li>
-                    <a class="flex items-center gap-4 px-8 py-4 transition-all
-                        {{ $isContributions ? 'nav-item-active' : 'text-[#a0b0a8] hover:text-white hover:bg-white/5' }}"
-                        href="{{ route('member.contributions') }}">
-                        <span class="material-symbols-outlined">account_balance_wallet</span>
-                        <span class="{{ $isContributions ? 'font-bold' : 'font-medium' }}">Contributions</span>
-                    </a>
+                    <div
+                        class="flex items-center gap-2 px-8 py-4 transition-all {{ $isContributions ? 'nav-item-active' : 'text-[#a0b0a8] hover:text-white hover:bg-white/5' }}">
+                        <a id="contributionsTrigger" class="flex min-w-0 flex-1 items-center gap-4" href="#">
+                            <span class="material-symbols-outlined">account_balance_wallet</span>
+                            <span class="{{ $isContributions ? 'font-bold' : 'font-medium' }}">Contributions</span>
+                        </a>
+                        <button type="button" id="contributionsToggle"
+                            class="inline-flex size-7 items-center justify-center rounded-md transition-colors {{ $isContributions ? 'text-primary hover:bg-primary/10' : 'text-[#6f8479] hover:bg-white/10' }}"
+                            aria-controls="contributionsSubmenu"
+                            aria-expanded="{{ $isContributions ? 'true' : 'false' }}"
+                            aria-label="Toggle contributions submenu">
+                            <span id="contributionsChevron"
+                                class="material-symbols-outlined text-[18px] transition-transform {{ $isContributions ? 'rotate-180' : '' }}">
+                                expand_more
+                            </span>
+                        </button>
+                    </div>
+                    <ul id="contributionsSubmenu"
+                        class="mx-4 mt-1 mb-2 pl-5 border-l border-white/10 space-y-1 {{ $isContributions ? '' : 'hidden' }}">
+                        <li>
+                            <a href="{{ route('member.contributions.shares') }}"
+                                class="flex items-center gap-2 px-3 py-2 rounded-lg text-s font-medium transition-all {{ $isContributionsShares ? 'bg-primary/15 text-primary' : 'text-[#a0b0a8] hover:text-white hover:bg-white/5' }}">
+                                <span class="material-symbols-outlined text-[16px]">pie_chart</span>
+                                Shares
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ route('member.contributions.savings') }}"
+                                class="flex items-center gap-2 px-3 py-2 rounded-lg text-s font-medium transition-all {{ $isContributionsSavings ? 'bg-primary/15 text-primary' : 'text-[#a0b0a8] hover:text-white hover:bg-white/5' }}">
+                                <span class="material-symbols-outlined text-[16px]">savings</span>
+                                Savings
+                            </a>
+                        </li>
+                    </ul>
                 </li>
 
                 {{-- Loans --}}
@@ -166,7 +198,8 @@
     <main class="flex-1 overflow-y-auto min-w-0">
 
         {{-- Header (custom per page OR default Welcome header) --}}
-        <header class="bg-white border-b border-slate-200 px-4 sm:px-6 lg:px-10 py-4 sm:py-6 lg:py-8 sticky top-0 z-10">
+        <header
+            class="bg-white border-b border-slate-200 px-4 sm:px-6 lg:px-10 py-4 sm:py-6 lg:py-8 sticky top-0 z-10 main-header">
             <div class="flex items-start gap-3">
                 <button id="memberSidebarBtn" type="button"
                     class="lg:hidden inline-flex items-center justify-center size-10 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors"
@@ -244,6 +277,29 @@
                     sidebar.classList.add('-translate-x-full');
                 }
             });
+
+            const contributionsToggle = document.getElementById('contributionsToggle');
+            const contributionsTrigger = document.getElementById('contributionsTrigger');
+            const contributionsSubmenu = document.getElementById('contributionsSubmenu');
+            const contributionsChevron = document.getElementById('contributionsChevron');
+            if (contributionsToggle && contributionsSubmenu && contributionsChevron) {
+                const toggleContributionsSubmenu = () => {
+                    const willExpand = contributionsSubmenu.classList.contains('hidden');
+                    contributionsSubmenu.classList.toggle('hidden', !willExpand);
+                    contributionsChevron.classList.toggle('rotate-180', willExpand);
+                    contributionsToggle.setAttribute('aria-expanded', willExpand ? 'true' : 'false');
+                };
+
+                contributionsToggle.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    toggleContributionsSubmenu();
+                });
+
+                contributionsTrigger?.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    toggleContributionsSubmenu();
+                });
+            }
 
             // Make member-page tables mobile-friendly by ensuring horizontal scroll.
             document.querySelectorAll('main table').forEach((table) => {

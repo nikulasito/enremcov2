@@ -23,6 +23,7 @@ class SavingsController extends Controller
         $perPage = (int) $request->input('per_page', 10);
         $search = trim((string) $request->input('search', ''));
         $office = trim((string) $request->input('office', ''));
+        $monthlyAmount = trim((string) $request->input('monthly_amount', ''));
 
         $q = User::query()
             ->where('status', 'Active')
@@ -38,6 +39,10 @@ class SavingsController extends Controller
                     ->orWhere('employee_ID', 'like', "%{$search}%")
                     ->orWhere('office', 'like', "%{$search}%");
             });
+        }
+
+        if ($monthlyAmount !== '' && is_numeric($monthlyAmount)) {
+            $q->where('savings', (float) $monthlyAmount);
         }
 
         // ✅ YOU MISSED THIS
@@ -99,6 +104,7 @@ class SavingsController extends Controller
         $perPage = (int) $request->input('per_page', 10);
         $search = trim((string) $request->input('search', ''));
         $office = trim((string) $request->input('office', ''));
+        $monthlyAmount = trim((string) $request->input('monthly_amount', ''));
 
         $q = User::query()
             ->where('status', 'Active')
@@ -114,6 +120,10 @@ class SavingsController extends Controller
                     ->orWhere('employee_ID', 'like', "%{$search}%")
                     ->orWhere('office', 'like', "%{$search}%");
             });
+        }
+
+        if ($monthlyAmount !== '' && is_numeric($monthlyAmount)) {
+            $q->where('savings', (float) $monthlyAmount);
         }
 
 
@@ -172,6 +182,7 @@ class SavingsController extends Controller
         $perPage = (int) $request->input('per_page', 10);
         $search = trim((string) $request->input('search', ''));
         $office = trim((string) $request->input('office', ''));
+        $monthlyAmount = trim((string) $request->input('monthly_amount', ''));
 
         $q = User::query()
             ->where('status', 'Active')
@@ -187,6 +198,10 @@ class SavingsController extends Controller
                     ->orWhere('employee_ID', 'like', "%{$search}%")
                     ->orWhere('office', 'like', "%{$search}%");
             });
+        }
+
+        if ($monthlyAmount !== '' && is_numeric($monthlyAmount)) {
+            $q->where('savings', (float) $monthlyAmount);
         }
 
         // ✅ REQUIRED

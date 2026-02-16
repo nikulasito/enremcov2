@@ -98,8 +98,8 @@
                     <input type="number" step="any" min="0" id="withdrawAmount" placeholder="Enter amount"
                         class="w-full rounded-lg border-[#dce5e0] dark:border-[#2a3a32] bg-white dark:bg-[#112119] py-2.5 px-4 text-sm">
                     <button id="addWithdrawBtn"
-                        class="shrink-0 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-black text-white hover:brightness-110">
-                        Add
+                        class="shrink-0 rounded-lg bg-primary px-4 py-2.5 text-sm font-black text-[#112119] hover:brightness-110">
+                        Add Withdrawal
                     </button>
                 </div>
             </div>

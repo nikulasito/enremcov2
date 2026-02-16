@@ -568,5 +568,52 @@ class LoansController extends Controller
         return back()->with('success', 'Application rejected.');
     }
 
+    public function loanRequestsSetStatus(Request $request, LoanApplication $application)
+    {
+        $validated = $request->validate([
+            'status' => 'required|string|in:for_review,for_approval,for_printing,approved',
+            'remarks' => 'nullable|string|max:1000',
+        ]);
+
+        $updates = [
+            'status' => $validated['status'],
+        ];
+
+        if (array_key_exists('remarks', $validated)) {
+            $updates['remarks'] = $validated['remarks'];
+        }
+
+        if (Schema::hasColumn('loan_applications', 'reviewed_by')) {
+            $updates['reviewed_by'] = auth()->id();
+        }
+        if (Schema::hasColumn('loan_applications', 'reviewed_at')) {
+            $updates['reviewed_at'] = now();
+        }
+
+        $application->forceFill($updates)->save();
+        $application->refresh();
+
+        if ($application->user) {
+            try {
+                $application->user->notify(new LoanStatusUpdatedNotification($application));
+            } catch (\Throwable $e) {
+                Log::warning('Loan status notification failed', [
+                    'application_id' => $application->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        $statusLabel = match ($validated['status']) {
+            'for_review' => 'For Review',
+            'for_approval' => 'For Approval',
+            'for_printing' => 'For Printing',
+            'approved' => 'Approved',
+            default => ucfirst(str_replace('_', ' ', $validated['status'])),
+        };
+
+        return back()->with('success', "Application status updated to {$statusLabel}.");
+    }
+
 
 }

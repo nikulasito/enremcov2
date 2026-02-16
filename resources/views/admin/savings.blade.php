@@ -102,7 +102,7 @@
                         class="w-full rounded-lg border-[#dce5e0] dark:border-[#2a3a32] bg-white dark:bg-[#112119] py-2.5 px-4 text-sm">
                     <button id="addSavingsBtn"
                         class="shrink-0 rounded-lg bg-primary px-4 py-2.5 text-sm font-black text-[#112119] hover:brightness-110">
-                        Add
+                        Add Monthly Savings
                     </button>
                 </div>
             </div>
@@ -714,6 +714,8 @@ const filtersForm   = document.getElementById('savingsFiltersForm');
 const ledgerSearch  = document.getElementById('searchSavings');
 const ledgerOffice  = document.getElementById('officeFilter');
 const ledgerPerPage = document.getElementById('per_page');
+const monthlyAmountInput = document.getElementById('savingsAmount');
+const addMonthlyBtn = document.getElementById('addSavingsBtn');
 
 const tbody = document.getElementById('savingsTableBody');
 const pager = document.getElementById('savingsPagination');
@@ -726,6 +728,7 @@ function buildParams(page = 1) {
     search: ledgerSearch?.value || '',
     office: ledgerOffice?.value || '',
     per_page: ledgerPerPage?.value || 10,
+    monthly_amount: monthlyAmountInput?.value || '',
     page: page
   });
 }
@@ -768,6 +771,10 @@ ledgerSearch?.addEventListener('input', () => {
 
 ledgerOffice?.addEventListener('change', () => fetchLedger(1));
 ledgerPerPage?.addEventListener('change', () => fetchLedger(1));
+monthlyAmountInput?.addEventListener('input', () => {
+  clearTimeout(t);
+  t = setTimeout(() => fetchLedger(1), 300);
+});
 
 document.addEventListener('click', (e) => {
   const link = e.target.closest('#savingsPagination a');
@@ -775,6 +782,72 @@ document.addEventListener('click', (e) => {
   e.preventDefault();
   const url = new URL(link.href);
   fetchLedger(url.searchParams.get('page') || 1);
+});
+
+// ===== Bulk Add Monthly Savings =====
+document.getElementById('selectAll')?.addEventListener('change', (e) => {
+  document.querySelectorAll('#savingsTableBody .memberCheckbox').forEach(cb => {
+    cb.checked = e.target.checked;
+  });
+});
+
+addMonthlyBtn?.addEventListener('click', async (e) => {
+  e.preventDefault();
+
+  const selected = Array.from(document.querySelectorAll('#savingsTableBody .memberCheckbox:checked'))
+    .map(cb => cb.value);
+
+  const amount = monthlyAmountInput?.value?.trim();
+  const dateRemittance = document.getElementById('latestRemittanceDate')?.value;
+  const remittanceNo = document.getElementById('remittanceNo')?.value?.trim();
+  const coveredMonth = document.getElementById('covered_month')?.value;
+  const coveredYear = document.getElementById('covered_year')?.value;
+
+  if (!selected.length) return alert('Please select at least one member.');
+  if (!amount || Number(amount) <= 0) return alert('Please enter a valid monthly savings amount.');
+  if (!dateRemittance || !remittanceNo || !coveredMonth || !coveredYear) {
+    return alert('Please complete all remittance fields.');
+  }
+
+  const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+  if (!csrf) return alert('Missing CSRF token.');
+
+  addMonthlyBtn.disabled = true;
+  try {
+    const res = await fetch(`{{ route('admin.bulk-add-savings') }}`, {
+      method: 'POST',
+      headers: {
+        'X-CSRF-TOKEN': csrf,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({
+        member_ids: selected,
+        amount: amount,
+        date_remittance: dateRemittance,
+        remittance_no: remittanceNo,
+        covered_month: coveredMonth,
+        covered_year: coveredYear,
+      }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data?.error || 'Failed to add monthly savings.');
+    }
+
+    if (Array.isArray(data.duplicates) && data.duplicates.length) {
+      alert('Some selected members were skipped because remittance entries already exist.');
+    } else {
+      alert('Monthly savings added successfully.');
+    }
+
+    fetchLedger(1);
+  } catch (err) {
+    alert(err.message || 'Failed to add monthly savings.');
+  } finally {
+    addMonthlyBtn.disabled = false;
+  }
 });
 
             });
