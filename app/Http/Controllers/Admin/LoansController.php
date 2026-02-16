@@ -434,6 +434,7 @@ class LoansController extends Controller
                 'status' => $application->status,
                 'created_at' => optional($application->created_at)?->format('M d, Y'),
                 'remarks' => $application->remarks,
+                'approved_amount' => $application->approved_amount ?? null,
                 // If you add these columns later, modal will auto-fill
                 'old_balance' => $application->old_balance ?? null,
                 'lpp' => $application->lpp ?? null,
@@ -453,12 +454,34 @@ class LoansController extends Controller
 
     public function loanRequestsApprove(Request $request, LoanApplication $application)
     {
-        $request->validate([
+        $validated = $request->validate([
             'remarks' => 'nullable|string|max:1000',
+            'approved_amount' => 'nullable|numeric|min:0',
+            'old_balance' => 'nullable|numeric|min:0',
+            'lpp' => 'nullable|numeric|min:0',
+            'interest' => 'nullable|numeric|min:0',
+            'handling_fee' => 'nullable|numeric|min:0',
+            'petty_cash_loan' => 'nullable|numeric|min:0',
+            'total_deduction' => 'nullable|numeric',
+            'total_net' => 'nullable|numeric',
+            'terms' => 'nullable|integer|min:1',
+            'monthly_payment' => 'nullable|numeric|min:0',
         ]);
+
+        $approvedAmount = (float) ($validated['approved_amount'] ?? $application->loan_amount ?? 0);
+        $oldBalance = (float) ($validated['old_balance'] ?? 0);
+        $lpp = (float) ($validated['lpp'] ?? 0);
+        $interest = (float) ($validated['interest'] ?? 0);
+        $handlingFee = (float) ($validated['handling_fee'] ?? 0);
+        $pettyCashLoan = (float) ($validated['petty_cash_loan'] ?? 0);
+        $totalDeduction = $oldBalance + $lpp + $interest + $handlingFee + $pettyCashLoan;
+        $totalNet = $approvedAmount - $totalDeduction;
+        $terms = (int) ($validated['terms'] ?? 24);
+        $monthlyPayment = $terms > 0 ? ($approvedAmount / $terms) : 0;
+
         $updates = [
             'status' => 'approved',
-            'remarks' => $request->input('remarks'),
+            'remarks' => $validated['remarks'] ?? null,
         ];
 
         if (Schema::hasColumn('loan_applications', 'reviewed_by')) {
@@ -467,13 +490,50 @@ class LoansController extends Controller
         if (Schema::hasColumn('loan_applications', 'reviewed_at')) {
             $updates['reviewed_at'] = now();
         }
+        if (Schema::hasColumn('loan_applications', 'approved_amount')) {
+            $updates['approved_amount'] = $approvedAmount;
+        }
+        if (Schema::hasColumn('loan_applications', 'old_balance')) {
+            $updates['old_balance'] = $oldBalance;
+        }
+        if (Schema::hasColumn('loan_applications', 'lpp')) {
+            $updates['lpp'] = $lpp;
+        }
+        if (Schema::hasColumn('loan_applications', 'interest')) {
+            $updates['interest'] = $interest;
+        }
+        if (Schema::hasColumn('loan_applications', 'handling_fee')) {
+            $updates['handling_fee'] = $handlingFee;
+        }
+        if (Schema::hasColumn('loan_applications', 'petty_cash_loan')) {
+            $updates['petty_cash_loan'] = $pettyCashLoan;
+        }
+        if (Schema::hasColumn('loan_applications', 'total_deduction')) {
+            $updates['total_deduction'] = $totalDeduction;
+        }
+        if (Schema::hasColumn('loan_applications', 'total_net')) {
+            $updates['total_net'] = $totalNet;
+        }
+        if (Schema::hasColumn('loan_applications', 'terms')) {
+            $updates['terms'] = $terms;
+        }
+        if (Schema::hasColumn('loan_applications', 'monthly_payment')) {
+            $updates['monthly_payment'] = $monthlyPayment;
+        }
 
         $application->forceFill($updates)->save();
         $application->refresh();
 
         // Notify member (requires notifications table)
         if ($application->user) {
-            $application->user->notify(new LoanStatusUpdatedNotification($application));
+            try {
+                $application->user->notify(new LoanStatusUpdatedNotification($application));
+            } catch (\Throwable $e) {
+                Log::warning('Loan approval notification failed', [
+                    'application_id' => $application->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
         }
 
 

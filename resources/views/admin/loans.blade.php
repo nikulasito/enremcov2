@@ -448,7 +448,7 @@
 
     {{-- ========================= Tailwind Modal: Update Loan ========================= --}}
     <div id="updateLoanModal" class="fixed inset-0 z-50 hidden">
-        <div class="absolute inset-0 bg-[#0d1a14]/80 backdrop-blur-sm" data-close-modal="updateLoanModal"></div>
+        <div class="absolute inset-0 bg-[#0d1a14]/80 backdrop-blur-sm"></div>
 
         <div class="relative min-h-screen w-full flex items-center justify-center p-4">
             <div
@@ -576,7 +576,7 @@
 
     {{-- ========================= Tailwind Modal: View Loan (Savings-style) ========================= --}}
     <div id="viewLoanModal" class="fixed inset-0 z-50 hidden">
-        <div class="absolute inset-0 bg-[#0d1a14]/80 backdrop-blur-sm" data-close-modal="viewLoanModal"></div>
+        <div class="absolute inset-0 bg-[#0d1a14]/80 backdrop-blur-sm"></div>
 
         <div class="relative min-h-screen w-full flex items-center justify-center p-4">
             <div

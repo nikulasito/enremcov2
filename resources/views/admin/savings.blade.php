@@ -217,7 +217,7 @@
 
     {{-- Update Savings Modal --}}
     <div id="updateDetailsModal" class="fixed inset-0 z-50 hidden">
-        <div class="absolute inset-0 bg-[#0d1a14]/80 backdrop-blur-sm" data-close-modal="updateDetailsModal"></div>
+        <div class="absolute inset-0 bg-[#0d1a14]/80 backdrop-blur-sm"></div>
 
 
                            <div class="relative min-h-screen w-full flex items-center justify-center p-4">
@@ -327,7 +327,7 @@
 
     {{-- View Savings Modal (same layout as update) --}}
     <div id="viewDetailsModal" class="fixed inset-0 z-50 hidden">
-        <div class="absolute inset-0 bg-[#0d1a14]/80 backdrop-blur-sm" data-close-modal="viewDetailsModal"></div>
+        <div class="absolute inset-0 bg-[#0d1a14]/80 backdrop-blur-sm"></div>
 
                    
         <div class="relative min-h-screen w-full flex items-center justify-center p-4">

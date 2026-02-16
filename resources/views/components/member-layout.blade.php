@@ -73,8 +73,11 @@
 
 <body class="flex h-screen overflow-hidden">
 
+    <div id="memberSidebarOverlay" class="fixed inset-0 bg-black/40 z-40 hidden lg:hidden"></div>
+
     {{-- Sidebar --}}
-    <aside class="w-72 bg-sidebar-dark text-white flex flex-col shrink-0">
+    <aside id="memberSidebar"
+        class="w-72 bg-sidebar-dark text-white flex flex-col shrink-0 fixed inset-y-0 left-0 z-50 transform -translate-x-full transition-transform duration-200 lg:static lg:translate-x-0">
         <div class="p-8 flex items-center gap-3">
             <h2 class="text-xl font-black tracking-tight uppercase">ENREMCO</h2>
         </div>
@@ -160,33 +163,106 @@
     </aside>
 
     {{-- Main --}}
-    <main class="flex-1 overflow-y-auto">
+    <main class="flex-1 overflow-y-auto min-w-0">
 
         {{-- Header (custom per page OR default Welcome header) --}}
-        <header class="bg-white border-b border-slate-200 px-10 py-8 sticky top-0 z-10">
-            @if($hasCustomHeader)
-                {{ $header }}
-            @else
-                <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
-                    <div>
-                        <h1 class="text-3xl font-black text-slate-900">Welcome, {{ $memberName }}</h1>
-                        <div class="mt-2 flex items-center gap-2 text-slate-500">
-                            <span class="text-sm font-medium uppercase tracking-wider">Member ID:</span>
-                            <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-900 font-bold text-sm">
-                                {{ $memberId }}
-                            </span>
+        <header class="bg-white border-b border-slate-200 px-4 sm:px-6 lg:px-10 py-4 sm:py-6 lg:py-8 sticky top-0 z-10">
+            <div class="flex items-start gap-3">
+                <button id="memberSidebarBtn" type="button"
+                    class="lg:hidden inline-flex items-center justify-center size-10 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors"
+                    aria-controls="memberSidebar" aria-expanded="false" aria-label="Toggle member menu">
+                    <span class="material-symbols-outlined">menu</span>
+                </button>
+
+                <div class="w-full">
+                    @if($hasCustomHeader)
+                        {{ $header }}
+                    @else
+                        <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                            <div>
+                                <h1 class="text-2xl sm:text-3xl font-black text-slate-900">Welcome, {{ $memberName }}</h1>
+                                <div class="mt-2 flex items-center gap-2 text-slate-500">
+                                    <span class="text-sm font-medium uppercase tracking-wider">Member ID:</span>
+                                    <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-900 font-bold text-sm">
+                                        {{ $memberId }}
+                                    </span>
+                                </div>
+                            </div>
                         </div>
-                    </div>
+                    @endif
                 </div>
-            @endif
+            </div>
         </header>
 
-        <div class="p-10 space-y-10">
+        <div class="p-4 sm:p-6 lg:p-10 space-y-8 lg:space-y-10">
             {{ $slot }}
         </div>
     </main>
 
     @stack('scripts')
+    <script>
+        (function () {
+            const sidebar = document.getElementById('memberSidebar');
+            const overlay = document.getElementById('memberSidebarOverlay');
+            const btn = document.getElementById('memberSidebarBtn');
+            if (!sidebar || !overlay || !btn) return;
+
+            const closeMenu = () => {
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
+                btn.setAttribute('aria-expanded', 'false');
+            };
+
+            const openMenu = () => {
+                sidebar.classList.remove('-translate-x-full');
+                overlay.classList.remove('hidden');
+                btn.setAttribute('aria-expanded', 'true');
+            };
+
+            btn.addEventListener('click', () => {
+                if (sidebar.classList.contains('-translate-x-full')) {
+                    openMenu();
+                } else {
+                    closeMenu();
+                }
+            });
+
+            overlay.addEventListener('click', closeMenu);
+
+            document.querySelectorAll('#memberSidebar a').forEach((a) => {
+                a.addEventListener('click', () => {
+                    if (window.innerWidth < 1024) closeMenu();
+                });
+            });
+
+            window.addEventListener('resize', () => {
+                if (window.innerWidth >= 1024) {
+                    overlay.classList.add('hidden');
+                    sidebar.classList.remove('-translate-x-full');
+                    btn.setAttribute('aria-expanded', 'false');
+                } else {
+                    sidebar.classList.add('-translate-x-full');
+                }
+            });
+
+            // Make member-page tables mobile-friendly by ensuring horizontal scroll.
+            document.querySelectorAll('main table').forEach((table) => {
+                const parent = table.parentElement;
+                if (!parent) return;
+
+                if (!parent.classList.contains('overflow-x-auto')) {
+                    const wrap = document.createElement('div');
+                    wrap.className = 'overflow-x-auto w-full';
+                    parent.insertBefore(wrap, table);
+                    wrap.appendChild(table);
+                }
+
+                if (window.innerWidth < 640) {
+                    table.style.minWidth = '720px';
+                }
+            });
+        })();
+    </script>
 </body>
 
 </html>

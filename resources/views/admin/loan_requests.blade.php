@@ -1,5 +1,4 @@
-<x-admin-v2-layout title="ENREMCO - Loan Requests" pageTitle="Loan Requests" :showSearch="false">
-
+﻿<x-admin-v2-layout title="ENREMCO - Loan Requests" pageTitle="Loan Requests" :showSearch="false">
     {{-- Page Header (matches how other pages do it) --}}
     <x-slot name="header">
         <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -87,7 +86,7 @@
                 </a>
             </div>
 
-            {{-- optional: if you want a “New Application” button --}}
+            {{-- optional: if you want a â€œNew Applicationâ€ button --}}
             {{-- <a href="#"
                 class="h-11 px-6 bg-primary text-background-dark font-black rounded-xl transition-all shadow-sm flex items-center gap-2 hover:brightness-105">
                 <span class="material-symbols-outlined text-[20px]">add</span>
@@ -160,14 +159,14 @@
                             </td>
 
                             <td class="px-6 py-5 text-sm font-black text-slate-700">
-                                {{ $app->member_key ?? '—' }}
+                                {{ $app->member_key ?? 'â€”' }}
                             </td>
 
                             <td class="px-6 py-5">
                                 <div class="flex items-center gap-3">
                                     <div
                                         class="size-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-black text-[10px]">
-                                        {{ $initials ?: '—' }}
+                                        {{ $initials ?: 'â€”' }}
                                     </div>
                                     <div>
                                         <div class="text-sm font-black text-slate-900">{{ $app->full_name }}</div>
@@ -181,7 +180,7 @@
                             <td class="px-6 py-5 text-sm font-medium text-slate-600">{{ $typeLabel }}</td>
 
                             <td class="px-6 py-5 text-sm font-extrabold text-slate-900">
-                                ₱{{ number_format((float) $app->loan_amount, 2) }}
+                                &#8369;{{ number_format((float) $app->loan_amount, 2) }}
                             </td>
 
                             <td class="px-6 py-5 text-sm font-medium text-slate-500">
@@ -279,7 +278,7 @@
                 <div>
                     <h2 class="text-xl font-black text-white">Review Regular Loan Application</h2>
                     <p class="text-[10px] text-primary font-black uppercase tracking-[0.2em] mt-1">
-                        Application ID: <span id="m_app_no">—</span>
+                        Application ID: <span id="m_app_no">â€”</span>
                     </p>
                 </div>
                 <button type="button" id="closeLoanReviewModal"
@@ -296,18 +295,18 @@
                     <div class="space-y-3">
                         <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
                             <span class="text-[11px] font-black text-slate-500 uppercase w-24">NAME:</span>
-                            <span class="text-sm font-black text-slate-900" id="m_name">—</span>
+                            <span class="text-sm font-black text-slate-900" id="m_name">â€”</span>
                         </div>
                         <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
                             <span class="text-[11px] font-black text-slate-500 uppercase w-24">ADDRESS:</span>
-                            <span class="text-sm font-medium text-slate-700" id="m_address">—</span>
+                            <span class="text-sm font-medium text-slate-700" id="m_address">â€”</span>
                         </div>
                     </div>
 
                     <div class="space-y-3">
                         <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
                             <span class="text-[11px] font-black text-slate-500 uppercase w-40">MEMBER ID:</span>
-                            <span class="text-sm font-black text-slate-900" id="m_member_key">—</span>
+                            <span class="text-sm font-black text-slate-900" id="m_member_key">â€”</span>
                         </div>
                         <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
                             <span class="text-[11px] font-black text-slate-500 uppercase w-40">AMOUNT OF LOAN:</span>
@@ -315,7 +314,7 @@
                         </div>
                         <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
                             <span class="text-[11px] font-black text-slate-500 uppercase w-40">DATE APPLIED:</span>
-                            <span class="text-sm font-bold text-slate-700" id="m_date">—</span>
+                            <span class="text-sm font-bold text-slate-700" id="m_date">â€”</span>
                         </div>
                     </div>
                 </div>
@@ -334,14 +333,26 @@
                             <tbody class="divide-y divide-slate-100">
                                 <tr>
                                     <td class="px-6 py-4 font-semibold text-slate-900">
-                                        Loan (<span id="m_loan_type">—</span>)
+                                        Requested Loan (<span id="m_loan_type">â€”</span>)
                                     </td>
-                                    <td class="px-6 py-4 text-right font-black" id="m_amount_row">₱0.00</td>
+                                    <td class="px-6 py-4 text-right font-black text-slate-900">
+                                        &#8369;<span id="m_amount_row">0.00</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="px-6 py-4 font-semibold text-slate-900">
+                                        Approved Amount
+                                    </td>
+                                    <td class="px-6 py-4 text-right">
+                                        <input id="approved_amount" name="approved_amount" form="approveForm"
+                                            class="w-40 text-right rounded-lg border-slate-200 bg-white px-3 py-2 font-black"
+                                            type="number" step="0.01" min="0" value="0">
+                                    </td>
                                 </tr>
 
                                 <tr class="bg-slate-50/50">
                                     <td class="px-6 py-2 text-[10px] font-black text-slate-400 uppercase" colspan="2">
-                                        Less: Deductions (admin input)
+                                        Less: Deductions
                                     </td>
                                 </tr>
 
@@ -389,7 +400,7 @@
                                 <tr class="bg-slate-50">
                                     <td class="px-6 py-4 font-black text-slate-900">Total Deduction</td>
                                     <td class="px-6 py-4 text-right font-extrabold text-red-500">
-                                        ₱<span id="total_deduction">0.00</span>
+                                        &#8369;<span id="total_deduction">0.00</span>
                                     </td>
                                 </tr>
                             </tbody>
@@ -402,12 +413,13 @@
                     <div class="space-y-3 bg-primary/5 p-6 rounded-2xl border border-primary/10">
                         <div class="flex justify-between items-center">
                             <span class="text-xs font-black text-slate-600">Total</span>
-                            <span class="text-sm font-black text-slate-900" id="gross_total">₱0.00</span>
+                            <span class="text-sm font-black text-slate-900" id="gross_total">&#8369;0.00</span>
                         </div>
 
                         <div class="pt-3 border-t border-primary/20 flex justify-between items-center">
                             <span class="text-sm font-extrabold text-[#0d1a14] uppercase">NET CASH RECEIVED</span>
-                            <span class="text-xl font-black text-[#15c26b]">₱<span id="net_cash">0.00</span></span>
+                            <span class="text-xl font-black text-[#15c26b]">&#8369;<span
+                                    id="net_cash">0.00</span></span>
                         </div>
 
                         <div class="pt-4 border-t border-slate-200">
@@ -507,6 +519,7 @@
                 }
 
                 function recalc() {
+                    currentLoanAmount = num(m('approved_amount').value);
                     const oldBal = num(m('old_balance').value);
                     const lpp = num(m('lpp').value);
                     const interest = num(m('interest').value);
@@ -531,16 +544,18 @@
 
                 function openModal(payload) {
                     // fill text
-                    m('m_app_no').textContent = payload.applicationNo || '—';
-                    m('m_name').textContent = payload.fullName || '—';
-                    m('m_address').textContent = payload.address || '—';
-                    m('m_member_key').textContent = payload.memberKey || '—';
-                    m('m_loan_type').textContent = payload.loanTypeLabel || '—';
+                    m('m_app_no').textContent = payload.applicationNo || 'â€”';
+                    m('m_name').textContent = payload.fullName || 'â€”';
+                    m('m_address').textContent = payload.address || 'â€”';
+                    m('m_member_key').textContent = payload.memberKey || 'â€”';
+                    m('m_loan_type').textContent = payload.loanTypeLabel || 'â€”';
 
-                    currentLoanAmount = payload.loanAmount || 0;
-                    m('m_amount').textContent = '₱' + fmt(currentLoanAmount);
-                    m('m_amount_row').textContent = '₱' + fmt(currentLoanAmount);
-                    m('m_date').textContent = payload.created || '—';
+                    const requestedLoanAmount = payload.loanAmount || 0;
+                    currentLoanAmount = payload.approvedAmount ?? requestedLoanAmount;
+                    m('m_amount').textContent = '₱' + fmt(requestedLoanAmount);
+                    m('m_amount_row').textContent = fmt(requestedLoanAmount);
+                    m('approved_amount').value = currentLoanAmount.toFixed(2);
+                    m('m_date').textContent = payload.created || 'â€”';
 
                     // set form actions
                     approveForm.action = approveUrlTpl.replace('__ID__', payload.id);
@@ -591,9 +606,12 @@
                             memberKey: data.member_key,
                             loanTypeLabel: (data.loan_type || '').replaceAll('_', ' ').replace(/\b\w/g, c => c.toUpperCase()),
                             loanAmount: parseFloat(data.loan_amount || '0'),
+                            approvedAmount: data.approved_amount !== null && data.approved_amount !== undefined
+                                ? parseFloat(data.approved_amount || '0')
+                                : null,
                             created: data.created_at,
 
-                            // ✅ bring back saved admin values (if you already store these)
+                            // âœ… bring back saved admin values (if you already store these)
                             old_balance: parseFloat(data.old_balance || '0'),
                             lpp: parseFloat(data.lpp || '0'),
                             interest: parseFloat(data.interest || '0'),
@@ -602,7 +620,7 @@
                             terms: parseInt(data.terms || '24'),
                             monthly_payment: parseFloat(data.monthly_payment || '0'),
 
-                            // ✅ this is the saved notes/remarks
+                            // âœ… this is the saved notes/remarks
                             remarks: data.remarks || '',
                             status: data.status || ''
                         });
@@ -612,11 +630,10 @@
 
                 // close handlers
                 closeBtn?.addEventListener('click', closeModal);
-                modal?.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
                 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !modal.classList.contains('hidden')) closeModal(); });
 
                 // recalc on input
-                ['old_balance', 'lpp', 'interest', 'handling_fee', 'petty_cash_loan', 'rebates', 'terms'].forEach(id => {
+                ['approved_amount', 'old_balance', 'lpp', 'interest', 'handling_fee', 'petty_cash_loan', 'terms'].forEach(id => {
                     m(id)?.addEventListener('input', recalc);
                 });
             })();

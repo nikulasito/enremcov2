@@ -25,6 +25,16 @@ class LoanApplication extends Model
         'reviewed_by',
         'reviewed_at',
         'remarks',
+        'approved_amount',
+        'old_balance',
+        'lpp',
+        'interest',
+        'handling_fee',
+        'petty_cash_loan',
+        'total_deduction',
+        'total_net',
+        'terms',
+        'monthly_payment',
     ];
 
     public function user()

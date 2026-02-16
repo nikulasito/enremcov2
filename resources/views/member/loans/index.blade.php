@@ -213,6 +213,7 @@
                     @php
                         $loanTypeText = $loan->loan_type_label ?? $typeLabel($loan->loan_type ?? '');
                         $loanId = $loan->loan_id ?? 'N/A';
+                        $netCash = (float) ($loan->total_net ?? $loan->loan_amount ?? 0);
                         $remaining = (float) ($loan->remaining_balance ?? 0);
                         $monthly = (float) ($loan->monthly_payment ?? 0);
                         $nextDue = $loan->next_due_date_label ?? 'N/A';
@@ -253,7 +254,8 @@
                         <button type="button"
                             class="js-loan-record-btn mt-6 w-full py-2.5 text-sm font-bold text-secondary bg-secondary/5 rounded-lg hover:bg-secondary/10 transition-colors"
                             data-loan-id="{{ $loanId }}" data-loan-type="{{ $loanTypeText }}"
-                            data-principal="{{ (float) ($loan->loan_amount ?? 0) }}" data-remaining="{{ $remaining }}"
+                            data-principal="{{ (float) ($loan->loan_amount ?? 0) }}" data-net-cash="{{ $netCash }}"
+                            data-remaining="{{ $remaining }}"
                             data-approved="{{ $approved }}" data-maturity="{{ $maturity }}" data-monthly="{{ $monthly }}"
                             data-status="Ongoing">
                             View Loan Breakdown
@@ -315,6 +317,7 @@
                                 $rowType = $loan->loan_type_label ?? $typeLabel($loan->loan_type ?? '');
                                 $rowId = $loan->loan_id ?? 'N/A';
                                 $rowPrincipal = (float) ($loan->loan_amount ?? 0);
+                                $rowNetCash = (float) ($loan->total_net ?? $rowPrincipal);
                                 $rowRemaining = (float) ($loan->remaining_balance ?? 0);
                                 $rowMonthly = (float) ($loan->monthly_payment ?? 0);
                                 $rowApproved = $loan->approved_date_label ?? 'N/A';
@@ -344,7 +347,8 @@
                                     <button type="button"
                                         class="js-loan-record-btn text-xs font-bold text-secondary hover:underline"
                                         data-loan-id="{{ $rowId }}" data-loan-type="{{ $rowType }}"
-                                        data-principal="{{ $rowPrincipal }}" data-remaining="{{ $rowRemaining }}"
+                                        data-principal="{{ $rowPrincipal }}" data-net-cash="{{ $rowNetCash }}"
+                                        data-remaining="{{ $rowRemaining }}"
                                         data-approved="{{ $rowApproved }}" data-maturity="{{ $rowMaturity }}"
                                         data-monthly="{{ $rowMonthly }}" data-status="{{ $statusText }}">
                                         View Details
@@ -422,7 +426,7 @@
     </section>
 
     <div id="loanRecordModal" class="fixed inset-0 z-[90] hidden items-center justify-center p-4">
-        <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" data-close-loan-modal></div>
+        <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"></div>
         <div
             class="relative w-full max-w-5xl overflow-hidden rounded-2xl bg-white shadow-2xl max-h-[90vh] flex flex-col">
             <div class="bg-sidebar-green p-6 flex items-start justify-between shrink-0 bg-[#fcfdfc]">
@@ -443,6 +447,10 @@
                 <div>
                     <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Principal</p>
                     <p class="font-black text-slate-900 mt-1" id="loan_modal_principal">N/A</p>
+                </div>
+                <div>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Net Cash</p>
+                    <p class="font-black text-slate-900 mt-1" id="loan_modal_net_cash">N/A</p>
                 </div>
                 <div>
                     <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Remaining Balance</p>
@@ -469,7 +477,7 @@
     </div>
 
     <div id="applicationModal" class="fixed inset-0 z-[95] hidden items-center justify-center p-4">
-        <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" data-close-application-modal></div>
+        <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"></div>
         <div
             class="relative w-full max-w-5xl overflow-hidden rounded-2xl bg-white shadow-2xl max-h-[90vh] flex flex-col">
             <div class="bg-sidebar-green p-6 flex items-start justify-between shrink-0 bg-[#fcfdfc]">
@@ -490,8 +498,16 @@
                         <p id="app_modal_type" class="mt-1 text-lg font-black text-slate-900">—</p>
 
                         <div class="mt-4">
-                            <p class="text-[10px] font-black uppercase tracking-widest text-slate-500">Amount</p>
+                            <p class="text-[10px] font-black uppercase tracking-widest text-slate-500">Requested Amount</p>
                             <p id="app_modal_amount" class="mt-1 text-2xl font-black text-slate-900">—</p>
+                        </div>
+                        <div class="mt-4">
+                            <p class="text-[10px] font-black uppercase tracking-widest text-slate-500">Approved Amount</p>
+                            <p id="app_modal_approved_amount" class="mt-1 text-lg font-black text-slate-900">—</p>
+                        </div>
+                        <div class="mt-4">
+                            <p class="text-[10px] font-black uppercase tracking-widest text-slate-500">Net Cash Received</p>
+                            <p id="app_modal_net_cash" class="mt-1 text-lg font-black text-primary">—</p>
                         </div>
 
                         <div class="mt-4">
@@ -551,6 +567,7 @@
                     document.getElementById('loan_modal_id').textContent = btn.dataset.loanId || 'N/A';
                     document.getElementById('loan_modal_type').textContent = btn.dataset.loanType || 'N/A';
                     document.getElementById('loan_modal_principal').textContent = toCurrency(btn.dataset.principal);
+                    document.getElementById('loan_modal_net_cash').textContent = toCurrency(btn.dataset.netCash);
                     document.getElementById('loan_modal_remaining').textContent = toCurrency(btn.dataset.remaining);
                     document.getElementById('loan_modal_approved').textContent = btn.dataset.approved || 'N/A';
                     document.getElementById('loan_modal_maturity').textContent = btn.dataset.maturity || 'N/A';
@@ -581,6 +598,8 @@
                     document.getElementById('app_modal_ref').textContent = 'Loading...';
                     document.getElementById('app_modal_type').textContent = 'Loading...';
                     document.getElementById('app_modal_amount').textContent = 'Loading...';
+                    document.getElementById('app_modal_approved_amount').textContent = 'Loading...';
+                    document.getElementById('app_modal_net_cash').textContent = 'Loading...';
                     document.getElementById('app_modal_date').textContent = 'Loading...';
                     document.getElementById('app_modal_status').textContent = 'Loading...';
                     document.getElementById('app_modal_status').className =
@@ -600,6 +619,8 @@
                             .toString()
                             .replaceAll('_', ' ');
                         document.getElementById('app_modal_amount').textContent = toCurrency(data.loan_amount || 0);
+                        document.getElementById('app_modal_approved_amount').textContent = toCurrency(data.approved_amount || data.loan_amount || 0);
+                        document.getElementById('app_modal_net_cash').textContent = toCurrency(data.total_net || data.approved_amount || data.loan_amount || 0);
                         document.getElementById('app_modal_date').textContent = data.created_at || 'N/A';
                         document.getElementById('app_modal_status').textContent = (data.status || 'N/A')
                             .toString()
@@ -618,6 +639,8 @@
                         document.getElementById('app_modal_ref').textContent = 'N/A';
                         document.getElementById('app_modal_type').textContent = 'N/A';
                         document.getElementById('app_modal_amount').textContent = 'N/A';
+                        document.getElementById('app_modal_approved_amount').textContent = 'N/A';
+                        document.getElementById('app_modal_net_cash').textContent = 'N/A';
                         document.getElementById('app_modal_date').textContent = 'N/A';
                         document.getElementById('app_modal_status').textContent = 'N/A';
                         document.getElementById('app_modal_status').className =

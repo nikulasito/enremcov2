@@ -226,7 +226,7 @@
     {{-- ===== View/Edit Withdrawals Modal (Tailwind) ===== --}}
     <div id="viewWithdrawalsModal" class="fixed inset-0 z-50 hidden">
         {{-- Backdrop --}}
-        <div class="absolute inset-0 bg-[#0d1a14]/80 backdrop-blur-sm" data-close-modal="viewWithdrawalsModal"></div>
+        <div class="absolute inset-0 bg-[#0d1a14]/80 backdrop-blur-sm"></div>
 
         <div class="relative min-h-screen w-full flex items-center justify-center p-4">
             <div

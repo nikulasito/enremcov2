@@ -270,15 +270,17 @@ class MemberLoanController extends Controller
                     ? Carbon::parse($application->reviewed_at)
                     : (optional($application->created_at) ? Carbon::parse($application->created_at) : null);
 
-                $amount = (float) ($application->loan_amount ?? 0);
+                $approvedAmount = (float) ($application->approved_amount ?? $application->loan_amount ?? 0);
+                $netCash = (float) ($application->total_net ?? $approvedAmount);
 
                 return (object) [
                     'loan_id' => $application->application_no ?? ('APP-' . $application->id),
                     'loan_type' => $application->loan_type,
                     'loan_type_label' => ucwords(str_replace('_', ' ', strtolower((string) $application->loan_type))),
-                    'loan_amount' => $amount,
-                    'remaining_balance' => $amount,
-                    'monthly_payment' => 0,
+                    'loan_amount' => $approvedAmount,
+                    'total_net' => $netCash,
+                    'remaining_balance' => $approvedAmount,
+                    'monthly_payment' => (float) ($application->monthly_payment ?? 0),
                     'next_due_date_label' => 'N/A',
                     'approved_date_label' => $approvedAt ? $approvedAt->format('M d, Y') : 'N/A',
                     'maturity_date_label' => 'N/A',
@@ -545,6 +547,8 @@ class MemberLoanController extends Controller
     public function details(LoanApplication $application)
     {
         abort_unless($this->canAccessApplication($application), 403);
+        $approvedAmount = (float) ($application->approved_amount ?? $application->loan_amount ?? 0);
+        $netCash = (float) ($application->total_net ?? $approvedAmount);
 
         return response()->json([
             'id' => $application->id,
@@ -554,6 +558,8 @@ class MemberLoanController extends Controller
             'member_key' => $application->member_key,
             'loan_type' => $application->loan_type,
             'loan_amount' => (float) $application->loan_amount,
+            'approved_amount' => $approvedAmount,
+            'total_net' => $netCash,
             'status' => $application->status,
             'created_at' => optional($application->created_at)?->format('M d, Y'),
             'remarks' => $application->remarks, // ✅ admin note

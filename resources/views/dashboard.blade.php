@@ -28,7 +28,7 @@
     <x-slot name="header">
         <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
-                <h1 class="text-3xl font-black text-slate-900">Welcome, {{ auth()->user()->name }}</h1>
+                <h1 class="text-2xl font-black text-slate-900">Welcome, {{ auth()->user()->name }}</h1>
                 <div class="mt-2 flex items-center gap-2 text-slate-500">
                     <span class="text-sm font-medium uppercase tracking-wider">Member ID:</span>
                     <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-900 font-bold text-sm">
@@ -254,19 +254,19 @@
                     @if($canApplyLoan)
                         <a href="{{ route('member.loans.apply', ['type' => $loan['type']]) }}"
                             class="mt-6 w-full py-3 px-4 rounded-xl font-black text-sm transition-all hover:brightness-105 active:scale-95 shadow-md
-                                                                            {{ $loan['style'] === 'secondary' ? 'bg-secondary text-white shadow-secondary/10' : 'bg-primary text-background-dark shadow-primary/10' }}">
+                                                                                            {{ $loan['style'] === 'secondary' ? 'bg-secondary text-white shadow-secondary/10' : 'bg-primary text-background-dark shadow-primary/10' }}">
                             Apply Now
                         </a>
                     @else
                         <button type="button" disabled
                             class="mt-6 w-full py-3 px-4 rounded-xl font-black text-sm shadow-md
-                                                                                   bg-slate-100 text-slate-400 cursor-not-allowed">
+                                                                                                   bg-slate-100 text-slate-400 cursor-not-allowed">
                             Apply Now
                         </button>
 
                         <!-- <p class="mt-2 text-[11px] font-bold text-amber-600">
-                                            Need â‚±{{ number_format($minRequired, 2) }} total Shares + Savings to apply.
-                                        </p> -->
+                                                            Need â‚±{{ number_format($minRequired, 2) }} total Shares + Savings to apply.
+                                                        </p> -->
                     @endif
                 </div>
             @endforeach
@@ -371,10 +371,12 @@
             modal.classList.remove('hidden');
             modal.classList.add('flex');
 
-            document.getElementById('ld_app_no').textContent = '—';
-            document.getElementById('ld_loan_type').textContent = '—';
-            document.getElementById('ld_amount').textContent = '—';
-            document.getElementById('ld_date').textContent = '—';
+            document.getElementById('ld_app_no').textContent = 'ï¿½';
+            document.getElementById('ld_loan_type').textContent = 'ï¿½';
+            document.getElementById('ld_amount').textContent = 'ï¿½';
+            document.getElementById('ld_approved_amount').textContent = 'ï¿½';
+            document.getElementById('ld_net_cash').textContent = 'ï¿½';
+            document.getElementById('ld_date').textContent = 'ï¿½';
             document.getElementById('ld_remarks').textContent = 'Loading...';
 
             const statusEl = document.getElementById('ld_status');
@@ -390,11 +392,15 @@
             })
                 .then(r => r.json())
                 .then(data => {
-                    document.getElementById('ld_app_no').textContent = data.application_no ?? '—';
-                    document.getElementById('ld_loan_type').textContent = (data.loan_type ?? '—').toString().replaceAll('_', ' ');
+                    document.getElementById('ld_app_no').textContent = data.application_no ?? 'ï¿½';
+                    document.getElementById('ld_loan_type').textContent = (data.loan_type ?? 'ï¿½').toString().replaceAll('_', ' ');
                     document.getElementById('ld_amount').textContent =
                         `\u20B1${Number(data.loan_amount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-                    document.getElementById('ld_date').textContent = data.created_at ?? '—';
+                    document.getElementById('ld_approved_amount').textContent =
+                        `\u20B1${Number(data.approved_amount ?? data.loan_amount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                    document.getElementById('ld_net_cash').textContent =
+                        `\u20B1${Number(data.total_net ?? data.approved_amount ?? data.loan_amount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                    document.getElementById('ld_date').textContent = data.created_at ?? 'ï¿½';
 
                     statusEl.textContent = formatLoanStatus(data.status);
                     statusEl.className = `px-3 py-1 rounded-full text-xs font-black ${loanStatusClass(data.status)}`;
@@ -429,7 +435,7 @@
 </x-member-layout>
 <div id="loanDetailsModal" class="fixed inset-0 z-[100] hidden items-center justify-center p-4">
     {{-- blur overlay --}}
-    <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onclick="closeLoanDetailsModal()"></div>
+    <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"></div>
 
     <div class="relative w-full max-w-5xl overflow-hidden rounded-2xl bg-white shadow-2xl max-h-[90vh] flex flex-col">
         {{-- Header --}}
@@ -456,8 +462,16 @@
                     <p id="ld_loan_type" class="mt-1 text-lg font-black text-slate-900">â€”</p>
 
                     <div class="mt-4">
-                        <p class="text-[10px] font-black uppercase tracking-widest text-slate-500">Amount</p>
+                        <p class="text-[10px] font-black uppercase tracking-widest text-slate-500">Requested Amount</p>
                         <p id="ld_amount" class="mt-1 text-2xl font-black text-slate-900">â€”</p>
+                    </div>
+                    <div class="mt-4">
+                        <p class="text-[10px] font-black uppercase tracking-widest text-slate-500">Approved Amount</p>
+                        <p id="ld_approved_amount" class="mt-1 text-lg font-black text-slate-900">â€”</p>
+                    </div>
+                    <div class="mt-4">
+                        <p class="text-[10px] font-black uppercase tracking-widest text-slate-500">Net Cash Received</p>
+                        <p id="ld_net_cash" class="mt-1 text-lg font-black text-primary">â€”</p>
                     </div>
 
                     <div class="mt-4">
