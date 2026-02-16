@@ -67,23 +67,59 @@
                 <div class="flex items-center gap-3 text-primary">
                     <h2
                         class="text-[#111814] dark:text-white text-xl font-black leading-tight tracking-tight uppercase">
-                        ENREMCO</h2>
+                        <a href="{{ route('home') }}">ENREMCO</a>
+                    </h2>
                 </div>
 
                 <nav class="hidden flex-1 justify-center gap-8 md:flex">
-                    <a class="text-sm font-semibold hover:text-primary transition-colors" href="#">Home</a>
-                    <a class="text-sm font-semibold hover:text-primary transition-colors" href="#">About Us</a>
-                    <a class="text-sm font-semibold hover:text-primary transition-colors" href="#">Services</a>
-                    <a class="text-sm font-semibold hover:text-primary transition-colors" href="#">Loan Products</a>
-                    <a class="text-sm font-semibold hover:text-primary transition-colors" href="#">Contact</a>
+                    <a class="text-sm font-semibold {{ request()->routeIs('home') ? 'text-primary' : 'text-[#111814] dark:text-[#f0f4f2] hover:text-primary transition-colors' }}"
+                        href="{{ route('home') }}">Home</a>
+
+                    <a class="text-sm font-semibold {{ request()->routeIs('about') ? 'text-primary' : 'text-[#111814] dark:text-[#f0f4f2] hover:text-primary transition-colors' }}"
+                        href="{{ route('about') }}">About Us</a>
+
+                    <a class="text-sm font-semibold {{ request()->routeIs('services') ? 'text-primary' : 'text-[#111814] dark:text-[#f0f4f2] hover:text-primary transition-colors' }}"
+                        href="{{ route('services') }}">Services</a>
+
+                    <a class="text-sm font-semibold {{ request()->routeIs('loan-products') ? 'text-primary' : 'text-[#111814] dark:text-[#f0f4f2] hover:text-primary transition-colors' }}"
+                        href="{{ route('loan-products') }}">Loan Products</a>
+
+                    <a class="text-sm font-semibold {{ request()->routeIs('contact') ? 'text-primary' : 'text-[#111814] dark:text-[#f0f4f2] hover:text-primary transition-colors' }}"
+                        href="{{ route('contact') }}">Contact</a>
                 </nav>
 
                 <div class="flex items-center gap-3">
+                    <button id="mobileMenuBtn" type="button"
+                        class="md:hidden inline-flex items-center justify-center size-10 rounded-lg border border-[#dce5e0] dark:border-[#2a3a32] text-[#111814] dark:text-white hover:bg-slate-50 dark:hover:bg-[#1a2e24] transition-all"
+                        aria-expanded="false" aria-controls="mobileMenu" aria-label="Toggle navigation menu">
+                        <span class="material-symbols-outlined">menu</span>
+                    </button>
+
                     <a href="{{ route('login') }}"
-                        class="flex min-w-[100px] items-center justify-center rounded-lg h-10 px-4 bg-primary text-[#112119] text-sm font-bold tracking-tight hover:brightness-110 transition-all">
+                        class="hidden sm:flex min-w-[100px] items-center justify-center rounded-lg h-10 px-4 bg-primary text-[#112119] text-sm font-bold tracking-tight hover:brightness-110 transition-all">
                         Member Login
                     </a>
                 </div>
+            </div>
+
+            <div id="mobileMenu"
+                class="md:hidden hidden border-t border-[#dce5e0] dark:border-[#2a3a32] bg-white dark:bg-background-dark px-6 py-4">
+                <nav class="flex flex-col gap-3">
+                    <a class="text-sm font-semibold {{ request()->routeIs('home') ? 'text-primary' : 'text-[#111814] dark:text-[#f0f4f2] hover:text-primary transition-colors' }}"
+                        href="{{ route('home') }}">Home</a>
+                    <a class="text-sm font-semibold {{ request()->routeIs('about') ? 'text-primary' : 'text-[#111814] dark:text-[#f0f4f2] hover:text-primary transition-colors' }}"
+                        href="{{ route('about') }}">About Us</a>
+                    <a class="text-sm font-semibold {{ request()->routeIs('services') ? 'text-primary' : 'text-[#111814] dark:text-[#f0f4f2] hover:text-primary transition-colors' }}"
+                        href="{{ route('services') }}">Services</a>
+                    <a class="text-sm font-semibold {{ request()->routeIs('loan-products') ? 'text-primary' : 'text-[#111814] dark:text-[#f0f4f2] hover:text-primary transition-colors' }}"
+                        href="{{ route('loan-products') }}">Loan Products</a>
+                    <a class="text-sm font-semibold {{ request()->routeIs('contact') ? 'text-primary' : 'text-[#111814] dark:text-[#f0f4f2] hover:text-primary transition-colors' }}"
+                        href="{{ route('contact') }}">Contact</a>
+                    <a href="{{ route('login') }}"
+                        class="mt-2 flex items-center justify-center rounded-lg h-10 px-4 bg-primary text-[#112119] text-sm font-bold tracking-tight hover:brightness-110 transition-all">
+                        Member Login
+                    </a>
+                </nav>
             </div>
         </header>
 
@@ -99,8 +135,8 @@
                             <h2 class="text-2xl font-black tracking-tight uppercase">ENREMCO</h2>
                         </div>
                         <p class="text-[#638875] dark:text-[#a0b0a8] text-sm leading-relaxed">
-                            Providing sustainable financial solutions and fostering cooperative growth for Energy
-                            Regulatory Commission employees since 1995.
+                            Supporting DENR X employees with financial services and community programs designed for
+                            growth and success.
                         </p>
 
                         <div class="flex gap-4">
@@ -129,13 +165,13 @@
                             Links</h3>
                         <nav class="flex flex-col gap-3">
                             <a class="text-[#638875] dark:text-[#a0b0a8] text-sm hover:text-primary transition-colors"
-                                href="#">Our Story</a>
+                                href="{{ route('about') }}">About</a>
                             <a class="text-[#638875] dark:text-[#a0b0a8] text-sm hover:text-primary transition-colors"
-                                href="#">Loan Products</a>
+                                href="{{ route('services') }}">Services</a>
                             <a class="text-[#638875] dark:text-[#a0b0a8] text-sm hover:text-primary transition-colors"
-                                href="#">Member Dividends</a>
+                                href="{{ route('loan-products') }}">Loan Products</a>
                             <a class="text-[#638875] dark:text-[#a0b0a8] text-sm hover:text-primary transition-colors"
-                                href="#">Annual Reports</a>
+                                href="{{ route('contact') }}">Contact</a>
                         </nav>
                     </div>
 
@@ -161,7 +197,8 @@
                             <div class="flex items-start gap-3">
                                 <span class="material-symbols-outlined text-primary text-xl">location_on</span>
                                 <p class="text-[#638875] dark:text-[#a0b0a8] text-sm">
-                                    Energy Regulatory Commission Office,<br />Pasig City, Metro Manila
+                                    Department of Environment and Natural Resources 10<br />
+                                    Puntod, Cagayan de Oro City, 9000
                                 </p>
                             </div>
 
@@ -172,7 +209,7 @@
 
                             <div class="flex items-center gap-3">
                                 <span class="material-symbols-outlined text-primary text-xl">mail</span>
-                                <p class="text-[#638875] dark:text-[#a0b0a8] text-sm">info@enremco.coop</p>
+                                <p class="text-[#638875] dark:text-[#a0b0a8] text-sm">support@enremco.com</p>
                             </div>
                         </div>
                     </div>
@@ -182,15 +219,6 @@
                     class="pt-8 border-t border-[#dce5e0] dark:border-[#2a3a32] flex flex-col md:flex-row justify-between items-center gap-4">
                     <p class="text-[#638875] dark:text-[#a0b0a8] text-xs">© 2026 ENREMCO Multi-Purpose Cooperative. All
                         rights reserved.</p>
-
-                    <div class="flex items-center gap-2 grayscale opacity-60">
-                        <span class="text-[10px] font-bold uppercase text-[#638875] dark:text-[#a0b0a8]">Member
-                            of</span>
-                        <div
-                            class="px-2 py-1 border border-[#dce5e0] dark:border-[#2a3a32] rounded font-black text-[10px] dark:text-[#f0f4f2]">
-                            DENR
-                        </div>
-                    </div>
                 </div>
             </div>
         </footer>
@@ -201,6 +229,18 @@
     {{-- If bootstrap modals are used, bootstrap JS must be loaded in layout --}}
     {{--
     <script src="{{ asset('...bootstrap.bundle.js') }}"></script> --}}
+    <script>
+        (function () {
+            const btn = document.getElementById('mobileMenuBtn');
+            const menu = document.getElementById('mobileMenu');
+            if (!btn || !menu) return;
+
+            btn.addEventListener('click', () => {
+                const isHidden = menu.classList.toggle('hidden');
+                btn.setAttribute('aria-expanded', (!isHidden).toString());
+            });
+        })();
+    </script>
 </body>
 
 </html>

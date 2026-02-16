@@ -1,4 +1,4 @@
-<x-member-layout :title="'ENREMCO My Loans Directory'">
+<x-member-layout :title="'ENREMCO - View Loans'">
     @php
         $typeLabel = function ($loanType) {
             $raw = strtolower((string) $loanType);
@@ -50,30 +50,53 @@
             $raw = strtolower((string) $status);
             return match ($raw) {
                 'pending' => 'bg-amber-100 text-amber-700 border border-amber-200',
-                'for_review', 'in_review', 'for_approval' => 'bg-blue-100 text-blue-700 border border-blue-200',
+                'for_review', 'for_approval' => 'bg-blue-100 text-blue-700 border border-blue-200',
                 'for_printing' => 'bg-purple-100 text-purple-700 border border-purple-200',
                 'approved' => 'bg-green-100 text-green-700 border border-green-200',
                 'rejected' => 'bg-red-100 text-red-700 border border-red-200',
-                default => 'bg-slate-100 text-slate-600 border border-slate-200',
+                default => 'bg-slate-100 text-slate-700 border border-slate-200',
             };
         };
+
+        $canApplyForLoan = (bool) data_get($loanEligibility ?? [], 'can_apply', true);
+        $applyDisabledReason = collect(data_get($loanEligibility ?? [], 'reasons', []))
+            ->filter()
+            ->implode(' ');
+        $applyDisabledReason = $applyDisabledReason !== ''
+            ? $applyDisabledReason
+            : 'You are currently not eligible to apply for a new loan.';
     @endphp
 
     <x-slot name="header">
         <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
-                <h1 class="text-3xl font-black text-slate-900">My Loans Directory</h1>
+                <h1 class="text-3xl font-black text-slate-900">View Loans</h1>
                 <p class="text-slate-500 mt-1">Manage and track your active and historical loan records.</p>
             </div>
             <div class="flex items-center gap-4">
-                <a href="{{ route('member.loans.apply') }}"
-                    class="flex items-center gap-2 px-6 py-3 bg-primary text-background-dark font-black text-sm rounded-xl hover:brightness-105 transition-all shadow-lg shadow-primary/20">
-                    <span class="material-symbols-outlined text-lg">add_circle</span>
-                    Apply for New Loan
-                </a>
+                @if($canApplyForLoan)
+                    <a href="{{ route('member.loans.apply') }}"
+                        class="flex items-center gap-2 px-6 py-3 bg-primary text-background-dark font-black text-sm rounded-xl hover:brightness-105 transition-all shadow-lg shadow-primary/20">
+                        <span class="material-symbols-outlined text-lg">add_circle</span>
+                        Apply for New Loan
+                    </a>
+                @else
+                    <button type="button"
+                        class="flex items-center gap-2 px-6 py-3 bg-slate-200 text-slate-500 font-black text-sm rounded-xl cursor-not-allowed"
+                        disabled title="{{ $applyDisabledReason }}">
+                        <span class="material-symbols-outlined text-lg">add_circle</span>
+                        Apply for New Loan
+                    </button>
+                @endif
             </div>
         </div>
     </x-slot>
+
+    @if($errors->has('loan_apply'))
+        <div class="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+            {{ $errors->first('loan_apply') }}
+        </div>
+    @endif
 
     <section>
         <div class="mb-6 flex items-center justify-between">
@@ -89,6 +112,7 @@
                     @php
                         $appLoanType = $typeLabel($application->loan_type ?? 'loan');
                         $appStatusRaw = strtolower((string) ($application->status ?? ''));
+                        $appIsPending = $appStatusRaw === 'pending';
                         $appStatusText = $statusLabel($appStatusRaw);
                         $appStatusClasses = $statusClass($appStatusRaw);
                         $appRef = $application->application_no ?? ('APP-' . str_pad((string) $application->id, 4, '0', STR_PAD_LEFT));
@@ -96,7 +120,8 @@
                         $appAmount = (float) ($application->loan_amount ?? 0);
                     @endphp
 
-                    <div class="p-6 flex flex-col md:flex-row items-center justify-between gap-6 {{ !$loop->last ? 'border-b border-slate-100' : '' }}">
+                    <div
+                        class="p-6 flex flex-col md:flex-row items-center justify-between gap-6 {{ !$loop->last ? 'border-b border-slate-100' : '' }}">
                         <div class="flex items-center gap-5 w-full md:w-auto">
                             <div
                                 class="size-14 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 shrink-0 border border-slate-100">
@@ -127,11 +152,21 @@
                                 <p class="text-sm font-bold text-slate-700">{{ $appDate }}</p>
                             </div>
                             <div class="col-span-2 md:col-span-1 flex items-center md:justify-end">
-                                <button type="button" class="js-view-application-btn inline-flex items-center gap-2 text-sm font-bold text-secondary hover:text-blue-700 transition-colors"
-                                    data-app-id="{{ $application->id }}">
-                                    View Details
-                                    <span class="material-symbols-outlined text-lg">chevron_right</span>
-                                </button>
+                                @if($appIsPending)
+                                    <button type="button"
+                                        class="inline-flex items-center gap-2 text-sm font-bold text-slate-400 cursor-not-allowed"
+                                        disabled title="Details are not available while this loan is pending.">
+                                        View Details
+                                        <span class="material-symbols-outlined text-lg">chevron_right</span>
+                                    </button>
+                                @else
+                                    <button type="button"
+                                        class="js-view-application-btn inline-flex items-center gap-2 text-sm font-bold text-secondary hover:text-blue-700 transition-colors"
+                                        data-app-id="{{ $application->id }}">
+                                        View Details
+                                        <span class="material-symbols-outlined text-lg">chevron_right</span>
+                                    </button>
+                                @endif
                             </div>
                         </div>
                     </div>
@@ -147,10 +182,18 @@
                             <p class="text-sm text-slate-500">You have not submitted a loan application.</p>
                         </div>
                     </div>
-                    <a href="{{ route('member.loans.apply') }}"
-                        class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-background-dark font-black text-sm hover:brightness-105 transition-all">
-                        Apply Now
-                    </a>
+                    @if($canApplyForLoan)
+                        <a href="{{ route('member.loans.apply') }}"
+                            class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-background-dark font-black text-sm hover:brightness-105 transition-all">
+                            Apply Now
+                        </a>
+                    @else
+                        <button type="button"
+                            class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-200 text-slate-500 font-black text-sm cursor-not-allowed"
+                            disabled title="{{ $applyDisabledReason }}">
+                            Apply Now
+                        </button>
+                    @endif
                 </div>
             @endif
         </div>
@@ -181,7 +224,8 @@
                         <div class="flex items-start justify-between mb-8">
                             <div>
                                 <div class="flex items-center gap-3 mb-1">
-                                    <h4 class="text-sm font-bold text-slate-400 uppercase tracking-widest">{{ $loanTypeText }}</h4>
+                                    <h4 class="text-sm font-bold text-slate-400 uppercase tracking-widest">{{ $loanTypeText }}
+                                    </h4>
                                     <span
                                         class="px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-[10px] font-bold uppercase">Ongoing</span>
                                 </div>
@@ -209,9 +253,9 @@
                         <button type="button"
                             class="js-loan-record-btn mt-6 w-full py-2.5 text-sm font-bold text-secondary bg-secondary/5 rounded-lg hover:bg-secondary/10 transition-colors"
                             data-loan-id="{{ $loanId }}" data-loan-type="{{ $loanTypeText }}"
-                            data-principal="{{ (float) ($loan->loan_amount ?? 0) }}"
-                            data-remaining="{{ $remaining }}" data-approved="{{ $approved }}" data-maturity="{{ $maturity }}"
-                            data-monthly="{{ $monthly }}" data-status="Ongoing">
+                            data-principal="{{ (float) ($loan->loan_amount ?? 0) }}" data-remaining="{{ $remaining }}"
+                            data-approved="{{ $approved }}" data-maturity="{{ $maturity }}" data-monthly="{{ $monthly }}"
+                            data-status="Ongoing">
                             View Loan Breakdown
                         </button>
                     </div>
@@ -246,13 +290,18 @@
                     <thead>
                         <tr class="bg-slate-50">
                             <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">No.</th>
-                            <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Loan Type</th>
-                            <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Principal Amount
+                            <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Loan Type
                             </th>
-                            <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Date Approved</th>
-                            <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Maturity Date</th>
+                            <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Principal
+                                Amount
+                            </th>
+                            <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Date
+                                Approved</th>
+                            <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Maturity
+                                Date</th>
                             <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Status</th>
-                            <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest text-right">Action
+                            <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest text-right">
+                                Action
                             </th>
                         </tr>
                     </thead>
@@ -273,7 +322,8 @@
                                 $rowNo = (($loanHistory->currentPage() - 1) * $loanHistory->perPage()) + $loop->iteration;
                             @endphp
                             <tr>
-                                <td class="px-6 py-4 text-sm font-bold text-slate-400">{{ str_pad((string) $rowNo, 2, '0', STR_PAD_LEFT) }}
+                                <td class="px-6 py-4 text-sm font-bold text-slate-400">
+                                    {{ str_pad((string) $rowNo, 2, '0', STR_PAD_LEFT) }}
                                 </td>
                                 <td class="px-6 py-4">
                                     <div class="flex items-center gap-3">
@@ -315,7 +365,8 @@
             <div class="p-6 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
                 <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">
                     @if($loanHistory->total() > 0)
-                        Showing {{ $loanHistory->firstItem() }} to {{ $loanHistory->lastItem() }} of {{ $loanHistory->total() }}
+                        Showing {{ $loanHistory->firstItem() }} to {{ $loanHistory->lastItem() }} of
+                        {{ $loanHistory->total() }}
                         records
                     @else
                         Showing 0 records
@@ -324,7 +375,8 @@
 
                 <div class="flex items-center gap-2">
                     @if($loanHistory->onFirstPage())
-                        <span class="size-8 flex items-center justify-center rounded bg-white border border-slate-200 text-slate-300">
+                        <span
+                            class="size-8 flex items-center justify-center rounded bg-white border border-slate-200 text-slate-300">
                             <span class="material-symbols-outlined text-lg">chevron_left</span>
                         </span>
                     @else
@@ -359,7 +411,8 @@
                             <span class="material-symbols-outlined text-lg">chevron_right</span>
                         </a>
                     @else
-                        <span class="size-8 flex items-center justify-center rounded bg-white border border-slate-200 text-slate-300">
+                        <span
+                            class="size-8 flex items-center justify-center rounded bg-white border border-slate-200 text-slate-300">
                             <span class="material-symbols-outlined text-lg">chevron_right</span>
                         </span>
                     @endif
@@ -369,9 +422,10 @@
     </section>
 
     <div id="loanRecordModal" class="fixed inset-0 z-[90] hidden items-center justify-center p-4">
-        <div class="absolute inset-0 bg-black/40" data-close-loan-modal></div>
-        <div class="relative w-full max-w-xl rounded-2xl bg-white border border-slate-200 shadow-2xl overflow-hidden">
-            <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+        <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" data-close-loan-modal></div>
+        <div
+            class="relative w-full max-w-5xl overflow-hidden rounded-2xl bg-white shadow-2xl max-h-[90vh] flex flex-col">
+            <div class="bg-sidebar-green p-6 flex items-start justify-between shrink-0 bg-[#fcfdfc]">
                 <h4 class="text-lg font-black text-slate-900">Loan Record Details</h4>
                 <button type="button" class="text-slate-400 hover:text-slate-700" data-close-loan-modal>
                     <span class="material-symbols-outlined">close</span>
@@ -415,48 +469,59 @@
     </div>
 
     <div id="applicationModal" class="fixed inset-0 z-[95] hidden items-center justify-center p-4">
-        <div class="absolute inset-0 bg-black/40" data-close-application-modal></div>
-        <div class="relative w-full max-w-xl rounded-2xl bg-white border border-slate-200 shadow-2xl overflow-hidden">
-            <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-                <h4 class="text-lg font-black text-slate-900">Application Details</h4>
+        <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" data-close-application-modal></div>
+        <div
+            class="relative w-full max-w-5xl overflow-hidden rounded-2xl bg-white shadow-2xl max-h-[90vh] flex flex-col">
+            <div class="bg-sidebar-green p-6 flex items-start justify-between shrink-0 bg-[#fcfdfc]">
+                <div>
+                    <h2 class="text-lg font-black text-slate-900">Application Details</h2>
+                    <p class="text-[10px] text-primary font-bold uppercase tracking-[0.2em] mt-1">
+                        Application No: <span id="app_modal_ref">—</span>
+                    </p>
+                </div>
                 <button type="button" class="text-slate-400 hover:text-slate-700" data-close-application-modal>
                     <span class="material-symbols-outlined">close</span>
                 </button>
             </div>
-            <div class="p-6 space-y-4 text-sm">
-                <div>
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Reference</p>
-                    <p class="font-black text-slate-900 mt-1" id="app_modal_ref">N/A</p>
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Loan Type</p>
-                        <p class="font-black text-slate-900 mt-1" id="app_modal_type">N/A</p>
+            <div class="flex-1 overflow-y-auto p-6 md:p-8 space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                        <p class="text-[10px] font-black uppercase tracking-widest text-slate-500">Loan Type</p>
+                        <p id="app_modal_type" class="mt-1 text-lg font-black text-slate-900">—</p>
+
+                        <div class="mt-4">
+                            <p class="text-[10px] font-black uppercase tracking-widest text-slate-500">Amount</p>
+                            <p id="app_modal_amount" class="mt-1 text-2xl font-black text-slate-900">—</p>
+                        </div>
+
+                        <div class="mt-4">
+                            <p class="text-[10px] font-black uppercase tracking-widest text-slate-500">Date Applied</p>
+                            <p id="app_modal_date" class="mt-1 text-sm font-bold text-slate-700">—</p>
+                        </div>
                     </div>
-                    <div>
-                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Amount</p>
-                        <p class="font-black text-slate-900 mt-1" id="app_modal_amount">N/A</p>
+
+                    {{-- Admin note --}}
+                    <div class="rounded-2xl border border-primary/20 bg-primary/5 p-5">
+                        <div class="flex items-center justify-between">
+                            <p class="text-[10px] font-black uppercase tracking-widest text-slate-600">Admin Notes</p>
+                            <span id="app_modal_status"
+                                class="px-3 py-1 rounded-full text-xs font-black bg-slate-100 text-slate-700 border border-slate-200">
+                                For Printing
+                            </span>
+                        </div>
+
+                        <p id="app_modal_remarks" class="mt-3 text-sm font-medium text-slate-700 leading-relaxed">
+                            —
+                        </p>
+
                     </div>
-                    <div>
-                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Date Applied</p>
-                        <p class="font-black text-slate-900 mt-1" id="app_modal_date">N/A</p>
-                    </div>
-                    <div>
-                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Status</p>
-                        <p class="font-black text-slate-900 mt-1" id="app_modal_status">N/A</p>
-                    </div>
+
                 </div>
-                <div>
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Admin Notes</p>
-                    <p class="text-sm font-medium text-slate-700 mt-1" id="app_modal_remarks">N/A</p>
-                </div>
-                <div class="pt-2">
-                    <a id="app_modal_print" href="#" target="_blank"
-                        class="hidden inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-background-dark font-black text-xs hover:brightness-105 transition-all">
-                        <span class="material-symbols-outlined text-base">picture_as_pdf</span>
-                        Open Printable Form
-                    </a>
-                </div>
+                <a id="app_modal_print" href="#" target="_blank"
+                    class="hidden mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-background-dark font-black text-xs hover:brightness-105 transition-all">
+                    <span class="material-symbols-outlined text-base">picture_as_pdf</span>
+                    Open Printable Form
+                </a>
             </div>
         </div>
     </div>
@@ -466,6 +531,17 @@
             (function () {
                 const toCurrency = (value) =>
                     `\u20B1${Number(value || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                const applicationStatusClass = (status) => {
+                    const raw = (status || '').toString().toLowerCase();
+                    if (raw === 'pending') return 'bg-amber-100 text-amber-700 border border-amber-200';
+                    if (raw === 'for_review' || raw === 'in_review' || raw === 'for_approval')
+                        return 'bg-blue-100 text-blue-700 border border-blue-200';
+                    if (raw === 'for_printing') return 'bg-purple-100 text-purple-700 border border-purple-200';
+                    if (raw === 'approved') return 'bg-green-100 text-green-700 border border-green-200';
+                    if (raw === 'rejected') return 'bg-red-100 text-red-700 border border-red-200';
+                    return 'bg-slate-100 text-slate-700 border border-slate-200';
+                };
+                const statusBaseClass = 'px-3 py-1 rounded-full text-xs font-black';
 
                 const loanModal = document.getElementById('loanRecordModal');
                 const loanButtons = document.querySelectorAll('.js-loan-record-btn');
@@ -507,6 +583,8 @@
                     document.getElementById('app_modal_amount').textContent = 'Loading...';
                     document.getElementById('app_modal_date').textContent = 'Loading...';
                     document.getElementById('app_modal_status').textContent = 'Loading...';
+                    document.getElementById('app_modal_status').className =
+                        `${statusBaseClass} ${applicationStatusClass('')}`;
                     document.getElementById('app_modal_remarks').textContent = 'Loading...';
                     document.getElementById('app_modal_print').classList.add('hidden');
 
@@ -526,6 +604,8 @@
                         document.getElementById('app_modal_status').textContent = (data.status || 'N/A')
                             .toString()
                             .replaceAll('_', ' ');
+                        document.getElementById('app_modal_status').className =
+                            `${statusBaseClass} ${applicationStatusClass(data.status)}`;
                         document.getElementById('app_modal_remarks').textContent = (data.remarks || '').trim() ||
                             'No remarks provided.';
 
@@ -540,6 +620,8 @@
                         document.getElementById('app_modal_amount').textContent = 'N/A';
                         document.getElementById('app_modal_date').textContent = 'N/A';
                         document.getElementById('app_modal_status').textContent = 'N/A';
+                        document.getElementById('app_modal_status').className =
+                            `${statusBaseClass} ${applicationStatusClass('')}`;
                         document.getElementById('app_modal_remarks').textContent = 'Unable to load application details.';
                     }
                 }

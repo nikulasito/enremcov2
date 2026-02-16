@@ -3,7 +3,7 @@
         <div class="mx-auto max-w-[1200px]">
             <div class="mb-10 text-center lg:text-left">
                 <h1 class="text-3xl lg:text-4xl font-black text-[#111814] dark:text-white">Join the Cooperative</h1>
-                <p class="mt-2 text-[#638875] dark:text-[#a0b0a8]">Apply for ENREMCO membership in three easy steps.</p>
+                <p class="mt-2 text-[#638875] dark:text-[#a0b0a8]">Apply for ENREMCO membership.</p>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
@@ -57,7 +57,7 @@
                         </div>
                     </div>
 
-                    <div
+                    <!-- <div
                         class="bg-white dark:bg-[#1a2e24] rounded-2xl p-8 border border-[#dce5e0] dark:border-[#2a3a32]">
                         <h4 class="text-sm font-black uppercase tracking-widest text-primary mb-4">Requirements</h4>
                         <ul class="space-y-3 text-sm text-[#638875] dark:text-[#a0b0a8]">
@@ -71,7 +71,7 @@
                                     class="material-symbols-outlined text-xs text-primary">check_circle</span>
                                 Accomplished application form</li>
                         </ul>
-                    </div>
+                    </div> -->
                     <div
                         class="bg-white dark:bg-[#1a2e24] rounded-2xl p-8 border border-[#dce5e0] dark:border-[#2a3a32]">
                         <p class="text-sm text-[#638875]">

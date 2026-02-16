@@ -94,9 +94,9 @@
                         </button>
                     </div>
 
-                    <p class="text-[11px] text-[#638875] dark:text-[#a0b0a8]">
+                    <!-- <p class="text-[11px] text-[#638875] dark:text-[#a0b0a8]">
                         Leave blank to view all historical records for this member.
-                    </p>
+                    </p> -->
                 </div>
 
                 {{-- Results --}}

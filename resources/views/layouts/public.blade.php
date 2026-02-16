@@ -40,6 +40,17 @@
                 @apply bg-white/80 dark:bg-[#1a2e24]/80 backdrop-blur-md border border-[#dce5e0] dark:border-[#2a3a32];
             }
         }
+        @layer base {
+            input[type="text"], input[type="date"], input[type="number"], input[type="email"], input[type="password"], select, textarea {
+                @apply block w-full rounded-lg border-[#dce5e0] bg-white text-sm
+                focus:border-primary focus:ring-primary
+                dark:border-[#2a3a32] dark:bg-[#1a2e24] dark:text-white;
+            }
+            label {
+                @apply mb-1.5 block text-xs font-bold uppercase tracking-wider
+                text-[#638875] dark:text-[#a0b0a8];
+            }
+        }
     </style>
 
     @stack('head')
@@ -79,15 +90,21 @@
                 </nav>
 
                 <div class="flex items-center gap-3">
+                    <button id="mobileMenuBtn" type="button"
+                        class="md:hidden inline-flex items-center justify-center size-10 rounded-lg border border-[#dce5e0] dark:border-[#2a3a32] text-[#111814] dark:text-white hover:bg-slate-50 dark:hover:bg-[#1a2e24] transition-all"
+                        aria-expanded="false" aria-controls="mobileMenu" aria-label="Toggle navigation menu">
+                        <span class="material-symbols-outlined">menu</span>
+                    </button>
+
                     @auth
                         <a href="{{ route('dashboard') }}"
-                            class="flex min-w-[120px] items-center justify-center rounded-lg h-10 px-4 bg-primary text-[#112119] text-sm font-bold tracking-tight hover:brightness-110 transition-all">
+                            class="hidden sm:flex min-w-[120px] items-center justify-center rounded-lg h-10 px-4 bg-primary text-[#112119] text-sm font-bold tracking-tight hover:brightness-110 transition-all">
                             Dashboard
                         </a>
                     @else
                         @if (Route::has('login'))
                             <a href="{{ route('login') }}"
-                                class="flex min-w-[120px] items-center justify-center rounded-lg h-10 px-4 bg-primary text-[#112119] text-sm font-bold tracking-tight hover:brightness-110 transition-all">
+                                class="hidden sm:flex min-w-[120px] items-center justify-center rounded-lg h-10 px-4 bg-primary text-[#112119] text-sm font-bold tracking-tight hover:brightness-110 transition-all">
                                 Member Login
                             </a>
                         @endif
@@ -106,6 +123,45 @@
                     @endauth
                 </div>
             </div>
+
+            <div id="mobileMenu"
+                class="md:hidden hidden border-t border-[#dce5e0] dark:border-[#2a3a32] bg-white dark:bg-background-dark px-6 py-4">
+                <nav class="flex flex-col gap-3">
+                    <a class="text-sm font-semibold {{ request()->routeIs('home') ? 'text-primary' : 'text-[#111814] dark:text-[#f0f4f2] hover:text-primary transition-colors' }}"
+                        href="{{ route('home') }}">Home</a>
+                    <a class="text-sm font-semibold {{ request()->routeIs('about') ? 'text-primary' : 'text-[#111814] dark:text-[#f0f4f2] hover:text-primary transition-colors' }}"
+                        href="{{ route('about') }}">About Us</a>
+                    <a class="text-sm font-semibold {{ request()->routeIs('services') ? 'text-primary' : 'text-[#111814] dark:text-[#f0f4f2] hover:text-primary transition-colors' }}"
+                        href="{{ route('services') }}">Services</a>
+                    <a class="text-sm font-semibold {{ request()->routeIs('loan-products') ? 'text-primary' : 'text-[#111814] dark:text-[#f0f4f2] hover:text-primary transition-colors' }}"
+                        href="{{ route('loan-products') }}">Loan Products</a>
+                    <a class="text-sm font-semibold {{ request()->routeIs('contact') ? 'text-primary' : 'text-[#111814] dark:text-[#f0f4f2] hover:text-primary transition-colors' }}"
+                        href="{{ route('contact') }}">Contact</a>
+
+                    <div class="pt-2 flex flex-col gap-2">
+                        @auth
+                            <a href="{{ route('dashboard') }}"
+                                class="flex items-center justify-center rounded-lg h-10 px-4 bg-primary text-[#112119] text-sm font-bold tracking-tight hover:brightness-110 transition-all">
+                                Dashboard
+                            </a>
+                        @else
+                            @if (Route::has('login'))
+                                <a href="{{ route('login') }}"
+                                    class="flex items-center justify-center rounded-lg h-10 px-4 bg-primary text-[#112119] text-sm font-bold tracking-tight hover:brightness-110 transition-all">
+                                    Member Login
+                                </a>
+                            @endif
+
+                            @if (Route::has('register'))
+                                <a href="{{ route('register') }}"
+                                    class="flex items-center justify-center rounded-lg h-10 px-4 bg-[#f0f4f2] dark:bg-[#2a3a32] text-[#111814] dark:text-white text-sm font-bold tracking-tight hover:bg-[#e2e8e5] dark:hover:bg-[#354a3f] transition-all">
+                                    Apply
+                                </a>
+                            @endif
+                        @endauth
+                    </div>
+                </nav>
+            </div>
         </header>
 
         {{-- PAGE CONTENT --}}
@@ -120,8 +176,8 @@
                             <h2 class="text-2xl font-black tracking-tight uppercase">ENREMCO</h2>
                         </div>
                         <p class="text-[#638875] dark:text-[#a0b0a8] text-sm leading-relaxed">
-                            Providing sustainable financial solutions and fostering cooperative growth for Energy
-                            Regulatory Commission employees since 1995.
+                            Supporting DENR X employees with financial services and community programs designed for
+                            growth and success.
                         </p>
                     </div>
 
@@ -130,13 +186,13 @@
                             Links</h3>
                         <nav class="flex flex-col gap-3">
                             <a class="text-[#638875] dark:text-[#a0b0a8] text-sm hover:text-primary transition-colors"
-                                href="#">Our Story</a>
+                                href="{{ route('about') }}">About</a>
                             <a class="text-[#638875] dark:text-[#a0b0a8] text-sm hover:text-primary transition-colors"
-                                href="#">Loan Products</a>
+                                href="{{ route('services') }}">Services</a>
                             <a class="text-[#638875] dark:text-[#a0b0a8] text-sm hover:text-primary transition-colors"
-                                href="#">Member Dividends</a>
+                                href="{{ route('loan-products') }}">Loan Products</a>
                             <a class="text-[#638875] dark:text-[#a0b0a8] text-sm hover:text-primary transition-colors"
-                                href="#">Annual Reports</a>
+                                href="{{ route('contact') }}">Contact</a>
                         </nav>
                     </div>
 
@@ -162,7 +218,8 @@
                             <div class="flex items-start gap-3">
                                 <span class="material-symbols-outlined text-primary text-xl">location_on</span>
                                 <p class="text-[#638875] dark:text-[#a0b0a8] text-sm">
-                                    Energy Regulatory Commission Office,<br />Pasig City, Metro Manila
+                                    Department of Environment and Natural Resources 10<br />
+                                    Puntod, Cagayan de Oro City, 9000
                                 </p>
                             </div>
 
@@ -173,7 +230,7 @@
 
                             <div class="flex items-center gap-3">
                                 <span class="material-symbols-outlined text-primary text-xl">mail</span>
-                                <p class="text-[#638875] dark:text-[#a0b0a8] text-sm">info@enremco.coop</p>
+                                <p class="text-[#638875] dark:text-[#a0b0a8] text-sm">support@enremco.com</p>
                             </div>
                         </div>
                     </div>
@@ -183,21 +240,23 @@
                     class="pt-8 border-t border-[#dce5e0] dark:border-[#2a3a32] flex flex-col md:flex-row justify-between items-center gap-4">
                     <p class="text-[#638875] dark:text-[#a0b0a8] text-xs">© 2024 ENREMCO Multi-Purpose Cooperative. All
                         rights reserved.</p>
-
-                    <div class="flex items-center gap-2 grayscale opacity-60">
-                        <span class="text-[10px] font-bold uppercase text-[#638875] dark:text-[#a0b0a8]">Member
-                            of</span>
-                        <div
-                            class="px-2 py-1 border border-[#dce5e0] dark:border-[#2a3a32] rounded font-black text-[10px] dark:text-[#f0f4f2]">
-                            CDA PHILIPPINES
-                        </div>
-                    </div>
                 </div>
             </div>
         </footer>
 
     </div>
     <script>
+        (function () {
+            const btn = document.getElementById('mobileMenuBtn');
+            const menu = document.getElementById('mobileMenu');
+            if (!btn || !menu) return;
+
+            btn.addEventListener('click', () => {
+                const isHidden = menu.classList.toggle('hidden');
+                btn.setAttribute('aria-expanded', (!isHidden).toString());
+            });
+        })();
+
         function updateCalculator() {
             const amount = parseInt(document.getElementById('loan-amount').value, 10);
             const term = parseInt(document.getElementById('loan-term').value, 10);

@@ -26,6 +26,7 @@ use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\MemberContributionsController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\PageController;
 
 Auth::routes();
 
@@ -241,13 +242,12 @@ Route::get('/services', function () {
 Route::get('/loan-products', function () {
     return view('loan-products');
 })->name('loan-products');
-Route::get('/contact', function () {
-    return view('contact');
-})->name('contact');
+Route::get('/contact', [PageController::class, 'contact'])->name('contact');
+Route::post('/contact', [PageController::class, 'submitContact'])->name('contact.submit');
 
 Route::middleware('auth')->prefix('member')->name('member.')->group(function () {
     Route::get('/loans', [MemberLoanController::class, 'index'])->name('loans.index');
-    Route::get('/loans/apply', fn() => view('member.loans.apply'))->name('loans.apply');
+    Route::get('/loans/apply', [MemberLoanController::class, 'apply'])->name('loans.apply');
     Route::post('/loans/store', [MemberLoanController::class, 'store'])->name('loans.store');
 
     // ✅ move comaker search here

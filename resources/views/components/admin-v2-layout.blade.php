@@ -241,9 +241,9 @@ use Illuminate\Support\Facades\DB;
     </div>
 </div>
 
-                    <a href="{{ route('profile.edit') }}" class="p-2.5 text-slate-400 hover:text-primary hover:bg-slate-50 rounded-xl transition-all">
+                    <!-- <a href="{{ route('profile.edit') }}" class="p-2.5 text-slate-400 hover:text-primary hover:bg-slate-50 rounded-xl transition-all">
                         <span class="material-symbols-outlined">settings</span>
-                    </a>
+                    </a> -->
                 </div>
 
                 <div class="h-8 w-px bg-slate-100"></div>

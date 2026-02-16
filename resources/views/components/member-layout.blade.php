@@ -65,6 +65,7 @@
         }
         .nav-item-active { @apply bg-primary/10 text-primary border-r-4 border-primary; }
         .card-shadow { box-shadow: 0 4px 20px -2px rgba(0,0,0,0.05); }
+        #applicationModal,#loanRecordModal {    margin-top: 0;}
     </style>
 
     @stack('head')
@@ -121,7 +122,6 @@
                     </a>
                 </li>
 
-                <hr>
                 {{-- Security --}}
                 <li>
                     <a class="flex items-center gap-4 px-8 py-4 transition-all

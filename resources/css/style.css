@@ -1268,6 +1268,7 @@ h1 {
     font-weight: bold;
 }
 
-div#loanDetailsModal {
+div#loanDetailsModal,
+#applicationModal {
     margin-top: 0;
 }

@@ -28,7 +28,7 @@
                             <span class="text-primary font-bold text-sm uppercase tracking-widest">About
                                 ENREMCO</span>
                             <h2 class="text-3xl lg:text-4xl font-black text-[#111814] dark:text-white leading-tight">
-                                Energy Regulatory Commission Employees Multi-Purpose Cooperative</h2>
+                                ENVIRONMENT AND NATURAL RESOURCES MULTI-PURPOSE CREDIT COOPERATIVE</h2>
                             <p class="text-[#638875] dark:text-[#a0b0a8] text-lg leading-relaxed">
                                 Founded on the principles of mutual aid and self-reliance, ENREMCO serves as a
                                 cornerstone for the financial well-being of ERC employees. For nearly three
@@ -60,11 +60,6 @@
                                 <img alt="Cooperative Team" class="w-full h-full object-cover"
                                     src="https://lh3.googleusercontent.com/aida-public/AB6AXuBE2km1h-1TWE6qTz5hFtV11BhNvzXL5t57ifH0S_AlyjVYipGsHzYCyWgWlNFYlvhctUVVStPVnkIQkm0UIciUvcPWZe-er45C31LAjU90SzZb9zIkv60EGCP1LtdzeF4Fw1JxXIIFd7pBilUZ7LamsWZGF50D_zJhFUIofG6dM1gdojjR7TNO8yQAyOMfYTWB8XZdNW6CT1tzeuTwtRBVWbzBzX_eFa5vYv6l6pxePb2vuEAV1Y9H0Yn4GNcjizYgS_JrAGDxC1f8" />
                             </div>
-                            <div class="absolute -bottom-6 -left-6 bg-primary p-8 rounded-2xl hidden md:block">
-                                <span class="material-symbols-outlined text-background-dark text-4xl mb-4">groups</span>
-                                <p class="text-background-dark font-black text-xl">Member-Owned<br />&amp;
-                                    Managed</p>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -89,7 +84,7 @@
                                 <span class="material-symbols-outlined text-primary text-3xl">flag</span>
                             </div>
                             <h3 class="text-2xl font-black text-[#111814] dark:text-white mb-4">Our Mission</h3>
-                            <p class="text-[#638875] dark:text-[#a0b0a8] text-lg leading-relaxed">
+                            <p class="text-[#638875] dark:text-[#a0b0a8] text-lg leading-relaxed italic">
                                 "To provide professional and high-quality financial services, promote a culture
                                 of savings, and foster cooperative values among our members for their holistic
                                 development."
@@ -188,79 +183,79 @@
                     </div>
                 </div>
             </section>
-            <section class="py-20 bg-white dark:bg-[#0d1a14]">
-                <div class="mx-auto max-w-[1280px] px-6 lg:px-10">
-                    <div class="flex flex-col lg:flex-row gap-16">
-                        <div class="lg:w-1/3">
-                            <h2 class="text-3xl lg:text-4xl font-black text-[#111814] dark:text-white leading-tight">
-                                Guided by International Cooperative Principles</h2>
-                            <p class="mt-4 text-[#638875] dark:text-[#a0b0a8]">We strictly adhere to the seven
-                                universal principles that define the cooperative movement worldwide.</p>
-                            <div class="mt-8 size-24 bg-primary/10 rounded-full flex items-center justify-center">
-                                <img alt="COOP" class="size-16 rounded-full grayscale mix-blend-multiply opacity-50"
-                                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuBUBOylhAcZvDjqzx9bdU2SH8Nykxec0Xzbngfjih1qr7Yo5WvH9NFJAl8PmcnbKOTNmX2LQzXKTkjWGJTRVbnQBWhZkjwUoEN9DrvjS5B3NYelyzhp2m1TxoN9jotQ5YE-HLvu5OiM3Z7njxAMJj4Whze3UELdIgHwSqwM_l4qjZngm415ju051sgDjwef01OEwg3DQbO9baQ-mxxIWLhghJ0_VquOgM9pWhlU11t-25cYsbqHKiPdxqKCKiAbVMtlxxLu3AB9wEO9" />
-                            </div>
-                        </div>
-                        <div class="lg:w-2/3 grid grid-cols-1 md:grid-cols-2 gap-y-10 gap-x-12">
-                            <div class="flex gap-4">
-                                <span class="text-primary font-black text-2xl">01</span>
-                                <div>
-                                    <h5 class="font-bold text-[#111814] dark:text-white">Voluntary and Open
-                                        Membership</h5>
-                                    <p class="text-sm text-[#638875] dark:text-[#a0b0a8] mt-1">Open to all
-                                        persons able to use services and willing to accept responsibilities.</p>
+            <!-- <section class="py-20 bg-white dark:bg-[#0d1a14]">
+                            <div class="mx-auto max-w-[1280px] px-6 lg:px-10">
+                                <div class="flex flex-col lg:flex-row gap-16">
+                                    <div class="lg:w-1/3">
+                                        <h2 class="text-3xl lg:text-4xl font-black text-[#111814] dark:text-white leading-tight">
+                                            Guided by International Cooperative Principles</h2>
+                                        <p class="mt-4 text-[#638875] dark:text-[#a0b0a8]">We strictly adhere to the seven
+                                            universal principles that define the cooperative movement worldwide.</p>
+                                        <div class="mt-8 size-24 bg-primary/10 rounded-full flex items-center justify-center">
+                                            <img alt="COOP" class="size-16 rounded-full grayscale mix-blend-multiply opacity-50"
+                                                src="https://lh3.googleusercontent.com/aida-public/AB6AXuBUBOylhAcZvDjqzx9bdU2SH8Nykxec0Xzbngfjih1qr7Yo5WvH9NFJAl8PmcnbKOTNmX2LQzXKTkjWGJTRVbnQBWhZkjwUoEN9DrvjS5B3NYelyzhp2m1TxoN9jotQ5YE-HLvu5OiM3Z7njxAMJj4Whze3UELdIgHwSqwM_l4qjZngm415ju051sgDjwef01OEwg3DQbO9baQ-mxxIWLhghJ0_VquOgM9pWhlU11t-25cYsbqHKiPdxqKCKiAbVMtlxxLu3AB9wEO9" />
+                                        </div>
+                                    </div>
+                                    <div class="lg:w-2/3 grid grid-cols-1 md:grid-cols-2 gap-y-10 gap-x-12">
+                                        <div class="flex gap-4">
+                                            <span class="text-primary font-black text-2xl">01</span>
+                                            <div>
+                                                <h5 class="font-bold text-[#111814] dark:text-white">Voluntary and Open
+                                                    Membership</h5>
+                                                <p class="text-sm text-[#638875] dark:text-[#a0b0a8] mt-1">Open to all
+                                                    persons able to use services and willing to accept responsibilities.</p>
+                                            </div>
+                                        </div>
+                                        <div class="flex gap-4">
+                                            <span class="text-primary font-black text-2xl">02</span>
+                                            <div>
+                                                <h5 class="font-bold text-[#111814] dark:text-white">Democratic Member
+                                                    Control</h5>
+                                                <p class="text-sm text-[#638875] dark:text-[#a0b0a8] mt-1">Controlled by
+                                                    members who actively participate in setting policies and decisions.</p>
+                                            </div>
+                                        </div>
+                                        <div class="flex gap-4">
+                                            <span class="text-primary font-black text-2xl">03</span>
+                                            <div>
+                                                <h5 class="font-bold text-[#111814] dark:text-white">Member Economic
+                                                    Participation</h5>
+                                                <p class="text-sm text-[#638875] dark:text-[#a0b0a8] mt-1">Members
+                                                    contribute equitably to, and democratically control, the capital of
+                                                    their coop.</p>
+                                            </div>
+                                        </div>
+                                        <div class="flex gap-4">
+                                            <span class="text-primary font-black text-2xl">04</span>
+                                            <div>
+                                                <h5 class="font-bold text-[#111814] dark:text-white">Autonomy and
+                                                    Independence</h5>
+                                                <p class="text-sm text-[#638875] dark:text-[#a0b0a8] mt-1">Autonomous,
+                                                    self-help organizations controlled by their members.</p>
+                                            </div>
+                                        </div>
+                                        <div class="flex gap-4">
+                                            <span class="text-primary font-black text-2xl">05</span>
+                                            <div>
+                                                <h5 class="font-bold text-[#111814] dark:text-white">Education, Training and
+                                                    Info</h5>
+                                                <p class="text-sm text-[#638875] dark:text-[#a0b0a8] mt-1">Providing
+                                                    education so members can contribute effectively to development.</p>
+                                            </div>
+                                        </div>
+                                        <div class="flex gap-4">
+                                            <span class="text-primary font-black text-2xl">06</span>
+                                            <div>
+                                                <h5 class="font-bold text-[#111814] dark:text-white">Concern for Community
+                                                </h5>
+                                                <p class="text-sm text-[#638875] dark:text-[#a0b0a8] mt-1">Working for the
+                                                    sustainable development of their communities.</p>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="flex gap-4">
-                                <span class="text-primary font-black text-2xl">02</span>
-                                <div>
-                                    <h5 class="font-bold text-[#111814] dark:text-white">Democratic Member
-                                        Control</h5>
-                                    <p class="text-sm text-[#638875] dark:text-[#a0b0a8] mt-1">Controlled by
-                                        members who actively participate in setting policies and decisions.</p>
-                                </div>
-                            </div>
-                            <div class="flex gap-4">
-                                <span class="text-primary font-black text-2xl">03</span>
-                                <div>
-                                    <h5 class="font-bold text-[#111814] dark:text-white">Member Economic
-                                        Participation</h5>
-                                    <p class="text-sm text-[#638875] dark:text-[#a0b0a8] mt-1">Members
-                                        contribute equitably to, and democratically control, the capital of
-                                        their coop.</p>
-                                </div>
-                            </div>
-                            <div class="flex gap-4">
-                                <span class="text-primary font-black text-2xl">04</span>
-                                <div>
-                                    <h5 class="font-bold text-[#111814] dark:text-white">Autonomy and
-                                        Independence</h5>
-                                    <p class="text-sm text-[#638875] dark:text-[#a0b0a8] mt-1">Autonomous,
-                                        self-help organizations controlled by their members.</p>
-                                </div>
-                            </div>
-                            <div class="flex gap-4">
-                                <span class="text-primary font-black text-2xl">05</span>
-                                <div>
-                                    <h5 class="font-bold text-[#111814] dark:text-white">Education, Training and
-                                        Info</h5>
-                                    <p class="text-sm text-[#638875] dark:text-[#a0b0a8] mt-1">Providing
-                                        education so members can contribute effectively to development.</p>
-                                </div>
-                            </div>
-                            <div class="flex gap-4">
-                                <span class="text-primary font-black text-2xl">06</span>
-                                <div>
-                                    <h5 class="font-bold text-[#111814] dark:text-white">Concern for Community
-                                    </h5>
-                                    <p class="text-sm text-[#638875] dark:text-[#a0b0a8] mt-1">Working for the
-                                        sustainable development of their communities.</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
+                        </section> -->
 
         </main>
 @endsection

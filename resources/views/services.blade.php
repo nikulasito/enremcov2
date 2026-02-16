@@ -219,10 +219,10 @@
                         class="px-10 py-5 bg-[#112119] text-white rounded-xl font-black text-lg hover:shadow-2xl transition-all text-center">
                         Start Application
                     </a>
-                    <button
-                        class="px-10 py-5 bg-white text-[#112119] rounded-xl font-black text-lg hover:shadow-xl transition-all">
-                        Download Guide
-                    </button>
+                    <!-- <button
+                            class="px-10 py-5 bg-white text-[#112119] rounded-xl font-black text-lg hover:shadow-xl transition-all">
+                            Download Guide
+                        </button> -->
                 </div>
             </div>
         </section>

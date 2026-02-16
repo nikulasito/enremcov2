@@ -63,31 +63,47 @@
                     class="rounded-2xl bg-white p-8 shadow-sm dark:bg-[#1a2e24] border border-[#dce5e0] dark:border-[#2a3a32]">
                     <h2 class="mb-8 text-2xl font-black text-[#111814] dark:text-white">Send us a Message</h2>
 
-                    {{-- Replace action later when you’re ready to save/send --}}
-                    <form class="flex flex-col gap-6" onsubmit="event.preventDefault()">
+                    @if(session('contact_success'))
+                        <div class="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm font-semibold text-green-700">
+                            {{ session('contact_success') }}
+                        </div>
+                    @endif
+
+                    @if($errors->has('contact'))
+                        <div class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+                            {{ $errors->first('contact') }}
+                        </div>
+                    @endif
+
+                    <form class="flex flex-col gap-6" method="POST" action="{{ route('contact.submit') }}">
+                        @csrf
                         <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                             <div class="flex flex-col gap-2">
                                 <label class="text-sm font-bold text-[#111814] dark:text-white" for="name">Full Name</label>
-                                <input id="name" placeholder="Juan Dela Cruz" type="text" />
+                                <input id="name" name="name" placeholder="Juan Dela Cruz" type="text" value="{{ old('name') }}" />
+                                @error('name') <p class="text-xs font-semibold text-red-600">{{ $message }}</p> @enderror
                             </div>
                             <div class="flex flex-col gap-2">
                                 <label class="text-sm font-bold text-[#111814] dark:text-white" for="email">Email
                                     Address</label>
-                                <input id="email" placeholder="juan@example.com" type="email" />
+                                <input id="email" name="email" placeholder="juan@example.com" type="email" value="{{ old('email') }}" />
+                                @error('email') <p class="text-xs font-semibold text-red-600">{{ $message }}</p> @enderror
                             </div>
                         </div>
 
                         <div class="flex flex-col gap-2">
                             <label class="text-sm font-bold text-[#111814] dark:text-white" for="subject">Subject</label>
-                            <input id="subject" placeholder="How can we help you?" type="text" />
+                            <input id="subject" name="subject" placeholder="How can we help you?" type="text" value="{{ old('subject') }}" />
+                            @error('subject') <p class="text-xs font-semibold text-red-600">{{ $message }}</p> @enderror
                         </div>
 
                         <div class="flex flex-col gap-2">
                             <label class="text-sm font-bold text-[#111814] dark:text-white" for="message">Message</label>
-                            <textarea id="message" placeholder="Type your message here..." rows="5"></textarea>
+                            <textarea id="message" name="message" placeholder="Type your message here..." rows="5">{{ old('message') }}</textarea>
+                            @error('message') <p class="text-xs font-semibold text-red-600">{{ $message }}</p> @enderror
                         </div>
 
-                        <button
+                        <button type="submit"
                             class="mt-2 flex w-full items-center justify-center rounded-lg bg-primary h-14 px-8 text-base font-black text-[#112119] shadow-lg shadow-primary/20 hover:brightness-110 transition-all">
                             Send Message
                         </button>
@@ -104,9 +120,8 @@
                             <div>
                                 <h3 class="font-bold text-[#111814] dark:text-white">Our Office</h3>
                                 <p class="mt-1 text-sm text-[#638875] dark:text-[#a0b0a8] leading-relaxed">
-                                    Energy Regulatory Commission Office<br />
-                                    Exquadra Tower, Jade Drive<br />
-                                    Ortigas Center, Pasig City
+                                    Department of Environment and Natural Resources 10<br />
+                                    Puntod, Cagayan de Oro City, 9000
                                 </p>
                             </div>
                         </div>
@@ -131,8 +146,7 @@
                             <div>
                                 <h3 class="font-bold text-[#111814] dark:text-white">Email Address</h3>
                                 <p class="mt-1 text-sm text-[#638875] dark:text-[#a0b0a8]">
-                                    info@enremco.coop<br />
-                                    support@enremco.coop
+                                    support@enremco.com
                                 </p>
                             </div>
                         </div>
@@ -152,17 +166,19 @@
 
                     </div>
 
-                    <div
-                        class="relative h-[340px] w-full overflow-hidden rounded-2xl border border-[#dce5e0] dark:border-[#2a3a32] bg-[#f0f4f2] dark:bg-[#1a2e24]">
-                        <div class="absolute inset-0 flex flex-col items-center justify-center text-center p-6">
-                            <span class="material-symbols-outlined text-4xl text-primary/40 mb-3">map</span>
-                            <p class="font-bold text-[#111814] dark:text-white">Location Map: Pasig City</p>
-                            <p class="text-xs text-[#638875] dark:text-[#a0b0a8] mt-2">
-                                Energy Regulatory Commission Building, Ortigas Center
-                            </p>
-                        </div>
-                        <div class="absolute inset-0 opacity-10 pointer-events-none"
-                            style="background-image: radial-gradient(#19e680 1px, transparent 1px); background-size: 20px 20px;">
+                    <div class="relative h-[340px] w-full overflow-hidden rounded-2xl border dark:border-[#2a3a32]">
+                        <!-- <div class="absolute inset-0 flex flex-col items-center justify-center text-center p-6">
+                                                <span class="material-symbols-outlined text-4xl text-primary/40 mb-3">map</span>
+                                                <p class="font-bold text-[#111814] dark:text-white">Location Map: Pasig City</p>
+                                                <p class="text-xs text-[#638875] dark:text-[#a0b0a8] mt-2">
+                                                    Energy Regulatory Commission Building, Ortigas Center
+                                                </p>
+                                            </div> -->
+                        <div class="absolute inset-0 opacity-50 pointer-events-none">
+                            <iframe
+                                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2346.318514764379!2d124.65848961397298!3d8.497274794834828!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x32fff2f26d193e5d%3A0x672b6c81b032591c!2sDepartment%20of%20Environment%20and%20Natural%20Resources%20-%20Region%20X!5e0!3m2!1sen!2sph!4v1771206705091!5m2!1sen!2sph"
+                                width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy"
+                                referrerpolicy="no-referrer-when-downgrade"></iframe>
                         </div>
                     </div>
 

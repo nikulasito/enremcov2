@@ -181,14 +181,14 @@
                             <p class="text-sm font-bold text-slate-700">{{ $loanDateFmt ?? '—' }}</p>
                         </div>
                         <div class="col-span-2 md:col-span-1 flex items-center md:justify-end">
-                            @if($loanApplication->status === 'for_printing')
+                            @if(strtolower((string) $loanApplication->status) === 'pending')
+                                <span class="text-sm font-bold text-slate-400">View Details</span>
+                            @else
                                 <button type="button" onclick="openLoanDetailsModal({{ $loanApplication->id }})"
                                     class="inline-flex items-center gap-2 text-sm font-bold text-secondary hover:text-blue-700 transition-colors">
                                     View Details
                                     <span class="material-symbols-outlined text-lg">chevron_right</span>
                                 </button>
-                            @else
-                                <span class="text-sm font-bold text-slate-400">View Details</span>
                             @endif
                         </div>
                     </div>
@@ -254,18 +254,19 @@
                     @if($canApplyLoan)
                         <a href="{{ route('member.loans.apply', ['type' => $loan['type']]) }}"
                             class="mt-6 w-full py-3 px-4 rounded-xl font-black text-sm transition-all hover:brightness-105 active:scale-95 shadow-md
-                                                    {{ $loan['style'] === 'secondary' ? 'bg-secondary text-white shadow-secondary/10' : 'bg-primary text-background-dark shadow-primary/10' }}">
+                                                                            {{ $loan['style'] === 'secondary' ? 'bg-secondary text-white shadow-secondary/10' : 'bg-primary text-background-dark shadow-primary/10' }}">
                             Apply Now
                         </a>
                     @else
-                        <button type="button" disabled class="mt-6 w-full py-3 px-4 rounded-xl font-black text-sm shadow-md
-                                                           bg-slate-100 text-slate-400 cursor-not-allowed">
+                        <button type="button" disabled
+                            class="mt-6 w-full py-3 px-4 rounded-xl font-black text-sm shadow-md
+                                                                                   bg-slate-100 text-slate-400 cursor-not-allowed">
                             Apply Now
                         </button>
 
-                        <p class="mt-2 text-[11px] font-bold text-amber-600">
-                            Need ₱{{ number_format($minRequired, 2) }} total Shares + Savings to apply.
-                        </p>
+                        <!-- <p class="mt-2 text-[11px] font-bold text-amber-600">
+                                            Need ₱{{ number_format($minRequired, 2) }} total Shares + Savings to apply.
+                                        </p> -->
                     @endif
                 </div>
             @endforeach
@@ -342,40 +343,75 @@
     </footer>
 
     <script>
+        function formatLoanStatus(status) {
+            const raw = (status || '').toString().toLowerCase();
+            if (!raw) return 'N/A';
+            if (raw === 'pending') return 'Pending';
+            if (raw === 'for_review' || raw === 'in_review') return 'In Review';
+            if (raw === 'for_approval') return 'For Approval';
+            if (raw === 'for_printing') return 'For Printing';
+            if (raw === 'approved') return 'Approved';
+            if (raw === 'rejected') return 'Rejected';
+            return raw.replaceAll('_', ' ').replace(/\b\w/g, (m) => m.toUpperCase());
+        }
+
+        function loanStatusClass(status) {
+            const raw = (status || '').toString().toLowerCase();
+            if (raw === 'pending') return 'bg-amber-100 text-amber-700 border border-amber-200';
+            if (raw === 'for_review' || raw === 'in_review' || raw === 'for_approval')
+                return 'bg-blue-100 text-blue-700 border border-blue-200';
+            if (raw === 'for_printing') return 'bg-purple-100 text-purple-700 border border-purple-200';
+            if (raw === 'approved') return 'bg-green-100 text-green-700 border border-green-200';
+            if (raw === 'rejected') return 'bg-red-100 text-red-700 border border-red-200';
+            return 'bg-slate-100 text-slate-700 border border-slate-200';
+        }
+
         function openLoanDetailsModal(id) {
             const modal = document.getElementById('loanDetailsModal');
             modal.classList.remove('hidden');
             modal.classList.add('flex');
 
-            // reset
-            document.getElementById('ld_app_no').textContent = '—';
-            document.getElementById('ld_loan_type').textContent = '—';
-            document.getElementById('ld_amount').textContent = '—';
-            document.getElementById('ld_date').textContent = '—';
-            document.getElementById('ld_remarks').textContent = 'Loading…';
-            document.getElementById('ld_pdf').src = '';
+            document.getElementById('ld_app_no').textContent = '�';
+            document.getElementById('ld_loan_type').textContent = '�';
+            document.getElementById('ld_amount').textContent = '�';
+            document.getElementById('ld_date').textContent = '�';
+            document.getElementById('ld_remarks').textContent = 'Loading...';
+
+            const statusEl = document.getElementById('ld_status');
+            statusEl.textContent = 'N/A';
+            statusEl.className = `px-3 py-1 rounded-full text-xs font-black ${loanStatusClass('')}`;
+
+            const openPrintable = document.getElementById('ld_open_new');
+            openPrintable.href = '#';
+            openPrintable.classList.add('hidden');
 
             fetch(`{{ url('member/loans') }}/${id}/details`, {
                 headers: { 'Accept': 'application/json' }
             })
                 .then(r => r.json())
                 .then(data => {
-                    document.getElementById('ld_app_no').textContent = data.application_no ?? '—';
-                    document.getElementById('ld_loan_type').textContent = (data.loan_type ?? '—').toString().replaceAll('_', ' ');
-                    document.getElementById('ld_amount').textContent = `₱${Number(data.loan_amount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-                    document.getElementById('ld_date').textContent = data.created_at ?? '—';
+                    document.getElementById('ld_app_no').textContent = data.application_no ?? '�';
+                    document.getElementById('ld_loan_type').textContent = (data.loan_type ?? '�').toString().replaceAll('_', ' ');
+                    document.getElementById('ld_amount').textContent =
+                        `\u20B1${Number(data.loan_amount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                    document.getElementById('ld_date').textContent = data.created_at ?? '�';
 
-                    // ✅ show admin approval notes
+                    statusEl.textContent = formatLoanStatus(data.status);
+                    statusEl.className = `px-3 py-1 rounded-full text-xs font-black ${loanStatusClass(data.status)}`;
+
                     document.getElementById('ld_remarks').textContent = data.remarks && data.remarks.trim()
                         ? data.remarks
                         : 'No approval notes were provided.';
 
-                    // ✅ PDF viewer
-                    document.getElementById('ld_pdf').src = data.pdf_url;
-                    document.getElementById('ld_open_new').href = data.pdf_url;
+                    if ((data.status || '').toLowerCase() === 'for_printing' && data.pdf_url) {
+                        openPrintable.href = data.pdf_url;
+                        openPrintable.classList.remove('hidden');
+                    }
                 })
                 .catch(() => {
                     document.getElementById('ld_remarks').textContent = 'Failed to load details.';
+                    statusEl.textContent = 'N/A';
+                    statusEl.className = `px-3 py-1 rounded-full text-xs font-black ${loanStatusClass('')}`;
                 });
         }
 
@@ -384,8 +420,9 @@
             modal.classList.add('hidden');
             modal.classList.remove('flex');
 
-            // stop PDF streaming when closed
-            document.getElementById('ld_pdf').src = '';
+            const openPrintable = document.getElementById('ld_open_new');
+            openPrintable.href = '#';
+            openPrintable.classList.add('hidden');
         }
     </script>
 
@@ -432,11 +469,10 @@
                 {{-- Admin note --}}
                 <div class="rounded-2xl border border-primary/20 bg-primary/5 p-5">
                     <div class="flex items-center justify-between">
-                        <p class="text-[10px] font-black uppercase tracking-widest text-slate-600">Admin Approval
-                            Notes</p>
+                        <p class="text-[10px] font-black uppercase tracking-widest text-slate-600">Admin Notes</p>
                         <span id="ld_status"
-                            class="px-3 py-1 rounded-full text-xs font-black bg-purple-100 text-purple-700 border border-purple-200">
-                            For Printing
+                            class="px-3 py-1 rounded-full text-xs font-black bg-slate-100 text-slate-700 border border-slate-200">
+                            N/A
                         </span>
                     </div>
 
@@ -446,20 +482,12 @@
                 </div>
             </div>
 
-            {{-- PDF Viewer --}}
-            <div class="rounded-2xl border border-slate-200 overflow-hidden">
-                <div class="px-5 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
-                    <p class="text-xs font-black text-slate-600 uppercase tracking-widest">Document Preview</p>
-                    <a id="ld_open_new" href="#" target="_blank"
-                        class="text-xs font-black text-secondary hover:underline">
-                        Open in new tab
-                    </a>
-                </div>
-
-                <div class="h-[70vh] bg-white">
-                    <iframe id="ld_pdf" src="" class="w-full h-full" style="border:0;" title="Loan PDF Viewer"></iframe>
-                </div>
-            </div>
+            {{-- Printable Form --}}
+            <a id="ld_open_new" href="#" target="_blank"
+                class="hidden inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-background-dark font-black text-xs hover:brightness-105 transition-all">
+                <span class="material-symbols-outlined text-base">picture_as_pdf</span>
+                Open Printable Form
+            </a>
         </div>
     </div>
 </div>

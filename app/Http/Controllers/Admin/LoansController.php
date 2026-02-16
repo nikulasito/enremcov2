@@ -14,6 +14,7 @@ use App\Exports\LoanTemplateExport;
 use App\Imports\LoanImport;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Schema;
 use App\Notifications\LoanStatusUpdatedNotification;
 
 class LoansController extends Controller
@@ -455,13 +456,20 @@ class LoansController extends Controller
         $request->validate([
             'remarks' => 'nullable|string|max:1000',
         ]);
+        $updates = [
+            'status' => 'approved',
+            'remarks' => $request->input('remarks'),
+        ];
 
-        $application->update([
-            'status' => 'for_printing',
-            'reviewed_by' => auth()->id(),
-            'reviewed_at' => now(),
-            'remarks' => $request->input('remarks'), // ✅ approval notes
-        ]);
+        if (Schema::hasColumn('loan_applications', 'reviewed_by')) {
+            $updates['reviewed_by'] = auth()->id();
+        }
+        if (Schema::hasColumn('loan_applications', 'reviewed_at')) {
+            $updates['reviewed_at'] = now();
+        }
+
+        $application->forceFill($updates)->save();
+        $application->refresh();
 
         // Notify member (requires notifications table)
         if ($application->user) {
@@ -470,7 +478,7 @@ class LoansController extends Controller
 
 
 
-        return back()->with('success', 'Application approved and set to For Printing.');
+        return back()->with('success', 'Application approved.');
     }
 
     public function loanRequestsReject(Request $request, LoanApplication $application)
@@ -479,13 +487,20 @@ class LoansController extends Controller
             'remarks' => 'nullable|string|max:255',
         ]);
 
-        $application->update([
+        $updates = [
             'status' => 'rejected',
-            'reviewed_by' => auth()->id(),
-            'reviewed_at' => now(),
             'remarks' => $request->input('remarks', 'Rejected by admin.'),
-        ]);
+        ];
 
+        if (Schema::hasColumn('loan_applications', 'reviewed_by')) {
+            $updates['reviewed_by'] = auth()->id();
+        }
+        if (Schema::hasColumn('loan_applications', 'reviewed_at')) {
+            $updates['reviewed_at'] = now();
+        }
+
+        $application->forceFill($updates)->save();
+        $application->refresh();
         if ($application->user) {
             $application->user->notify(new LoanStatusUpdatedNotification($application));
         }

@@ -23,3 +23,7 @@
         @apply px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full;
     }
 }
+
+#applicationModal {
+    margin-top: 0;
+}

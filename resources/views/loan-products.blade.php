@@ -59,7 +59,7 @@
                     <h1 class="text-4xl md:text-5xl lg:text-6xl font-black text-white leading-tight mb-6">
                         Loan Products <span class="text-primary">Catalog</span>
                         <p class="mt-4 text-lg text-[#a0b0a8]">
-                            Find the perfect financial solution tailored for Energy Regulatory Commission employees.
+                            Find the perfect financial solution tailored for DENR 10 employees.
                             Competitive
                             rates and flexible terms for all your needs.
                         </p>
@@ -200,7 +200,7 @@
                         <div class="p-8 lg:p-10">
                             <div class="flex justify-between items-start mb-6">
                                 <div>
-                                    <h3 class="text-2xl font-black text-[#111814] dark:text-white">Multi-Purpose Loan</h3>
+                                    <h3 class="text-2xl font-black text-[#111814] dark:text-white">Regular Loan</h3>
                                     <p class="text-primary font-bold text-sm uppercase tracking-widest mt-1">Versatile
                                         Financial Support</p>
                                 </div>
@@ -255,7 +255,7 @@
                         <div class="p-8 lg:p-10 pt-0 mt-auto">
                             <button
                                 class="w-full py-4 bg-primary text-[#112119] rounded-xl font-bold hover:brightness-110 transition-all">
-                                Apply for Multi-Purpose Loan
+                                Apply for Regular Loan
                             </button>
                         </div>
                     </div>
@@ -332,12 +332,12 @@
                         <div class="p-8 lg:p-10">
                             <div class="flex justify-between items-start mb-6">
                                 <div>
-                                    <h3 class="text-2xl font-black text-[#111814] dark:text-white">Emergency Loan</h3>
+                                    <h3 class="text-2xl font-black text-[#111814] dark:text-white">Appliance Loan</h3>
                                     <p class="text-primary font-bold text-sm uppercase tracking-widest mt-1">Swift Support
                                         When Needed</p>
                                 </div>
                                 <div class="size-14 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-                                    <span class="material-symbols-outlined text-3xl">bolt</span>
+                                    <span class="material-symbols-outlined text-3xl">google_home_devices</span>
                                 </div>
                             </div>
 
@@ -387,7 +387,7 @@
                         <div class="p-8 lg:p-10 pt-0 mt-auto">
                             <button
                                 class="w-full py-4 bg-primary text-[#112119] rounded-xl font-bold hover:brightness-110 transition-all">
-                                Apply for Emergency Loan
+                                Apply for Appliance Loan
                             </button>
                         </div>
                     </div>
@@ -398,12 +398,12 @@
                         <div class="p-8 lg:p-10">
                             <div class="flex justify-between items-start mb-6">
                                 <div>
-                                    <h3 class="text-2xl font-black text-[#111814] dark:text-white">Calamity Loan</h3>
+                                    <h3 class="text-2xl font-black text-[#111814] dark:text-white">Grocery Loan</h3>
                                     <p class="text-primary font-bold text-sm uppercase tracking-widest mt-1">Disaster
                                         Recovery Aid</p>
                                 </div>
                                 <div class="size-14 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-                                    <span class="material-symbols-outlined text-3xl">home_repair_service</span>
+                                    <span class="material-symbols-outlined text-3xl">grocery</span>
                                 </div>
                             </div>
 
@@ -453,7 +453,7 @@
                         <div class="p-8 lg:p-10 pt-0 mt-auto">
                             <button
                                 class="w-full py-4 bg-primary text-[#112119] rounded-xl font-bold hover:brightness-110 transition-all">
-                                Apply for Calamity Loan
+                                Apply for Grocery Loan
                             </button>
                         </div>
                     </div>

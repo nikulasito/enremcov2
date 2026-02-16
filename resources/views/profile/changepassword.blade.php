@@ -72,7 +72,7 @@
                                 @enderror
 
                                 {{-- (Optional UI only) password strength bar --}}
-                                <div class="mt-2">
+                                <!-- <div class="mt-2">
                                     <div class="flex justify-between items-center mb-1">
                                         <span class="text-[10px] font-bold uppercase text-[#a0b0a8]">Password
                                             Strength</span>
@@ -110,7 +110,7 @@
                                             <span class="text-[#638875]">Symbol (!@#…)</span>
                                         </div>
                                     </div>
-                                </div>
+                                </div> -->
                             </div>
 
                             {{-- Confirm Password --}}

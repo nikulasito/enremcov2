@@ -16,6 +16,105 @@ use Illuminate\Support\Carbon;
 
 class MemberLoanController extends Controller
 {
+    private function resolveMemberKeys($user): array
+    {
+        if (!$user) {
+            return [];
+        }
+
+        return collect([
+            $user->employee_ID ?? null,
+            $user->employees_id ?? null,
+            $user->employee_id ?? null,
+            (string) $user->id,
+        ])
+            ->filter(fn($v) => $v !== null && $v !== '')
+            ->map(fn($v) => (string) $v)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    private function resolveMemberColumn(string $table): ?string
+    {
+        foreach (['employee_ID', 'employees_id', 'employee_id', 'user_id'] as $col) {
+            if (Schema::hasColumn($table, $col)) {
+                return $col;
+            }
+        }
+
+        return null;
+    }
+
+    private function getLoanEligibilityData($user): array
+    {
+        $minContributions = 5000;
+        $maxLoanCount = 3;
+
+        if (!$user) {
+            return [
+                'can_apply' => false,
+                'reasons' => ['You must be logged in to apply for a loan.'],
+                'total_contributions' => 0.0,
+                'loan_count' => 0,
+                'min_contributions' => $minContributions,
+                'max_loan_count' => $maxLoanCount,
+            ];
+        }
+
+        $memberKeys = collect($this->resolveMemberKeys($user));
+
+        $totalShares = 0.0;
+        if (Schema::hasTable('shares') && Schema::hasColumn('shares', 'amount')) {
+            $sharesMemberColumn = $this->resolveMemberColumn('shares');
+            if ($sharesMemberColumn && $memberKeys->isNotEmpty()) {
+                $totalShares = (float) DB::table('shares')
+                    ->whereIn($sharesMemberColumn, $memberKeys->all())
+                    ->sum('amount');
+            }
+        }
+
+        $totalSavings = 0.0;
+        if (Schema::hasTable('savings') && Schema::hasColumn('savings', 'amount')) {
+            $savingsMemberColumn = $this->resolveMemberColumn('savings');
+            if ($savingsMemberColumn && $memberKeys->isNotEmpty()) {
+                $totalSavings = (float) DB::table('savings')
+                    ->whereIn($savingsMemberColumn, $memberKeys->all())
+                    ->sum('amount');
+            }
+        }
+
+        $loanCount = 0;
+        if (Schema::hasTable('loan_details')) {
+            $loanMemberColumn = $this->resolveMemberColumn('loan_details');
+            if ($loanMemberColumn && $memberKeys->isNotEmpty()) {
+                $loanCount = (int) DB::table('loan_details')
+                    ->whereIn($loanMemberColumn, $memberKeys->all())
+                    ->count();
+            }
+        }
+
+        $totalContributions = (float) ($totalShares + $totalSavings);
+        $reasons = [];
+
+        if ($totalContributions < $minContributions) {
+            $reasons[] = 'Loan application is locked. Minimum combined Shares + Savings is P' . number_format($minContributions, 0) . '.';
+        }
+
+        if ($loanCount >= $maxLoanCount) {
+            $reasons[] = 'Loan application is locked. Members with 3 or more loans cannot apply for a new loan.';
+        }
+
+        return [
+            'can_apply' => empty($reasons),
+            'reasons' => $reasons,
+            'total_contributions' => $totalContributions,
+            'loan_count' => $loanCount,
+            'min_contributions' => $minContributions,
+            'max_loan_count' => $maxLoanCount,
+        ];
+    }
+
     private function canAccessApplication(LoanApplication $application): bool
     {
         $user = auth()->user();
@@ -46,19 +145,12 @@ class MemberLoanController extends Controller
         $historySearch = trim((string) $request->query('q', ''));
         $perPage = 10;
         $page = max(1, (int) $request->query('page', 1));
+        $loanEligibility = $this->getLoanEligibilityData($user);
 
-        $memberKeys = collect([
-            $user->employee_ID ?? null,
-            $user->employees_id ?? null,
-            $user->employee_id ?? null,
-            (string) $user->id,
-        ])
-            ->filter(fn($v) => $v !== null && $v !== '')
-            ->map(fn($v) => (string) $v)
-            ->unique()
-            ->values();
+        $memberKeys = collect($this->resolveMemberKeys($user));
 
         $loanApplications = collect();
+        $approvedApplications = collect();
         if (Schema::hasTable('loan_applications')) {
             $loanApplications = LoanApplication::query()
                 ->where(function ($q) use ($user, $memberKeys) {
@@ -70,6 +162,15 @@ class MemberLoanController extends Controller
                 })
                 ->orderByDesc('created_at')
                 ->get();
+
+            $approvedApplications = $loanApplications
+                ->filter(fn($application) => strtolower((string) ($application->status ?? '')) === 'approved')
+                ->values();
+
+            // Approved items should leave the application queue and appear under Active Loans.
+            $loanApplications = $loanApplications
+                ->reject(fn($application) => strtolower((string) ($application->status ?? '')) === 'approved')
+                ->values();
         }
 
         $activeLoans = collect();
@@ -163,6 +264,31 @@ class MemberLoanController extends Controller
                 ->values();
         }
 
+        if ($approvedApplications->isNotEmpty()) {
+            $approvedAsActive = $approvedApplications->map(function ($application) {
+                $approvedAt = $application->reviewed_at
+                    ? Carbon::parse($application->reviewed_at)
+                    : (optional($application->created_at) ? Carbon::parse($application->created_at) : null);
+
+                $amount = (float) ($application->loan_amount ?? 0);
+
+                return (object) [
+                    'loan_id' => $application->application_no ?? ('APP-' . $application->id),
+                    'loan_type' => $application->loan_type,
+                    'loan_type_label' => ucwords(str_replace('_', ' ', strtolower((string) $application->loan_type))),
+                    'loan_amount' => $amount,
+                    'remaining_balance' => $amount,
+                    'monthly_payment' => 0,
+                    'next_due_date_label' => 'N/A',
+                    'approved_date_label' => $approvedAt ? $approvedAt->format('M d, Y') : 'N/A',
+                    'maturity_date_label' => 'N/A',
+                    'is_paid' => false,
+                ];
+            });
+
+            $activeLoans = $approvedAsActive->concat($activeLoans)->values();
+        }
+
         $historyTotal = $historyItems->count();
         $historyPageItems = $historyItems->forPage($page, $perPage)->values();
 
@@ -182,7 +308,23 @@ class MemberLoanController extends Controller
             'activeLoans' => $activeLoans,
             'loanHistory' => $loanHistory,
             'historySearch' => $historySearch,
+            'loanEligibility' => $loanEligibility,
         ]);
+    }
+
+    public function apply()
+    {
+        $eligibility = $this->getLoanEligibilityData(auth()->user());
+
+        if (!$eligibility['can_apply']) {
+            return redirect()
+                ->route('member.loans.index')
+                ->withErrors([
+                    'loan_apply' => implode(' ', $eligibility['reasons']),
+                ]);
+        }
+
+        return view('member.loans.apply');
     }
 
     public function store(Request $request)
@@ -207,26 +349,15 @@ class MemberLoanController extends Controller
 
         $memberKey = $user->employee_ID ?? $user->employees_id ?? $user->employee_id ?? (string) $user->id;
 
-        $user = auth()->user();
-
-        // ✅ Eligibility check: Shares + Savings must be >= 5000
-        $min = 5000;
-
-        $sharesSum = Schema::hasTable('shares')
-            ? (float) DB::table('shares')->where('employees_id', $user->id)->sum('amount')
-            : 0.0;
-
-        $savingsSum = Schema::hasTable('savings')
-            ? (float) DB::table('savings')->where('employees_id', $user->id)->sum('amount')
-            : 0.0;
-
-        if (($sharesSum + $savingsSum) < $min) {
+        $eligibility = $this->getLoanEligibilityData($user);
+        if (!$eligibility['can_apply']) {
             return back()
                 ->withInput()
                 ->withErrors([
-                    'loan_amount' => "Loan application is locked. Minimum combined Shares + Savings is ₱" . number_format($min, 0) . "."
+                    'loan_amount' => implode(' ', $eligibility['reasons']),
                 ]);
         }
+
 
 
         // 1) SAVE as pending
