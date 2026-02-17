@@ -15,6 +15,8 @@
         $secondaryTotalEntries = $secondaryTotalEntries ?? ($totalSavingsEntries ?? 0);
         $secondaryEmptyText = $secondaryEmptyText ?? 'No savings contributions available.';
         $secondaryLabelLower = strtolower($secondaryLabel);
+        $showRemainingBalanceCard = in_array($page, ['shares', 'savings'], true);
+        $remainingBalance = (float) $totalShareAmount - (float) ($showRemainingBalanceCard ? $secondaryTotalDisplayed : 0);
         $primaryHistoryLabel = $page === 'savings' ? 'Savings' : 'Shares';
         $pageHeading = match ($page) {
             'shares' => 'My Share Contributions',
@@ -77,7 +79,8 @@
     <div class="space-y-8">
 
         <!-- Summary cards -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div
+            class="grid grid-cols-1 md:grid-cols-2 {{ $showRemainingBalanceCard ? 'lg:grid-cols-4' : 'lg:grid-cols-3' }} gap-6">
             <div class="bg-white p-6 rounded-2xl card-shadow border border-[#dce5e0] relative overflow-hidden group">
                 <div class="relative z-10 flex items-start justify-between">
                     <div>
@@ -106,7 +109,25 @@
                 </div>
             </div>
 
-            <div class="bg-background-dark p-6 rounded-2xl card-shadow text-white lg:col-span-1 md:col-span-2">
+            @if($showRemainingBalanceCard)
+                <div
+                    class="bg-white p-6 rounded-2xl card-shadow border border-[#dce5e0] relative overflow-hidden group bg-primary\/5">
+                    <div class="relative z-10 flex items-start justify-between">
+                        <div>
+                            <p class="text-sm font-bold text-[#638875] uppercase tracking-wider">Remaining Balance</p>
+                            <h3 class="text-3xl font-black text-background-dark mt-2">
+                                ₱{{ $money($remainingBalance) }}
+                            </h3>
+                        </div>
+                        <div class="size-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                            <span class="material-symbols-outlined text-2xl">account_balance_wallet</span>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
+            <div
+                class="bg-background-dark p-6 rounded-2xl card-shadow text-white {{ $showRemainingBalanceCard ? '' : 'lg:col-span-1 md:col-span-2' }}">
                 <p class="text-sm font-bold text-primary uppercase tracking-wider">Latest Contribution</p>
 
                 @php
@@ -208,20 +229,20 @@
                         </table>
 
                         <!-- <div class="p-6 bg-[#f6f8f7]/30 border-t border-[#dce5e0]">
-                                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                            <div class="bg-white rounded-xl border border-[#dce5e0] p-4">
-                                                                <p class="text-[10px] font-black uppercase tracking-widest text-[#638875]">Total Months
-                                                                    Contributed</p>
-                                                                <p class="text-2xl font-black text-background-dark mt-1">{{ $totalEntries ?? 0 }}</p>
+                                                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                <div class="bg-white rounded-xl border border-[#dce5e0] p-4">
+                                                                    <p class="text-[10px] font-black uppercase tracking-widest text-[#638875]">Total Months
+                                                                        Contributed</p>
+                                                                    <p class="text-2xl font-black text-background-dark mt-1">{{ $totalEntries ?? 0 }}</p>
+                                                                </div>
+                                                                <div class="bg-white rounded-xl border border-[#dce5e0] p-4">
+                                                                    <p class="text-[10px] font-black uppercase tracking-widest text-[#638875]">Total Share
+                                                                        Capital</p>
+                                                                    <p class="text-2xl font-black text-background-dark mt-1">
+                                                                        ₱{{ $money($totalShareAmount) }}</p>
+                                                                </div>
                                                             </div>
-                                                            <div class="bg-white rounded-xl border border-[#dce5e0] p-4">
-                                                                <p class="text-[10px] font-black uppercase tracking-widest text-[#638875]">Total Share
-                                                                    Capital</p>
-                                                                <p class="text-2xl font-black text-background-dark mt-1">
-                                                                    ₱{{ $money($totalShareAmount) }}</p>
-                                                            </div>
-                                                        </div>
-                                                    </div> -->
+                                                        </div> -->
                     @endif
                 </div>
             </div>
@@ -264,21 +285,21 @@
                         </table>
 
                         <!-- <div class="p-6 bg-[#f6f8f7]/30 border-t border-[#dce5e0]">
-                                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                            <div class="bg-white rounded-xl border border-[#dce5e0] p-4">
-                                                                <p class="text-[10px] font-black uppercase tracking-widest text-[#638875]">Total Months
-                                                                    Contributed</p>
-                                                                <p class="text-2xl font-black text-background-dark mt-1">
-                                                                    {{ $secondaryTotalEntries ?? ($totalEntries ?? 0) }}
-                                                                </p>
+                                                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                <div class="bg-white rounded-xl border border-[#dce5e0] p-4">
+                                                                    <p class="text-[10px] font-black uppercase tracking-widest text-[#638875]">Total Months
+                                                                        Contributed</p>
+                                                                    <p class="text-2xl font-black text-background-dark mt-1">
+                                                                        {{ $secondaryTotalEntries ?? ($totalEntries ?? 0) }}
+                                                                    </p>
+                                                                </div>
+                                                                <div class="bg-white rounded-xl border border-[#dce5e0] p-4">
+                                                                    <p class="text-[10px] font-black uppercase tracking-widest text-[#638875]">Total {{ $secondaryLabel }}</p>
+                                                                    <p class="text-2xl font-black text-background-dark mt-1">
+                                                                        ₱{{ $money($secondaryTotalDisplayed) }}</p>
+                                                                </div>
                                                             </div>
-                                                            <div class="bg-white rounded-xl border border-[#dce5e0] p-4">
-                                                                <p class="text-[10px] font-black uppercase tracking-widest text-[#638875]">Total {{ $secondaryLabel }}</p>
-                                                                <p class="text-2xl font-black text-background-dark mt-1">
-                                                                    ₱{{ $money($secondaryTotalDisplayed) }}</p>
-                                                            </div>
-                                                        </div>
-                                                    </div> -->
+                                                        </div> -->
                     @endif
                 </div>
             </div>

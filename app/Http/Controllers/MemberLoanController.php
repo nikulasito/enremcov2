@@ -27,7 +27,7 @@ class MemberLoanController extends Controller
             return 0;
         }
 
-        $activeStatuses = ['pending', 'in_review', 'for_review', 'for_approval', 'for_printing', 'approved'];
+        $activeStatuses = ['pending', 'in_review', 'for_review', 'for_approval', 'for_processing', 'approved'];
 
         return (int) LoanApplication::query()
             ->whereIn(DB::raw('LOWER(status)'), $activeStatuses)
@@ -522,7 +522,7 @@ class MemberLoanController extends Controller
         if ($hasLoansTable && $hasStatusCol && ($hasCm1Col || $hasCm2Col) && $users->isNotEmpty()) {
             $ids = $users->pluck('id')->values();
 
-            $activeStatuses = ['pending', 'in_review', 'for_review', 'for_approval', 'for_printing', 'approved'];
+            $activeStatuses = ['pending', 'in_review', 'for_review', 'for_approval', 'for_processing', 'approved'];
             $activeStatuses = array_map('strtolower', $activeStatuses);
 
             $loanRows = LoanApplication::query()
@@ -573,8 +573,8 @@ class MemberLoanController extends Controller
         // ✅ security: only the owner can view
         abort_unless($this->canAccessApplication($application), 403);
 
-        // Optional: allow only when for_printing
-        abort_unless($application->status === 'for_printing', 403);
+        // Optional: allow only when for_processing
+        abort_unless($application->status === 'for_processing', 403);
 
         $html = view('member.loans.print_regular', [
             'app' => $application,

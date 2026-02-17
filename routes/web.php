@@ -134,7 +134,8 @@ Route::middleware(['auth', IsAdmin::class])->group(function () {
     Route::post('/admin/bulk-add-withdraw', [\App\Http\Controllers\Admin\WithdrawController::class, 'bulkAddWithdraw'])->name('admin.bulk-add-withdraw');
 
     // optional fetch/update used by the modal
-    Route::get('/admin/get-withdrawals/{employee_id}/{search}', [\App\Http\Controllers\Admin\WithdrawController::class, 'getWithdrawals']);
+    Route::get('/admin/get-withdrawals/{employee_id}/{search?}', [\App\Http\Controllers\Admin\WithdrawController::class, 'getWithdrawals'])
+        ->name('admin.get-withdrawals');
     Route::post('/admin/update-withdrawals', [\App\Http\Controllers\Admin\WithdrawController::class, 'updateWithdrawals']);
 });
 

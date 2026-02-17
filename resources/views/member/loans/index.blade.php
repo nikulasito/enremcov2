@@ -39,7 +39,7 @@
                 'pending' => 'Pending Approval',
                 'for_review', 'in_review' => 'In Review',
                 'for_approval' => 'For Approval',
-                'for_printing' => 'For Printing',
+                'for_processing' => 'For Processing',
                 'approved' => 'Approved',
                 'rejected' => 'Rejected',
                 default => ucwords(str_replace('_', ' ', $raw)),
@@ -51,7 +51,7 @@
             return match ($raw) {
                 'pending' => 'bg-amber-100 text-amber-700 border border-amber-200',
                 'for_review', 'for_approval' => 'bg-blue-100 text-blue-700 border border-blue-200',
-                'for_printing' => 'bg-purple-100 text-purple-700 border border-purple-200',
+                'for_processing' => 'bg-purple-100 text-purple-700 border border-purple-200',
                 'approved' => 'bg-green-100 text-green-700 border border-green-200',
                 'rejected' => 'bg-red-100 text-red-700 border border-red-200',
                 default => 'bg-slate-100 text-slate-700 border border-slate-200',
@@ -522,7 +522,7 @@
                             <p class="text-[10px] font-black uppercase tracking-widest text-slate-600">Admin Notes</p>
                             <span id="app_modal_status"
                                 class="px-3 py-1 rounded-full text-xs font-black bg-slate-100 text-slate-700 border border-slate-200">
-                                For Printing
+                                For Processing
                             </span>
                         </div>
 
@@ -552,7 +552,7 @@
                     if (raw === 'pending') return 'bg-amber-100 text-amber-700 border border-amber-200';
                     if (raw === 'for_review' || raw === 'in_review' || raw === 'for_approval')
                         return 'bg-blue-100 text-blue-700 border border-blue-200';
-                    if (raw === 'for_printing') return 'bg-purple-100 text-purple-700 border border-purple-200';
+                    if (raw === 'for_processing') return 'bg-purple-100 text-purple-700 border border-purple-200';
                     if (raw === 'approved') return 'bg-green-100 text-green-700 border border-green-200';
                     if (raw === 'rejected') return 'bg-red-100 text-red-700 border border-red-200';
                     return 'bg-slate-100 text-slate-700 border border-slate-200';
@@ -630,7 +630,7 @@
                         document.getElementById('app_modal_remarks').textContent = (data.remarks || '').trim() ||
                             'No remarks provided.';
 
-                        if ((data.status || '').toLowerCase() === 'for_printing' && data.pdf_url) {
+                        if ((data.status || '').toLowerCase() === 'for_processing' && data.pdf_url) {
                             const printLink = document.getElementById('app_modal_print');
                             printLink.href = data.pdf_url;
                             printLink.classList.remove('hidden');

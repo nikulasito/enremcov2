@@ -137,7 +137,7 @@
                                 'pending' => 'Pending',
                                 'for_review' => 'In Review',
                                 'for_approval' => 'For Approval',
-                                'for_printing' => 'For Printing',
+                                'for_processing' => 'For Processing',
                                 'approved' => 'Approved',
                                 'rejected' => 'Rejected',
                                 default => ucwords((string) $app->status),
@@ -146,7 +146,7 @@
                             $statusClass = match ($app->status) {
                                 'pending' => 'bg-amber-100 text-amber-700 border border-amber-200',
                                 'for_review', 'for_approval' => 'bg-blue-100 text-blue-700 border border-blue-200',
-                                'for_printing' => 'bg-purple-100 text-purple-700 border border-purple-200',
+                                'for_processing' => 'bg-purple-100 text-purple-700 border border-purple-200',
                                 'approved' => 'bg-green-100 text-green-700 border border-green-200',
                                 'rejected' => 'bg-red-100 text-red-700 border border-red-200',
                                 default => 'bg-slate-100 text-slate-700 border border-slate-200',
@@ -496,9 +496,9 @@
                     For Approval
                 </button>
 
-                <button type="button" data-loan-status="for_printing"
+                <button type="button" data-loan-status="for_processing"
                     class="js-set-loan-status px-5 py-3 rounded-xl border border-purple-200 bg-purple-50 text-purple-700 text-sm font-black hover:bg-purple-100 transition-all">
-                    For Printing
+                    For Processing
                 </button>
 
                 <button type="button" data-loan-status="approved"
