@@ -337,6 +337,7 @@
 
                 // ===== AJAX partial/live search (same as Savings/Shares) =====
 const partialUrl = @json(route('admin.withdraw.partial'));
+const withdrawalsSearchBaseUrl = @json(url('admin/get-withdrawals'));
 
 const tbody = document.getElementById('membersTableBody');
 const paginationWrap = document.getElementById('withdrawPagination');
@@ -542,13 +543,22 @@ window.addEventListener('popstate', () => {
                 document.getElementById('wSearchBtn')?.addEventListener('click', function () {
                     const userId = this.getAttribute('data-user-id');
                     const q = document.getElementById('wSearch').value.trim();
+                    if (!userId) { alert('Unable to load member record. Please reopen the modal.'); return; }
                     if (!q) { alert('Enter a Year or a Reference No.'); return; }
 
                     const result = document.getElementById('withdrawalsResult');
                     result.innerHTML = `<div class="p-5 text-sm font-bold text-[#638875] dark:text-[#a0b0a8]">Loading...</div>`;
 
-                    fetch(`/admin/get-withdrawals/${encodeURIComponent(userId)}/${encodeURIComponent(q)}`)
-                        .then(r => r.json())
+                    const params = new URLSearchParams({ search: q });
+                    const requestUrl = `${withdrawalsSearchBaseUrl}/${encodeURIComponent(userId)}?${params.toString()}`;
+
+                    fetch(requestUrl, {
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    })
+                        .then(r => {
+                            if (!r.ok) throw new Error(`Request failed (${r.status})`);
+                            return r.json();
+                        })
                         .then(data => {
                             let html = `
                                                     <div class="overflow-x-auto rounded-xl border border-[#dce5e0] dark:border-[#2a3a32]">

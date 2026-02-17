@@ -571,7 +571,7 @@ class LoansController extends Controller
     public function loanRequestsSetStatus(Request $request, LoanApplication $application)
     {
         $validated = $request->validate([
-            'status' => 'required|string|in:for_review,for_approval,for_printing,approved',
+            'status' => 'required|string|in:for_review,for_approval,for_processing,approved',
             'remarks' => 'nullable|string|max:1000',
         ]);
 
@@ -607,7 +607,7 @@ class LoansController extends Controller
         $statusLabel = match ($validated['status']) {
             'for_review' => 'For Review',
             'for_approval' => 'For Approval',
-            'for_printing' => 'For Printing',
+            'for_processing' => 'For processing',
             'approved' => 'Approved',
             default => ucfirst(str_replace('_', ' ', $validated['status'])),
         };

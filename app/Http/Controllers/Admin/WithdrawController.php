@@ -119,18 +119,21 @@ class WithdrawController extends Controller
     }
 
     // (Optional) fetch by year or ref for modal tables
-    public function getWithdrawals($employeeId, $search)
+    public function getWithdrawals(Request $request, $employeeId, $search = null)
     {
         $query = Withdraw::where('employees_id', $employeeId)->orderBy('date_of_withdrawal', 'desc');
 
-        $search = trim($search);
+        // Prefer query string so references like "ABC/123" work reliably.
+        $search = trim((string) $request->query('search', $search ?? ''));
 
-        if (preg_match('/^\d{4}$/', $search)) {
-            // Search by YEAR from date_of_withdrawal
-            $query->whereYear('date_of_withdrawal', (int) $search);
-        } else {
-            // Fallback: search by reference number
-            $query->where('reference_no', 'LIKE', "%{$search}%");
+        if ($search !== '') {
+            if (preg_match('/^\d{4}$/', $search)) {
+                // Search by YEAR from date_of_withdrawal
+                $query->whereYear('date_of_withdrawal', (int) $search);
+            } else {
+                // Fallback: search by reference number
+                $query->where('reference_no', 'LIKE', "%{$search}%");
+            }
         }
 
 
