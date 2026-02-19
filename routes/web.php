@@ -13,6 +13,8 @@ use App\Http\Controllers\MemberLoanController;
 use App\Http\Controllers\Admin\LoanPaymentController;
 use App\Http\Middleware\IsAdmin;
 use App\Http\Middleware\AdminMiddleware;
+use App\Http\Middleware\CanViewLoanApproval;
+use App\Http\Middleware\CanApproveLoanRequest;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\ResetPasswordController;
@@ -268,12 +270,22 @@ Route::middleware('auth')->prefix('member')->name('member.')->group(function () 
         ->name('loans.details');
 });
 
-Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () {
+Route::prefix('admin')->name('admin.')->middleware(['auth', CanViewLoanApproval::class])->group(function () {
+    Route::get('/executive-dashboard', [AdminController::class, 'execDashboard'])->name('exec-dashboard');
     Route::get('/loan-requests', [LoansController::class, 'loanRequestsIndex'])->name('loan-requests.index');
     Route::get('/loan-requests/{application}', [LoansController::class, 'loanRequestsShow'])->name('loan-requests.show');
+});
+
+Route::prefix('admin')->name('admin.')->middleware(['auth', IsAdmin::class])->group(function () {
     Route::patch('/loan-requests/{application}/status', [LoansController::class, 'loanRequestsSetStatus'])->name('loan-requests.status');
-    Route::patch('/loan-requests/{application}/approve', [LoansController::class, 'loanRequestsApprove'])->name('loan-requests.approve');
+});
+
+Route::prefix('admin')->name('admin.')->middleware(['auth', CanViewLoanApproval::class])->group(function () {
     Route::patch('/loan-requests/{application}/reject', [LoansController::class, 'loanRequestsReject'])->name('loan-requests.reject');
+});
+
+Route::prefix('admin')->name('admin.')->middleware(['auth', CanApproveLoanRequest::class])->group(function () {
+    Route::patch('/loan-requests/{application}/approve', [LoansController::class, 'loanRequestsApprove'])->name('loan-requests.approve');
 });
 
 Route::get('/admin/new-members', [AdminController::class, 'newMembers'])->name('admin.new-members');

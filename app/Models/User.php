@@ -39,6 +39,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'employee_ID',
         'username',
         'is_admin',
+        'role',
     ];
 
     /**
@@ -82,6 +83,11 @@ class User extends Authenticatable implements MustVerifyEmail
     public function isAdmin()
     {
         return $this->is_admin;
+    }
+
+    public function isExecAdmin(): bool
+    {
+        return strtolower((string) ($this->role ?? '')) === 'exec-admin';
     }
 
     public function loans()

@@ -212,7 +212,7 @@
                         </a>
                     @else
                         <button type="button"
-                            class="mt-6 w-full py-3 px-4 rounded-xl font-black text-sm bg-slate-200 text-slate-500 cursor-not-allowed"
+                            class="py-3 px-4 rounded-xl font-black text-sm bg-slate-200 text-slate-500 cursor-not-allowed"
                             title="Requires ₱{{ number_format($minRequired, 0) }} combined Shares + Savings">
                             Locked (₱{{ number_format($minRequired, 0) }} required)
                         </button>
@@ -254,19 +254,19 @@
                     @if($canApplyLoan)
                         <a href="{{ route('member.loans.apply', ['type' => $loan['type']]) }}"
                             class="mt-6 w-full py-3 px-4 rounded-xl font-black text-sm transition-all hover:brightness-105 active:scale-95 shadow-md
-                                                                                                                                            {{ $loan['style'] === 'secondary' ? 'bg-secondary text-white shadow-secondary/10' : 'bg-primary text-background-dark shadow-primary/10' }}">
+                                                                                                                                                            {{ $loan['style'] === 'secondary' ? 'bg-secondary text-white shadow-secondary/10' : 'bg-primary text-background-dark shadow-primary/10' }}">
                             Apply Now
                         </a>
                     @else
                         <button type="button" disabled
                             class="mt-6 w-full py-3 px-4 rounded-xl font-black text-sm shadow-md
-                                                                                                                                                   bg-slate-100 text-slate-400 cursor-not-allowed">
+                                                                                                                                                                   bg-slate-100 text-slate-400 cursor-not-allowed">
                             Apply Now
                         </button>
 
                         <!-- <p class="mt-2 text-[11px] font-bold text-amber-600">
-                                                                                                            Need ₱{{ number_format($minRequired, 2) }} total Shares + Savings to apply.
-                                                                                                        </p> -->
+                                                                                                                            Need ₱{{ number_format($minRequired, 2) }} total Shares + Savings to apply.
+                                                                                                                        </p> -->
                     @endif
                 </div>
             @endforeach

@@ -13,26 +13,34 @@ use Illuminate\Support\Facades\DB;
     use Illuminate\Support\Facades\Schema;
     $searchAction = $searchAction ?? route('admin.members');
     $admin = auth()->user();
+    $isExecAdmin = strtolower((string) ($admin->role ?? '')) === 'exec-admin';
     $adminName = $admin->name ?? 'Administrator';
-    $adminRole = ($admin->is_admin ?? 1) ? 'Super Admin' : 'Admin';
+    $adminRole = $isExecAdmin ? 'Exec Admin' : (($admin->is_admin ?? 1) ? 'Super Admin' : 'Admin');
 
     $navClass = fn (bool $active) => $active ? 'nav-item nav-item-active' : 'nav-item';
 
     // ✅ Notifications (counts)
-    $pendingMemberCount = \App\Models\User::query()
-        ->where('is_admin', 0)
-        ->whereIn(DB::raw('LOWER(status)'), [
-            'awaiting approval',  // your newMembers() uses this
-            'pending',
-        ])
-        ->count();
+    $pendingMemberCount = $isExecAdmin
+        ? 0
+        : \App\Models\User::query()
+            ->where('is_admin', 0)
+            ->whereIn(DB::raw('LOWER(status)'), [
+                'awaiting approval',  // your newMembers() uses this
+                'pending',
+            ])
+            ->count();
 
     $pendingLoanCount = Schema::hasTable('loan_applications')
         ? \App\Models\LoanApplication::query()
-            ->whereIn(DB::raw('LOWER(status)'), [
-                'pending',
-                'in_review',        // include if you want “review queue” counted too
-            ])
+            ->when($isExecAdmin, function ($q) {
+                $q->whereRaw('LOWER(status) = ?', ['for_approval']);
+            }, function ($q) {
+                $q->whereIn(DB::raw('LOWER(status)'), [
+                    'pending',
+                    'for_review',
+                    'for_processing',
+                ]);
+            })
             ->count()
         : 0;
 
@@ -40,7 +48,7 @@ use Illuminate\Support\Facades\DB;
 
     $notifItems = [];
 
-    if ($pendingMemberCount > 0) {
+    if (!$isExecAdmin && $pendingMemberCount > 0) {
         $notifItems[] = [
             'title' => 'New Member Requests',
             'message' => $pendingMemberCount . ' pending membership approval',
@@ -55,8 +63,10 @@ use Illuminate\Support\Facades\DB;
 
     if ($pendingLoanCount > 0) {
         $notifItems[] = [
-            'title' => 'Loan Requests',
-            'message' => $pendingLoanCount . ' loans pending action',
+            'title' => $isExecAdmin ? 'For Approval Queue' : 'Loan Requests',
+            'message' => $isExecAdmin
+                ? ($pendingLoanCount . ' loans awaiting your approval')
+                : ($pendingLoanCount . ' loans pending action'),
             'count' => $pendingLoanCount,
             'href' => route('admin.loan-requests.index'), // or add ?status=pending if your page supports it
             'icon' => 'checkbook',
@@ -103,57 +113,71 @@ use Illuminate\Support\Facades\DB;
         </div>
 
         <nav class="flex-1 overflow-y-auto custom-scrollbar">
-            <div class="mb-4">
-                <p class="px-6 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-600 mb-3">Main Navigation</p>
-                <a class="{{ $navClass(request()->routeIs('admin.dashboard')) }}" href="{{ route('admin.dashboard') }}">
-                    <span class="material-symbols-outlined text-[22px]">grid_view</span>
-                    Dashboard
-                </a>
-            </div>
+            @if($isExecAdmin)
+                <div class="mb-4">
+                    <p class="px-6 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-600 mb-3">Executive Panel</p>
+                    <a class="{{ $navClass(request()->routeIs('admin.exec-dashboard')) }}" href="{{ route('admin.exec-dashboard') }}">
+                        <span class="material-symbols-outlined text-[22px]">dashboard</span>
+                        Dashboard
+                    </a>
+                    <a class="{{ $navClass(request()->routeIs('admin.loan-requests.*')) }}" href="{{ route('admin.loan-requests.index') }}">
+                        <span class="material-symbols-outlined text-[22px]">checkbook</span>
+                        Loan Approvals
+                    </a>
+                </div>
+            @else
+                <div class="mb-4">
+                    <p class="px-6 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-600 mb-3">Main Navigation</p>
+                    <a class="{{ $navClass(request()->routeIs('admin.dashboard')) }}" href="{{ route('admin.dashboard') }}">
+                        <span class="material-symbols-outlined text-[22px]">grid_view</span>
+                        Dashboard
+                    </a>
+                </div>
 
-            <div class="mb-4">
-                <p class="px-6 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-600 mb-3">Membership</p>
-                <a class="{{ $navClass(request()->routeIs('admin.new-members')) }}" href="{{ route('admin.new-members') }}">
-                    <span class="material-symbols-outlined text-[22px]">person_add</span>
-                    New Members
-                </a>
-                <a class="{{ $navClass(request()->routeIs('admin.members')) }}" href="{{ route('admin.members') }}">
-                    <span class="material-symbols-outlined text-[22px]">group</span>
-                    View Members
-                </a>
-            </div>
+                <div class="mb-4">
+                    <p class="px-6 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-600 mb-3">Membership</p>
+                    <a class="{{ $navClass(request()->routeIs('admin.new-members')) }}" href="{{ route('admin.new-members') }}">
+                        <span class="material-symbols-outlined text-[22px]">person_add</span>
+                        New Members
+                    </a>
+                    <a class="{{ $navClass(request()->routeIs('admin.members')) }}" href="{{ route('admin.members') }}">
+                        <span class="material-symbols-outlined text-[22px]">group</span>
+                        View Members
+                    </a>
+                </div>
 
-            <div class="mb-4">
-                <p class="px-6 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-600 mb-3">Ledger & Finance</p>
-                <a class="{{ $navClass(request()->routeIs('admin.shares')) }}" href="{{ route('admin.shares') }}">
-                    <span class="material-symbols-outlined text-[22px]">account_balance_wallet</span>
-                    Shares
-                </a>
-                <a class="{{ $navClass(request()->routeIs('admin.savings')) }}" href="{{ route('admin.savings') }}">
-                    <span class="material-symbols-outlined text-[22px]">savings</span>
-                    Savings
-                </a>
-                <a class="{{ $navClass(request()->routeIs('admin.withdraw')) }}" href="{{ route('admin.withdraw') }}">
-                    <span class="material-symbols-outlined text-[22px]">request_quote</span>
-                    Withdrawals
-                </a>
-                <a class="{{ $navClass(request()->routeIs('admin.loan-payments')) }}" href="{{ route('admin.loan-payments') }}">
-                    <span class="material-symbols-outlined text-[22px]">payments</span>
-                    Loan Payments
-                </a>
-            </div>
+                <div class="mb-4">
+                    <p class="px-6 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-600 mb-3">Ledger & Finance</p>
+                    <a class="{{ $navClass(request()->routeIs('admin.shares')) }}" href="{{ route('admin.shares') }}">
+                        <span class="material-symbols-outlined text-[22px]">account_balance_wallet</span>
+                        Shares
+                    </a>
+                    <a class="{{ $navClass(request()->routeIs('admin.savings')) }}" href="{{ route('admin.savings') }}">
+                        <span class="material-symbols-outlined text-[22px]">savings</span>
+                        Savings
+                    </a>
+                    <a class="{{ $navClass(request()->routeIs('admin.withdraw')) }}" href="{{ route('admin.withdraw') }}">
+                        <span class="material-symbols-outlined text-[22px]">request_quote</span>
+                        Withdrawals
+                    </a>
+                    <a class="{{ $navClass(request()->routeIs('admin.loan-payments')) }}" href="{{ route('admin.loan-payments') }}">
+                        <span class="material-symbols-outlined text-[22px]">payments</span>
+                        Loan Payments
+                    </a>
+                </div>
 
-            <div class="mb-4">
-                <p class="px-6 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-600 mb-3">Loans</p>
-                <a class="{{ $navClass(request()->routeIs('admin.loan-requests.*')) }}" href="{{ route('admin.loan-requests.index') }}">
-                    <span class="material-symbols-outlined text-[22px]">checkbook</span>
-                    Loan Requests
-                </a>
-                <a class="{{ $navClass(request()->routeIs('admin.loans')) }}" href="{{ route('admin.loans') }}">
-                    <span class="material-symbols-outlined text-[22px]">description</span>
-                    Loan Details
-                </a>
-            </div>
+                <div class="mb-4">
+                    <p class="px-6 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-600 mb-3">Loans</p>
+                    <a class="{{ $navClass(request()->routeIs('admin.loan-requests.*')) }}" href="{{ route('admin.loan-requests.index') }}">
+                        <span class="material-symbols-outlined text-[22px]">checkbook</span>
+                        Loan Requests
+                    </a>
+                    <a class="{{ $navClass(request()->routeIs('admin.loans')) }}" href="{{ route('admin.loans') }}">
+                        <span class="material-symbols-outlined text-[22px]">description</span>
+                        Loan Details
+                    </a>
+                </div>
+            @endif
         </nav>
 
         <div class="p-6 border-t border-white/5 bg-black/10">
