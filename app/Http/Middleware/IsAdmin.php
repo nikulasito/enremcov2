@@ -16,7 +16,11 @@ class IsAdmin
      */
     public function handle($request, Closure $next)
     {
-        if (Auth::check() && Auth::user()->is_admin) {
+        if (
+            Auth::check() &&
+            Auth::user()->is_admin &&
+            strtolower((string) (Auth::user()->role ?? '')) !== 'exec-admin'
+        ) {
             return $next($request);
         }
 

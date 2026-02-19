@@ -1,4 +1,7 @@
 ﻿<x-admin-v2-layout title="ENREMCO - Loan Requests" pageTitle="Loan Requests" :showSearch="false">
+    @php
+        $isExecAdmin = strtolower((string) (auth()->user()->role ?? '')) === 'exec-admin';
+    @endphp
     {{-- Page Header (matches how other pages do it) --}}
     <x-slot name="header">
         <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -19,7 +22,7 @@
 
                     {{-- keep filters while searching --}}
                     <input type="hidden" name="loan_type" value="{{ $loanType ?? request('loan_type', 'all') }}">
-                    <input type="hidden" name="status" value="{{ $status ?? request('status', 'all') }}">
+                    <input type="hidden" name="status" value="{{ $isExecAdmin ? 'for_approval' : ($status ?? request('status', 'all')) }}">
                 </form>
             </div>
         </div>
@@ -54,22 +57,29 @@
                     </select>
                 </div>
 
-                <div class="flex flex-col gap-1.5">
-                    <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Status</label>
-                    <select name="status"
-                        class="h-10 pl-4 pr-10 bg-white border border-slate-200 rounded-lg text-xs font-semibold focus:ring-2 focus:ring-primary/20 focus:border-primary cursor-pointer min-w-[160px]">
-                        <option value="all" @selected(($status ?? request('status', 'all')) === 'all')>All Status</option>
-                        <option value="pending" @selected(($status ?? request('status')) === 'pending')>Pending</option>
-                        <option value="for_review" @selected(($status ?? request('status')) === 'for_review')>In Review
-                        </option>
-                        <option value="for_approval" @selected(($status ?? request('status')) === 'for_approval')>For
-                            Approval</option>
-                        <option value="approved" @selected(($status ?? request('status')) === 'approved')>Approved
-                        </option>
-                        <option value="rejected" @selected(($status ?? request('status')) === 'rejected')>Rejected
-                        </option>
-                    </select>
-                </div>
+                @if(!$isExecAdmin)
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Status</label>
+                        <select name="status"
+                            class="h-10 pl-4 pr-10 bg-white border border-slate-200 rounded-lg text-xs font-semibold focus:ring-2 focus:ring-primary/20 focus:border-primary cursor-pointer min-w-[160px]">
+                            <option value="all" @selected(($status ?? request('status', 'all')) === 'all')>All Status</option>
+                            <option value="pending" @selected(($status ?? request('status')) === 'pending')>Pending</option>
+                            <option value="for_review" @selected(($status ?? request('status')) === 'for_review')>In Review
+                            </option>
+                            <option value="for_approval" @selected(($status ?? request('status')) === 'for_approval')>For
+                                Approval</option>
+                            <option value="approved" @selected(($status ?? request('status')) === 'approved')>Approved
+                            </option>
+                            <option value="rejected" @selected(($status ?? request('status')) === 'rejected')>Rejected
+                            </option>
+                        </select>
+                    </div>
+                @else
+                    <input type="hidden" name="status" value="for_approval">
+                    <div class="h-10 px-4 inline-flex items-center rounded-lg border border-indigo-200 bg-indigo-50 text-xs font-black text-indigo-700">
+                        Showing: For Approval Only
+                    </div>
+                @endif
 
                 <input type="hidden" name="q" value="{{ $q ?? request('q') }}">
 
@@ -195,34 +205,22 @@
                             </td>
 
                             <td class="px-6 py-5">
-                                @if($app->status !== 'approved')
-                                    <div class="flex items-center justify-end gap-2">
-                                        {{-- Review --}}
-                                        <button type="button"
-                                            class="js-open-loan-modal flex items-center justify-center p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition-all"
-                                            title="Review" data-id="{{ $app->id }}"
-                                            data-application-no="{{ $app->application_no }}"
-                                            data-full-name="{{ e($app->full_name) }}"
-                                            data-address="{{ e($app->address ?? '') }}"
-                                            data-member-key="{{ e($app->member_key ?? '') }}"
-                                            data-loan-type="{{ e($app->loan_type ?? '') }}"
-                                            data-loan-amount="{{ (float) $app->loan_amount }}"
-                                            data-created="{{ \Illuminate\Support\Carbon::parse($app->created_at)->format('M d, Y') }}">
-                                            <span class="material-symbols-outlined text-[20px]">visibility</span>
-                                        </button>
+                                <div class="flex items-center justify-end gap-2">
+                                    {{-- Review --}}
+                                    <button type="button"
+                                        class="js-open-loan-modal flex items-center justify-center p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition-all"
+                                        title="Review" data-id="{{ $app->id }}"
+                                        data-application-no="{{ $app->application_no }}"
+                                        data-full-name="{{ e($app->full_name) }}"
+                                        data-address="{{ e($app->address ?? '') }}"
+                                        data-member-key="{{ e($app->member_key ?? '') }}"
+                                        data-loan-type="{{ e($app->loan_type ?? '') }}"
+                                        data-loan-amount="{{ (float) $app->loan_amount }}"
+                                        data-created="{{ \Illuminate\Support\Carbon::parse($app->created_at)->format('M d, Y') }}">
+                                        <span class="material-symbols-outlined text-[20px]">visibility</span>
+                                    </button>
 
-                                        {{-- Approve --}}
-                                        <form method="POST" action="{{ route('admin.loan-requests.approve', $app->id) }}"
-                                            onsubmit="return confirm('Approve this application?');">
-                                            @csrf
-                                            @method('PATCH')
-                                            <button type="submit"
-                                                class="flex items-center justify-center p-2 rounded-lg text-emerald-600 hover:bg-emerald-50 transition-all"
-                                                title="Approve">
-                                                <span class="material-symbols-outlined text-[20px]">check_circle</span>
-                                            </button>
-                                        </form>
-
+                                    @if(!$isExecAdmin && $app->status !== 'approved')
                                         {{-- Reject --}}
                                         <form method="POST" action="{{ route('admin.loan-requests.reject', $app->id) }}"
                                             onsubmit="return confirm('Reject this application?');">
@@ -235,10 +233,10 @@
                                                 <span class="material-symbols-outlined text-[20px]">cancel</span>
                                             </button>
                                         </form>
-                                    </div>
-                                @else
-                                    <div class="text-right text-xs font-bold text-slate-400">No actions</div>
-                                @endif
+                                    @elseif($app->status === 'approved')
+                                        <div class="text-right text-xs font-bold text-slate-400">No actions</div>
+                                    @endif
+                                </div>
                             </td>
                         </tr>
                     @empty
@@ -349,7 +347,7 @@
                                     <td class="px-6 py-4 text-right">
                                         <input id="approved_amount" name="approved_amount" form="approveForm"
                                             class="w-40 text-right rounded-lg border-slate-200 bg-white px-3 py-2 font-black"
-                                            type="number" step="0.01" min="0" value="0">
+                                            type="number" step="0.01" min="0" value="0" @if($isExecAdmin) readonly @endif>
                                     </td>
                                 </tr>
 
@@ -364,7 +362,7 @@
                                     <td class="px-6 py-3 text-right">
                                         <input id="old_balance" name="old_balance" form="approveForm"
                                             class="w-40 text-right rounded-lg border-slate-200 bg-white px-3 py-2 font-black"
-                                            type="number" step="0.01" value="0">
+                                            type="number" step="0.01" value="0" @if($isExecAdmin) readonly @endif>
                                     </td>
                                 </tr>
                                 <tr>
@@ -372,7 +370,7 @@
                                     <td class="px-6 py-3 text-right">
                                         <input id="lpp" name="lpp" form="approveForm"
                                             class="w-40 text-right rounded-lg border-slate-200 bg-white px-3 py-2 font-black"
-                                            type="number" step="0.01" value="0">
+                                            type="number" step="0.01" value="0" @if($isExecAdmin) readonly @endif>
                                     </td>
                                 </tr>
                                 <tr>
@@ -380,7 +378,7 @@
                                     <td class="px-6 py-3 text-right">
                                         <input id="interest" name="interest" form="approveForm"
                                             class="w-40 text-right rounded-lg border-slate-200 bg-white px-3 py-2 font-black"
-                                            type="number" step="0.01" value="0">
+                                            type="number" step="0.01" value="0" @if($isExecAdmin) readonly @endif>
                                     </td>
                                 </tr>
                                 <tr>
@@ -388,7 +386,7 @@
                                     <td class="px-6 py-3 text-right">
                                         <input id="handling_fee" name="handling_fee" form="approveForm"
                                             class="w-40 text-right rounded-lg border-slate-200 bg-white px-3 py-2 font-black"
-                                            type="number" step="0.01" value="0">
+                                            type="number" step="0.01" value="0" @if($isExecAdmin) readonly @endif>
                                     </td>
                                 </tr>
                                 <tr>
@@ -396,7 +394,7 @@
                                     <td class="px-6 py-3 text-right">
                                         <input id="petty_cash_loan" name="petty_cash_loan" form="approveForm"
                                             class="w-40 text-right rounded-lg border-slate-200 bg-white px-3 py-2 font-black"
-                                            type="number" step="0.01" value="0">
+                                            type="number" step="0.01" value="0" @if($isExecAdmin) readonly @endif>
                                     </td>
                                 </tr>
 
@@ -430,7 +428,7 @@
                                 (months)</label>
                             <input id="terms" name="terms" form="approveForm"
                                 class="mt-2 w-full rounded-lg border-slate-200 bg-white px-3 py-2 font-black"
-                                type="number" min="1" value="24">
+                                type="number" min="1" value="24" @if($isExecAdmin) readonly @endif>
                         </div>
 
                         <div>
@@ -438,7 +436,7 @@
                                 Installment</label>
                             <input id="monthly_payment" name="monthly_payment" form="approveForm"
                                 class="mt-2 w-full rounded-lg border-slate-200 bg-white px-3 py-2 font-black"
-                                type="number" step="0.01" value="0">
+                                type="number" step="0.01" value="0" @if($isExecAdmin) readonly @endif>
                         </div>
 
                         {{-- computed hidden fields --}}
@@ -486,31 +484,47 @@
 
             {{-- Footer buttons --}}
             <div class="p-6 bg-slate-50 border-t border-slate-100 flex justify-end gap-3 shrink-0">
-                <button type="button" data-loan-status="for_review"
-                    class="js-set-loan-status px-5 py-3 rounded-xl border border-blue-200 bg-blue-50 text-blue-700 text-sm font-black hover:bg-blue-100 transition-all">
-                    For Review
-                </button>
+                @if(!$isExecAdmin)
+                    <button type="button" data-loan-status="for_review" data-loan-modal-action="true"
+                        class="js-set-loan-status px-5 py-3 rounded-xl border border-blue-200 bg-blue-50 text-blue-700 text-sm font-black hover:bg-blue-100 transition-all">
+                        For Review
+                    </button>
 
-                <button type="button" data-loan-status="for_approval"
-                    class="js-set-loan-status px-5 py-3 rounded-xl border border-indigo-200 bg-indigo-50 text-indigo-700 text-sm font-black hover:bg-indigo-100 transition-all">
-                    For Approval
-                </button>
+                    <button type="button" data-loan-status="for_processing" data-loan-modal-action="true"
+                        class="js-set-loan-status px-5 py-3 rounded-xl border border-purple-200 bg-purple-50 text-purple-700 text-sm font-black hover:bg-purple-100 transition-all">
+                        For Processing
+                    </button>
 
-                <button type="button" data-loan-status="for_processing"
-                    class="js-set-loan-status px-5 py-3 rounded-xl border border-purple-200 bg-purple-50 text-purple-700 text-sm font-black hover:bg-purple-100 transition-all">
-                    For Processing
-                </button>
+                    <button type="button" data-loan-status="for_approval" data-loan-modal-action="true"
+                        class="js-set-loan-status px-5 py-3 rounded-xl border border-indigo-200 bg-indigo-50 text-indigo-700 text-sm font-black hover:bg-indigo-100 transition-all">
+                        For Approval
+                    </button>
 
-                <button type="button" data-loan-status="approved"
-                    class="js-set-loan-status px-5 py-3 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 text-sm font-black hover:bg-emerald-100 transition-all">
-                    Approved
-                </button>
+                    <!-- <button type="button" data-loan-status="approved"
+                            class="js-set-loan-status px-5 py-3 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 text-sm font-black hover:bg-emerald-100 transition-all">
+                            Approved
+                        </button> -->
 
-                <button type="submit" form="rejectForm"
-                    class="px-8 py-3 rounded-xl border-2 border-red-500 text-red-500 text-sm font-black hover:bg-red-50 transition-all flex items-center gap-2">
-                    <span class="material-symbols-outlined text-[20px]">cancel</span>
-                    Reject Application
-                </button>
+                    <button type="submit" form="rejectForm" data-loan-modal-action="true"
+                        class="px-8 py-3 rounded-xl border-2 border-red-500 text-red-500 text-sm font-black hover:bg-red-50 transition-all flex items-center gap-2">
+                        <span class="material-symbols-outlined text-[20px]">cancel</span>
+                        Reject Application
+                    </button>
+                @else
+                    <button type="submit" form="rejectForm" data-loan-modal-action="true"
+                        class="px-8 py-3 rounded-xl border-2 border-red-500 text-red-500 text-sm font-black hover:bg-red-50 transition-all flex items-center gap-2"
+                        onclick="return confirm('Reject this application?');">
+                        <span class="material-symbols-outlined text-[20px]">cancel</span>
+                        Reject Application
+                    </button>
+
+                    <button type="submit" form="approveForm" data-loan-modal-action="true"
+                        class="px-8 py-3 rounded-xl bg-primary text-[#0d1a14] text-sm font-black hover:bg-[#15c26b] transition-all shadow-lg shadow-primary/20 flex items-center gap-2"
+                        onclick="return confirm('Approve this application?');">
+                        <span class="material-symbols-outlined text-[20px]">check_circle</span>
+                        Approve Application
+                    </button>
+                @endif
 
                 <!-- <button type="submit" form="approveForm"
                     class="px-8 py-3 rounded-xl bg-primary text-[#0d1a14] text-sm font-black hover:bg-[#15c26b] transition-all shadow-lg shadow-primary/20 flex items-center gap-2">
@@ -525,6 +539,7 @@
             (function () {
                 const modal = document.getElementById('loanReviewModal');
                 const closeBtn = document.getElementById('closeLoanReviewModal');
+                const modalActionButtons = modal ? modal.querySelectorAll('[data-loan-modal-action="true"]') : [];
 
                 const approveForm = document.getElementById('approveForm');
                 const rejectForm = document.getElementById('rejectForm');
@@ -575,6 +590,10 @@
                 }
 
                 function openModal(payload) {
+                    const status = String(payload.status || '').toLowerCase();
+                    const isApproved = status === 'approved';
+                    modalActionButtons.forEach((btn) => btn.classList.toggle('hidden', isApproved));
+
                     // fill text
                     m('m_app_no').textContent = payload.applicationNo || 'â€”';
                     m('m_name').textContent = payload.fullName || 'â€”';

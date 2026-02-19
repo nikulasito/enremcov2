@@ -14,12 +14,89 @@ use App\Models\User;
 use App\Models\LoanDetail;
 use App\Models\LoanPayment;
 use App\Models\LoanApplication;
+use App\Models\Share;
+use App\Models\Saving;
+use App\Models\Withdraw;
 use Illuminate\Support\Facades\Schema;
 
 
 
 class AdminController extends Controller
 {
+    public function execDashboard()
+    {
+        $user = auth()->user();
+        $isExecAdmin = strtolower((string) ($user->role ?? '')) === 'exec-admin';
+
+        if (!$isExecAdmin) {
+            return redirect()->route('admin.dashboard')->with('error', 'Unauthorized access.');
+        }
+
+        $totalShares = (float) Share::sum('amount');
+        $totalSavings = (float) Saving::sum('amount');
+        $totalWithdraw = 0.0;
+        $withdrawShares = 0.0;
+        $withdrawSavings = 0.0;
+
+        if (Schema::hasTable('withdrawals')) {
+            $totalWithdraw = (float) Withdraw::sum('amount_withdrawn');
+            $withdrawShares = (float) Withdraw::whereRaw('LOWER(COALESCE(reference_no, "")) LIKE ?', ['%shares%'])
+                ->sum('amount_withdrawn');
+            $withdrawSavings = (float) Withdraw::whereRaw('LOWER(COALESCE(reference_no, "")) LIKE ?', ['%savings%'])
+                ->sum('amount_withdrawn');
+        }
+
+        $totalWithdrawShares = $withdrawShares;
+        $totalWithdrawSavings = $withdrawSavings;
+        $totalRemainingShareBalance = $totalShares - $withdrawShares;
+        $totalRemainingSavingsBalance = $totalSavings - $withdrawSavings;
+        $totalRemainingBalance = $totalRemainingShareBalance + $totalRemainingSavingsBalance;
+
+        $loanItemsPending = Schema::hasTable('loan_applications')
+            ? LoanApplication::whereRaw('LOWER(status) = ?', ['for_approval'])->count()
+            : 0;
+
+        $totalLoanApps = Schema::hasTable('loan_applications') ? LoanApplication::count() : 0;
+        $approvedLoanApps = Schema::hasTable('loan_applications')
+            ? LoanApplication::whereRaw('LOWER(status) = ?', ['approved'])->count()
+            : 0;
+        $rejectedLoanApps = Schema::hasTable('loan_applications')
+            ? LoanApplication::whereRaw('LOWER(status) = ?', ['rejected'])->count()
+            : 0;
+
+        $portfolioHealth = $totalLoanApps > 0
+            ? round(($approvedLoanApps / $totalLoanApps) * 100, 1)
+            : 0;
+
+        $reserveCoverage = $totalShares > 0
+            ? round(min(100, ($totalSavings / $totalShares) * 100), 1)
+            : 0;
+
+        $delinquencyRate = $totalLoanApps > 0
+            ? round(($rejectedLoanApps / $totalLoanApps) * 100, 1)
+            : 0;
+
+        $recentActivities = Schema::hasTable('loan_applications')
+            ? LoanApplication::query()->latest()->take(8)->get()
+            : collect();
+
+        return view('admin.exec_dashboard', compact(
+            'totalShares',
+            'totalSavings',
+            'totalWithdraw',
+            'totalWithdrawShares',
+            'totalWithdrawSavings',
+            'totalRemainingShareBalance',
+            'totalRemainingSavingsBalance',
+            'totalRemainingBalance',
+            'loanItemsPending',
+            'portfolioHealth',
+            'reserveCoverage',
+            'delinquencyRate',
+            'recentActivities'
+        ));
+    }
+
     // Dashboard Method
     public function dashboard()
     {
@@ -39,8 +116,25 @@ class AdminController extends Controller
             ->whereDate('created_at', '>=', Carbon::now()->subDays(30))
             ->count();
 
-        $totalShares = \App\Models\Share::sum('amount');
-        $totalSavings = \App\Models\Saving::sum('amount');
+        $totalShares = (float) Share::sum('amount');
+        $totalSavings = (float) Saving::sum('amount');
+        $totalWithdraw = 0.0;
+        $withdrawShares = 0.0;
+        $withdrawSavings = 0.0;
+
+        if (Schema::hasTable('withdrawals')) {
+            $totalWithdraw = (float) Withdraw::sum('amount_withdrawn');
+            $withdrawShares = (float) Withdraw::whereRaw('LOWER(COALESCE(reference_no, "")) LIKE ?', ['%shares%'])
+                ->sum('amount_withdrawn');
+            $withdrawSavings = (float) Withdraw::whereRaw('LOWER(COALESCE(reference_no, "")) LIKE ?', ['%savings%'])
+                ->sum('amount_withdrawn');
+        }
+
+        $totalWithdrawShares = $withdrawShares;
+        $totalWithdrawSavings = $withdrawSavings;
+        $totalRemainingShareBalance = $totalShares - $withdrawShares;
+        $totalRemainingSavingsBalance = $totalSavings - $withdrawSavings;
+        $totalRemainingBalance = $totalRemainingShareBalance + $totalRemainingSavingsBalance;
 
         // Count ALL pending/in_review loan applications (admin dashboard is global)
         $pendingLoansCount = Schema::hasTable('loan_applications')
@@ -88,6 +182,12 @@ class AdminController extends Controller
             'newMembersLast30Days',
             'totalShares',
             'totalSavings',
+            'totalWithdraw',
+            'totalWithdrawShares',
+            'totalWithdrawSavings',
+            'totalRemainingShareBalance',
+            'totalRemainingSavingsBalance',
+            'totalRemainingBalance',
             'pendingLoansCount',
             'pendingLoans',
             'recentMembershipRequests',

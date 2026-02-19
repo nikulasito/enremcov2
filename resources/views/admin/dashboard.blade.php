@@ -15,7 +15,7 @@
     @endphp
 
     {{-- Summary Cards --}}
-    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-10">
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-10">
         <div class="summary-card">
             <div class="flex items-center justify-between mb-5">
                 <div class="size-12 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-600">
@@ -42,6 +42,12 @@
             </div>
             <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Share Capital</p>
             <p class="text-3xl font-black text-slate-900 mt-1">{{ $peso($totalShares ?? 0) }}</p>
+            <p class="text-s font-medium text-slate-600 mt-2">
+                Total Withdraw (Shares): {{ $peso($totalWithdrawShares ?? 0) }}
+            </p>
+            <p class="text-s font-medium text-slate-600 mt-1">
+                Remaining Share Balance: <b>{{ $peso($totalRemainingShareBalance ?? 0) }}</b>
+            </p>
         </div>
 
         <div class="summary-card">
@@ -57,6 +63,38 @@
             </div>
             <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Member Savings</p>
             <p class="text-3xl font-black text-slate-900 mt-1">{{ $peso($totalSavings ?? 0) }}</p>
+            <p class="text-s font-medium text-slate-600 mt-2">
+                Total Withdraw (Savings): {{ $peso($totalWithdrawSavings ?? 0) }}
+            </p>
+            <p class="text-s font-medium text-slate-600 mt-1">
+                Remaining Savings Balance: <b>{{ $peso($totalRemainingSavingsBalance ?? 0) }}</b>
+            </p>
+        </div>
+
+        <div class="summary-card">
+            <div class="flex items-center justify-between mb-5">
+                <div class="size-12 rounded-2xl bg-rose-50 flex items-center justify-center text-rose-600">
+                    <span class="material-symbols-outlined text-[28px]">payments</span>
+                </div>
+                <div class="text-[11px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full">
+                    Ledger
+                </div>
+            </div>
+            <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Withdraw</p>
+            <p class="text-3xl font-black text-slate-900 mt-1">{{ $peso($totalWithdraw ?? 0) }}</p>
+        </div>
+
+        <div class="summary-card">
+            <div class="flex items-center justify-between mb-5">
+                <div class="size-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600">
+                    <span class="material-symbols-outlined text-[28px]">account_balance_wallet</span>
+                </div>
+                <div class="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+                    Net
+                </div>
+            </div>
+            <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Remaining Balance</p>
+            <p class="text-3xl font-black text-slate-900 mt-1">{{ $peso($totalRemainingBalance ?? 0) }}</p>
         </div>
 
         <div class="summary-card">

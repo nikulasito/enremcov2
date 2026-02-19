@@ -16,6 +16,7 @@ use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Schema;
 use App\Notifications\LoanStatusUpdatedNotification;
+use App\Notifications\LoanForApprovalNotification;
 
 class LoansController extends Controller
 {
@@ -399,9 +400,10 @@ class LoansController extends Controller
 
     public function loanRequestsIndex(Request $request)
     {
+        $isExecAdmin = strtolower((string) (auth()->user()->role ?? '')) === 'exec-admin';
         $q = trim((string) $request->get('q', ''));
         $loanType = $request->get('loan_type', 'all');
-        $status = $request->get('status', 'all');
+        $status = $isExecAdmin ? 'for_approval' : $request->get('status', 'all');
 
         $applications = LoanApplication::query()
             ->when($q !== '', function ($query) use ($q) {
@@ -421,6 +423,11 @@ class LoansController extends Controller
 
     public function loanRequestsShow(LoanApplication $application, Request $request)
     {
+        $isExecAdmin = strtolower((string) (auth()->user()->role ?? '')) === 'exec-admin';
+        if ($isExecAdmin && strtolower((string) ($application->status ?? '')) !== 'for_approval') {
+            abort(404);
+        }
+
         // used by the modal fetch()
         if ($request->wantsJson()) {
             return response()->json([
@@ -454,30 +461,35 @@ class LoansController extends Controller
 
     public function loanRequestsApprove(Request $request, LoanApplication $application)
     {
+        $isExecAdmin = strtolower((string) (auth()->user()->role ?? '')) === 'exec-admin';
+        if (!$isExecAdmin) {
+            abort(403, 'Only exec-admin can approve loan requests.');
+        }
+
         $validated = $request->validate([
             'remarks' => 'nullable|string|max:1000',
-            'approved_amount' => 'nullable|numeric|min:0',
-            'old_balance' => 'nullable|numeric|min:0',
-            'lpp' => 'nullable|numeric|min:0',
-            'interest' => 'nullable|numeric|min:0',
-            'handling_fee' => 'nullable|numeric|min:0',
-            'petty_cash_loan' => 'nullable|numeric|min:0',
-            'total_deduction' => 'nullable|numeric',
-            'total_net' => 'nullable|numeric',
-            'terms' => 'nullable|integer|min:1',
-            'monthly_payment' => 'nullable|numeric|min:0',
         ]);
 
-        $approvedAmount = (float) ($validated['approved_amount'] ?? $application->loan_amount ?? 0);
-        $oldBalance = (float) ($validated['old_balance'] ?? 0);
-        $lpp = (float) ($validated['lpp'] ?? 0);
-        $interest = (float) ($validated['interest'] ?? 0);
-        $handlingFee = (float) ($validated['handling_fee'] ?? 0);
-        $pettyCashLoan = (float) ($validated['petty_cash_loan'] ?? 0);
-        $totalDeduction = $oldBalance + $lpp + $interest + $handlingFee + $pettyCashLoan;
-        $totalNet = $approvedAmount - $totalDeduction;
-        $terms = (int) ($validated['terms'] ?? 24);
-        $monthlyPayment = $terms > 0 ? ($approvedAmount / $terms) : 0;
+        // Exec-admin can only submit notes; financial fields are read-only in UI and enforced here.
+        $approvedAmount = (float) ($application->approved_amount ?? $application->loan_amount ?? 0);
+        $oldBalance = (float) ($application->old_balance ?? 0);
+        $lpp = (float) ($application->lpp ?? 0);
+        $interest = (float) ($application->interest ?? 0);
+        $handlingFee = (float) ($application->handling_fee ?? 0);
+        $pettyCashLoan = (float) ($application->petty_cash_loan ?? 0);
+        $totalDeduction = ($application->total_deduction !== null)
+            ? (float) $application->total_deduction
+            : ($oldBalance + $lpp + $interest + $handlingFee + $pettyCashLoan);
+        $totalNet = ($application->total_net !== null)
+            ? (float) $application->total_net
+            : ($approvedAmount - $totalDeduction);
+        $terms = (int) ($application->terms ?? 24);
+        if ($terms < 1) {
+            $terms = 24;
+        }
+        $monthlyPayment = ($application->monthly_payment !== null)
+            ? (float) $application->monthly_payment
+            : ($terms > 0 ? ($approvedAmount / $terms) : 0);
 
         $updates = [
             'status' => 'approved',
@@ -570,6 +582,8 @@ class LoansController extends Controller
 
     public function loanRequestsSetStatus(Request $request, LoanApplication $application)
     {
+        $previousStatus = strtolower((string) ($application->status ?? ''));
+
         $validated = $request->validate([
             'status' => 'required|string|in:for_review,for_approval,for_processing,approved',
             'remarks' => 'nullable|string|max:1000',
@@ -592,6 +606,24 @@ class LoansController extends Controller
 
         $application->forceFill($updates)->save();
         $application->refresh();
+
+        if ($validated['status'] === 'for_approval' && $previousStatus !== 'for_approval') {
+            try {
+                $execAdmins = User::query()
+                    ->where('is_admin', 1)
+                    ->whereRaw('LOWER(COALESCE(role, "")) = ?', ['exec-admin'])
+                    ->get();
+
+                if ($execAdmins->isNotEmpty()) {
+                    Notification::send($execAdmins, new LoanForApprovalNotification($application));
+                }
+            } catch (\Throwable $e) {
+                Log::warning('Exec-admin approval notification failed', [
+                    'application_id' => $application->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
 
         if ($application->user) {
             try {
