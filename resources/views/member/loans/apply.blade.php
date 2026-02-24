@@ -106,8 +106,278 @@
                                     id="loan-amount" name="loan_amount" placeholder="0.00" type="number" step="0.01"
                                     value="{{ old('loan_amount') }}" />
                             </div>
+                            <p id="loan-amount-hint" class="hidden text-xs font-semibold text-slate-500">
+                                For Appliance Loan, this amount is auto-computed from your item list total.
+                            </p>
                             @error('loan_amount') <p class="text-xs text-red-600 font-semibold">{{ $message }}</p>
                             @enderror
+                        </div>
+                    </div>
+                </section>
+
+                {{-- Loan Type Specific Details --}}
+                <section class="space-y-6">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                        Loan Type Details
+                        <div class="flex-1 h-px bg-slate-100"></div>
+                    </h3>
+
+                    <div data-loan-type-group="regular" class="js-loan-type-group hidden rounded-2xl border border-slate-200 bg-slate-50 p-6">
+                        <h4 class="text-sm font-black text-slate-800 mb-4">Regular Loan Details</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="md:col-span-2 space-y-2">
+                                <label class="text-sm font-bold text-slate-700" for="loan-purpose">Loan Purpose</label>
+                                <textarea
+                                    class="w-full rounded-xl border-slate-200 bg-white text-slate-900 px-4 py-3 font-medium"
+                                    id="loan-purpose" name="loan_purpose" rows="3" data-required="1"
+                                    placeholder="State the purpose of your regular loan...">{{ old('loan_purpose') }}</textarea>
+                                @error('loan_purpose') <p class="text-xs text-red-600 font-semibold">{{ $message }}</p> @enderror
+                            </div>
+                        </div>
+                    </div>
+
+                    <div data-loan-type-group="educational" class="js-loan-type-group hidden rounded-2xl border border-slate-200 bg-slate-50 p-6">
+                        <h4 class="text-sm font-black text-slate-800 mb-4">Educational Loan Details</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="space-y-2">
+                                <label class="text-sm font-bold text-slate-700" for="beneficiary_name">Beneficiary Name</label>
+                                <input
+                                    class="w-full rounded-xl border-slate-200 bg-white text-slate-900 px-4 py-3 font-medium"
+                                    id="beneficiary_name" name="beneficiary_name" type="text" data-required="1"
+                                    value="{{ old('beneficiary_name') }}">
+                                @error('beneficiary_name') <p class="text-xs text-red-600 font-semibold">{{ $message }}</p> @enderror
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-sm font-bold text-slate-700" for="school_name">School Name</label>
+                                <input
+                                    class="w-full rounded-xl border-slate-200 bg-white text-slate-900 px-4 py-3 font-medium"
+                                    id="school_name" name="school_name" type="text" data-required="1"
+                                    value="{{ old('school_name') }}">
+                                @error('school_name') <p class="text-xs text-red-600 font-semibold">{{ $message }}</p> @enderror
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-sm font-bold text-slate-700" for="school_program">Program/Course</label>
+                                <input
+                                    class="w-full rounded-xl border-slate-200 bg-white text-slate-900 px-4 py-3 font-medium"
+                                    id="school_program" name="school_program" type="text" data-required="1"
+                                    value="{{ old('school_program') }}">
+                                @error('school_program') <p class="text-xs text-red-600 font-semibold">{{ $message }}</p> @enderror
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-sm font-bold text-slate-700" for="school_year">School Year</label>
+                                <input
+                                    class="w-full rounded-xl border-slate-200 bg-white text-slate-900 px-4 py-3 font-medium"
+                                    id="school_year" name="school_year" type="text" data-required="1"
+                                    placeholder="e.g. 2026-2027" value="{{ old('school_year') }}">
+                                @error('school_year') <p class="text-xs text-red-600 font-semibold">{{ $message }}</p> @enderror
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-sm font-bold text-slate-700" for="semester">Semester</label>
+                                <select
+                                    class="w-full rounded-xl border-slate-200 bg-white text-slate-900 px-4 py-3 font-medium"
+                                    id="semester" name="semester" data-required="1">
+                                    <option value="">Select semester</option>
+                                    <option value="1st Semester" @selected(old('semester') === '1st Semester')>1st Semester</option>
+                                    <option value="2nd Semester" @selected(old('semester') === '2nd Semester')>2nd Semester</option>
+                                    <option value="Summer" @selected(old('semester') === 'Summer')>Summer</option>
+                                </select>
+                                @error('semester') <p class="text-xs text-red-600 font-semibold">{{ $message }}</p> @enderror
+                            </div>
+                        </div>
+                    </div>
+
+                    <div data-loan-type-group="appliance" class="js-loan-type-group hidden rounded-2xl border border-slate-200 bg-slate-50 p-6">
+                        <h4 class="text-sm font-black text-slate-800 mb-4">Appliance Loan Details</h4>
+                        @php
+                            $applianceItemsOld = old('appliance_items');
+                            if (!is_array($applianceItemsOld) || count($applianceItemsOld) === 0) {
+                                $applianceItemsOld = [['item_name' => '', 'quantity' => 1, 'unit_price' => '']];
+                            }
+                        @endphp
+
+                        <div class="space-y-3">
+                            <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+                                <table class="w-full text-left text-sm">
+                                    <thead class="bg-slate-50 border-b border-slate-200">
+                                        <tr>
+                                            <th class="px-4 py-3 font-black text-slate-600">Item</th>
+                                            <th class="px-4 py-3 font-black text-slate-600 w-28">Qty</th>
+                                            <th class="px-4 py-3 font-black text-slate-600 w-36">Unit Price</th>
+                                            <th class="px-4 py-3 font-black text-slate-600 w-36 text-right">Amount</th>
+                                            <th class="px-4 py-3 font-black text-slate-600 w-24 text-right">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="appliance-items-container" class="divide-y divide-slate-100">
+                                        @foreach($applianceItemsOld as $idx => $row)
+                                            <tr data-item-row>
+                                                <td class="px-4 py-3">
+                                                    <input
+                                                        class="w-full rounded-lg border-slate-200 bg-white text-slate-900 px-3 py-2 text-sm font-medium"
+                                                        type="text"
+                                                        name="appliance_items[{{ $idx }}][item_name]"
+                                                        value="{{ $row['item_name'] ?? '' }}"
+                                                        data-required="1"
+                                                        placeholder="e.g. Refrigerator">
+                                                </td>
+                                                <td class="px-4 py-3">
+                                                    <input
+                                                        class="w-full rounded-lg border-slate-200 bg-white text-slate-900 px-3 py-2 text-sm font-medium"
+                                                        type="number"
+                                                        name="appliance_items[{{ $idx }}][quantity]"
+                                                        min="1"
+                                                        step="1"
+                                                        value="{{ $row['quantity'] ?? 1 }}"
+                                                        data-required="1">
+                                                </td>
+                                                <td class="px-4 py-3">
+                                                    <input
+                                                        class="w-full rounded-lg border-slate-200 bg-white text-slate-900 px-3 py-2 text-sm font-medium"
+                                                        type="number"
+                                                        name="appliance_items[{{ $idx }}][unit_price]"
+                                                        min="0"
+                                                        step="0.01"
+                                                        value="{{ $row['unit_price'] ?? '' }}"
+                                                        data-required="1">
+                                                </td>
+                                                <td class="px-4 py-3 text-right font-black text-slate-800">
+                                                    <span data-item-amount>0.00</span>
+                                                </td>
+                                                <td class="px-4 py-3 text-right">
+                                                    <button type="button"
+                                                        class="js-remove-appliance-item px-2.5 py-1.5 text-xs font-black rounded-lg border border-red-200 text-red-600 hover:bg-red-50">
+                                                        Remove
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div class="flex items-center justify-between gap-3">
+                                <button type="button" id="add-appliance-item"
+                                    class="px-4 py-2 rounded-lg border border-slate-300 text-slate-700 text-xs font-black hover:bg-slate-100 transition-colors">
+                                    + Add Another Item
+                                </button>
+                                <div class="text-sm font-black text-slate-700">
+                                    Total Amount:
+                                    <span class="text-primary">&#8369;<span id="appliance-items-total-display">0.00</span></span>
+                                </div>
+                            </div>
+
+                            <input type="hidden" id="appliance_total_amount" name="appliance_total_amount" value="{{ old('appliance_total_amount') }}">
+
+                            @error('appliance_items') <p class="text-xs text-red-600 font-semibold">{{ $message }}</p> @enderror
+                            @error('appliance_items.0.item_name') <p class="text-xs text-red-600 font-semibold">{{ $message }}</p> @enderror
+                            @error('appliance_items.0.quantity') <p class="text-xs text-red-600 font-semibold">{{ $message }}</p> @enderror
+                            @error('appliance_items.0.unit_price') <p class="text-xs text-red-600 font-semibold">{{ $message }}</p> @enderror
+                        </div>
+
+                        <template id="appliance-item-row-template">
+                            <tr data-item-row>
+                                <td class="px-4 py-3">
+                                    <input
+                                        class="w-full rounded-lg border-slate-200 bg-white text-slate-900 px-3 py-2 text-sm font-medium"
+                                        type="text"
+                                        name="appliance_items[__INDEX__][item_name]"
+                                        data-required="1"
+                                        placeholder="e.g. Refrigerator">
+                                </td>
+                                <td class="px-4 py-3">
+                                    <input
+                                        class="w-full rounded-lg border-slate-200 bg-white text-slate-900 px-3 py-2 text-sm font-medium"
+                                        type="number"
+                                        name="appliance_items[__INDEX__][quantity]"
+                                        min="1"
+                                        step="1"
+                                        value="1"
+                                        data-required="1">
+                                </td>
+                                <td class="px-4 py-3">
+                                    <input
+                                        class="w-full rounded-lg border-slate-200 bg-white text-slate-900 px-3 py-2 text-sm font-medium"
+                                        type="number"
+                                        name="appliance_items[__INDEX__][unit_price]"
+                                        min="0"
+                                        step="0.01"
+                                        value=""
+                                        data-required="1">
+                                </td>
+                                <td class="px-4 py-3 text-right font-black text-slate-800">
+                                    <span data-item-amount>0.00</span>
+                                </td>
+                                <td class="px-4 py-3 text-right">
+                                    <button type="button"
+                                        class="js-remove-appliance-item px-2.5 py-1.5 text-xs font-black rounded-lg border border-red-200 text-red-600 hover:bg-red-50">
+                                        Remove
+                                    </button>
+                                </td>
+                            </tr>
+                        </template>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                            <div class="space-y-2">
+                                <label class="text-sm font-bold text-slate-700" for="appliance_store">Store / Supplier</label>
+                                <input
+                                    class="w-full rounded-xl border-slate-200 bg-white text-slate-900 px-4 py-3 font-medium"
+                                    id="appliance_store" name="appliance_store" type="text" data-required="1"
+                                    value="{{ old('appliance_store') }}">
+                                @error('appliance_store') <p class="text-xs text-red-600 font-semibold">{{ $message }}</p> @enderror
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-sm font-bold text-slate-700" for="appliance_downpayment">Downpayment (₱)</label>
+                                <input
+                                    class="w-full rounded-xl border-slate-200 bg-white text-slate-900 px-4 py-3 font-medium"
+                                    id="appliance_downpayment" name="appliance_downpayment" type="number" step="0.01" min="0"
+                                    value="{{ old('appliance_downpayment') }}">
+                                @error('appliance_downpayment') <p class="text-xs text-red-600 font-semibold">{{ $message }}</p> @enderror
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-sm font-bold text-slate-700" for="appliance_warranty_months">Warranty (months)</label>
+                                <input
+                                    class="w-full rounded-xl border-slate-200 bg-white text-slate-900 px-4 py-3 font-medium"
+                                    id="appliance_warranty_months" name="appliance_warranty_months" type="number" min="0"
+                                    value="{{ old('appliance_warranty_months') }}">
+                                @error('appliance_warranty_months') <p class="text-xs text-red-600 font-semibold">{{ $message }}</p> @enderror
+                            </div>
+                        </div>
+                    </div>
+
+                    <div data-loan-type-group="grocery" class="js-loan-type-group hidden rounded-2xl border border-slate-200 bg-slate-50 p-6">
+                        <h4 class="text-sm font-black text-slate-800 mb-4">Grocery Loan Details</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="space-y-2">
+                                <label class="text-sm font-bold text-slate-700" for="grocery_partner_store">Preferred Store / Partner</label>
+                                <input
+                                    class="w-full rounded-xl border-slate-200 bg-white text-slate-900 px-4 py-3 font-medium"
+                                    id="grocery_partner_store" name="grocery_partner_store" type="text" data-required="1"
+                                    value="{{ old('grocery_partner_store') }}">
+                                @error('grocery_partner_store') <p class="text-xs text-red-600 font-semibold">{{ $message }}</p> @enderror
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-sm font-bold text-slate-700" for="household_size">Household Size</label>
+                                <input
+                                    class="w-full rounded-xl border-slate-200 bg-white text-slate-900 px-4 py-3 font-medium"
+                                    id="household_size" name="household_size" type="number" min="1" data-required="1"
+                                    value="{{ old('household_size') }}">
+                                @error('household_size') <p class="text-xs text-red-600 font-semibold">{{ $message }}</p> @enderror
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-sm font-bold text-slate-700" for="grocery_period_from">Coverage Start Date</label>
+                                <input
+                                    class="w-full rounded-xl border-slate-200 bg-white text-slate-900 px-4 py-3 font-medium"
+                                    id="grocery_period_from" name="grocery_period_from" type="date" data-required="1"
+                                    value="{{ old('grocery_period_from') }}">
+                                @error('grocery_period_from') <p class="text-xs text-red-600 font-semibold">{{ $message }}</p> @enderror
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-sm font-bold text-slate-700" for="grocery_period_to">Coverage End Date</label>
+                                <input
+                                    class="w-full rounded-xl border-slate-200 bg-white text-slate-900 px-4 py-3 font-medium"
+                                    id="grocery_period_to" name="grocery_period_to" type="date" data-required="1"
+                                    value="{{ old('grocery_period_to') }}">
+                                @error('grocery_period_to') <p class="text-xs text-red-600 font-semibold">{{ $message }}</p> @enderror
+                            </div>
                         </div>
                     </div>
                 </section>
@@ -266,6 +536,142 @@
     @endif
 
     @push('scripts')
+        <script>
+            (function () {
+                const loanTypeEl = document.getElementById('loan-type');
+                const typeGroups = document.querySelectorAll('.js-loan-type-group');
+                const loanAmountEl = document.getElementById('loan-amount');
+                const loanAmountHint = document.getElementById('loan-amount-hint');
+                if (!loanTypeEl || !typeGroups.length) return;
+
+                function syncTypeGroups() {
+                    const selectedType = (loanTypeEl.value || 'regular').toLowerCase();
+
+                    typeGroups.forEach((group) => {
+                        const isActive = (group.dataset.loanTypeGroup || '').toLowerCase() === selectedType;
+                        group.classList.toggle('hidden', !isActive);
+
+                        group.querySelectorAll('input, select, textarea').forEach((field) => {
+                            field.disabled = !isActive;
+                            const mustRequire = isActive && field.dataset.required === '1';
+                            if (mustRequire) {
+                                field.setAttribute('required', 'required');
+                            } else {
+                                field.removeAttribute('required');
+                            }
+                        });
+                    });
+
+                    // Appliance total drives loan amount
+                    const applianceMode = selectedType === 'appliance';
+                    if (loanAmountEl) {
+                        loanAmountEl.readOnly = applianceMode;
+                        loanAmountEl.classList.toggle('bg-slate-50', applianceMode);
+                        loanAmountEl.classList.toggle('cursor-not-allowed', applianceMode);
+                    }
+                    if (loanAmountHint) {
+                        loanAmountHint.classList.toggle('hidden', !applianceMode);
+                    }
+
+                    document.dispatchEvent(new CustomEvent('loan-type-changed', {
+                        detail: { type: selectedType }
+                    }));
+                }
+
+                loanTypeEl.addEventListener('change', syncTypeGroups);
+                syncTypeGroups();
+            })();
+        </script>
+
+        <script>
+            (function () {
+                const loanTypeEl = document.getElementById('loan-type');
+                const loanAmountEl = document.getElementById('loan-amount');
+                const container = document.getElementById('appliance-items-container');
+                const addBtn = document.getElementById('add-appliance-item');
+                const tpl = document.getElementById('appliance-item-row-template');
+                const totalEl = document.getElementById('appliance-items-total-display');
+                const totalHidden = document.getElementById('appliance_total_amount');
+
+                if (!loanTypeEl || !loanAmountEl || !container || !addBtn || !tpl || !totalEl || !totalHidden) {
+                    return;
+                }
+
+                const parseNumber = (v) => {
+                    const n = parseFloat(v);
+                    return Number.isFinite(n) ? n : 0;
+                };
+                const fmt = (v) => parseNumber(v).toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                });
+
+                function rowAmount(row) {
+                    const qty = parseNumber(row.querySelector('input[name*=\"[quantity]\"]')?.value);
+                    const unit = parseNumber(row.querySelector('input[name*=\"[unit_price]\"]')?.value);
+                    return Math.max(0, qty) * Math.max(0, unit);
+                }
+
+                function reindexRows() {
+                    [...container.querySelectorAll('[data-item-row]')].forEach((row, idx) => {
+                        row.querySelectorAll('input[name^=\"appliance_items[\"]').forEach((input) => {
+                            input.name = input.name.replace(/appliance_items\\[\\d+\\]/, `appliance_items[${idx}]`);
+                        });
+                    });
+                }
+
+                function recalcApplianceTotal() {
+                    let total = 0;
+                    [...container.querySelectorAll('[data-item-row]')].forEach((row) => {
+                        const amt = rowAmount(row);
+                        total += amt;
+                        const amountEl = row.querySelector('[data-item-amount]');
+                        if (amountEl) amountEl.textContent = fmt(amt);
+                    });
+
+                    totalEl.textContent = fmt(total);
+                    totalHidden.value = total.toFixed(2);
+
+                    if ((loanTypeEl.value || '').toLowerCase() === 'appliance') {
+                        loanAmountEl.value = total > 0 ? total.toFixed(2) : '';
+                    }
+                }
+
+                function addRow() {
+                    const index = container.querySelectorAll('[data-item-row]').length;
+                    const html = tpl.innerHTML.replaceAll('__INDEX__', String(index));
+                    container.insertAdjacentHTML('beforeend', html);
+                    reindexRows();
+                    recalcApplianceTotal();
+                }
+
+                addBtn.addEventListener('click', addRow);
+
+                container.addEventListener('click', (e) => {
+                    const btn = e.target.closest('.js-remove-appliance-item');
+                    if (!btn) return;
+
+                    const rows = container.querySelectorAll('[data-item-row]');
+                    if (rows.length <= 1) return;
+                    btn.closest('[data-item-row]')?.remove();
+                    reindexRows();
+                    recalcApplianceTotal();
+                });
+
+                container.addEventListener('input', (e) => {
+                    if (!e.target.matches('input')) return;
+                    recalcApplianceTotal();
+                });
+
+                document.addEventListener('loan-type-changed', () => {
+                    recalcApplianceTotal();
+                });
+
+                reindexRows();
+                recalcApplianceTotal();
+            })();
+        </script>
+
         <script>
             (function () {
                 const endpoint = "{{ route('member.loans.comakers.search') }}";
@@ -487,3 +893,4 @@
     @endpush
 
 </x-member-layout>
+

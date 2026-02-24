@@ -320,6 +320,48 @@
                     </div>
                 </div>
 
+                {{-- Loan-type specific details --}}
+                <div class="mb-8 rounded-xl border border-slate-200 bg-white overflow-hidden">
+                    <div class="px-5 py-3 border-b border-slate-100 bg-slate-50">
+                        <p class="text-[10px] font-black text-slate-500 uppercase tracking-wider">Loan-Specific Details</p>
+                    </div>
+                    <div class="p-5">
+                        <div data-loan-panel="regular" class="js-loan-type-panel hidden">
+                            <p class="text-sm font-bold text-slate-800">Regular Loan Review</p>
+                            <p class="text-xs text-slate-500 mt-1">Verify deductions, prior balances, and repayment terms for salary-based regular loan processing.</p>
+                        </div>
+
+                        <div data-loan-panel="educational" class="js-loan-type-panel hidden">
+                            <p class="text-sm font-bold text-slate-800">Educational Loan Review</p>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2 text-xs">
+                                <div><span class="font-black text-slate-600">Beneficiary:</span> <span id="d_edu_beneficiary">—</span></div>
+                                <div><span class="font-black text-slate-600">School:</span> <span id="d_edu_school">—</span></div>
+                                <div><span class="font-black text-slate-600">Program/Course:</span> <span id="d_edu_program">—</span></div>
+                                <div><span class="font-black text-slate-600">School Year/Sem:</span> <span id="d_edu_term">—</span></div>
+                            </div>
+                        </div>
+
+                        <div data-loan-panel="appliance" class="js-loan-type-panel hidden">
+                            <p class="text-sm font-bold text-slate-800">Appliance Loan Review</p>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2 text-xs">
+                                <div><span class="font-black text-slate-600">Item:</span> <span id="d_app_item">—</span></div>
+                                <div><span class="font-black text-slate-600">Brand/Model:</span> <span id="d_app_brand">—</span></div>
+                                <div><span class="font-black text-slate-600">Store/Supplier:</span> <span id="d_app_store">—</span></div>
+                                <div><span class="font-black text-slate-600">Cash Price:</span> <span id="d_app_cash_price">—</span></div>
+                            </div>
+                        </div>
+
+                        <div data-loan-panel="grocery" class="js-loan-type-panel hidden">
+                            <p class="text-sm font-bold text-slate-800">Grocery Loan Review</p>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2 text-xs">
+                                <div><span class="font-black text-slate-600">Preferred Store:</span> <span id="d_gro_store">—</span></div>
+                                <div><span class="font-black text-slate-600">Coverage Period:</span> <span id="d_gro_coverage">—</span></div>
+                                <div><span class="font-black text-slate-600">Household Size:</span> <span id="d_gro_household">—</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 {{-- Computation Table --}}
                 <div class="mb-8">
                     <div class="bg-slate-50 border border-slate-200 rounded-xl overflow-hidden">
@@ -357,40 +399,40 @@
                                     </td>
                                 </tr>
 
-                                <tr>
-                                    <td class="px-6 py-3 pl-10 text-slate-600">Balance (Old Bal)</td>
+                                <tr id="row_old_balance">
+                                    <td class="px-6 py-3 pl-10 text-slate-600" id="label_old_balance">Balance (Old Bal)</td>
                                     <td class="px-6 py-3 text-right">
                                         <input id="old_balance" name="old_balance" form="approveForm"
                                             class="w-40 text-right rounded-lg border-slate-200 bg-white px-3 py-2 font-black"
                                             type="number" step="0.01" value="0" @if($isExecAdmin) readonly @endif>
                                     </td>
                                 </tr>
-                                <tr>
-                                    <td class="px-6 py-3 pl-10 text-slate-600">LPP</td>
+                                <tr id="row_lpp">
+                                    <td class="px-6 py-3 pl-10 text-slate-600" id="label_lpp">LPP</td>
                                     <td class="px-6 py-3 text-right">
                                         <input id="lpp" name="lpp" form="approveForm"
                                             class="w-40 text-right rounded-lg border-slate-200 bg-white px-3 py-2 font-black"
                                             type="number" step="0.01" value="0" @if($isExecAdmin) readonly @endif>
                                     </td>
                                 </tr>
-                                <tr>
-                                    <td class="px-6 py-3 pl-10 text-slate-600">Interest (amount)</td>
+                                <tr id="row_interest">
+                                    <td class="px-6 py-3 pl-10 text-slate-600" id="label_interest">Interest (amount)</td>
                                     <td class="px-6 py-3 text-right">
                                         <input id="interest" name="interest" form="approveForm"
                                             class="w-40 text-right rounded-lg border-slate-200 bg-white px-3 py-2 font-black"
                                             type="number" step="0.01" value="0" @if($isExecAdmin) readonly @endif>
                                     </td>
                                 </tr>
-                                <tr>
-                                    <td class="px-6 py-3 pl-10 text-slate-600">Handling Fee</td>
+                                <tr id="row_handling_fee">
+                                    <td class="px-6 py-3 pl-10 text-slate-600" id="label_handling_fee">Handling Fee</td>
                                     <td class="px-6 py-3 text-right">
                                         <input id="handling_fee" name="handling_fee" form="approveForm"
                                             class="w-40 text-right rounded-lg border-slate-200 bg-white px-3 py-2 font-black"
                                             type="number" step="0.01" value="0" @if($isExecAdmin) readonly @endif>
                                     </td>
                                 </tr>
-                                <tr>
-                                    <td class="px-6 py-3 pl-10 text-slate-600">Petty Cash Loan</td>
+                                <tr id="row_petty_cash_loan">
+                                    <td class="px-6 py-3 pl-10 text-slate-600" id="label_petty_cash_loan">Petty Cash Loan</td>
                                     <td class="px-6 py-3 text-right">
                                         <input id="petty_cash_loan" name="petty_cash_loan" form="approveForm"
                                             class="w-40 text-right rounded-lg border-slate-200 bg-white px-3 py-2 font-black"
@@ -424,7 +466,7 @@
                         </div>
 
                         <div class="pt-4 border-t border-slate-200">
-                            <label class="text-[10px] font-black text-slate-500 uppercase tracking-wider">Terms
+                            <label id="terms_label" class="text-[10px] font-black text-slate-500 uppercase tracking-wider">Terms
                                 (months)</label>
                             <input id="terms" name="terms" form="approveForm"
                                 class="mt-2 w-full rounded-lg border-slate-200 bg-white px-3 py-2 font-black"
@@ -432,7 +474,7 @@
                         </div>
 
                         <div>
-                            <label class="text-[10px] font-black text-slate-500 uppercase tracking-wider">Monthly
+                            <label id="monthly_label" class="text-[10px] font-black text-slate-500 uppercase tracking-wider">Monthly
                                 Installment</label>
                             <input id="monthly_payment" name="monthly_payment" form="approveForm"
                                 class="mt-2 w-full rounded-lg border-slate-200 bg-white px-3 py-2 font-black"
@@ -553,8 +595,61 @@
 
                 // modal fields
                 const m = (id) => document.getElementById(id);
+                const loanTypePanels = modal ? modal.querySelectorAll('.js-loan-type-panel') : [];
 
                 let currentLoanAmount = 0;
+                let currentLoanType = 'regular';
+
+                const loanTypeConfigs = {
+                    regular: {
+                        fields: ['old_balance', 'lpp', 'interest', 'handling_fee', 'petty_cash_loan'],
+                        labels: {
+                            old_balance: 'Balance (Old Bal)',
+                            lpp: 'LPP',
+                            interest: 'Interest (12%)',
+                            handling_fee: 'Handling Fee',
+                            petty_cash_loan: 'Petty Cash Loan',
+                            terms: 'Terms (months)',
+                            monthly: 'Monthly Installment',
+                        },
+                    },
+                    educational: {
+                        fields: ['old_balance', 'lpp', 'interest', 'handling_fee'],
+                        labels: {
+                            old_balance: 'Previous Balance',
+                            lpp: 'Tuition & School Fees',
+                            interest: 'Interest (4.5%)',
+                            handling_fee: 'Processing Fee',
+                            petty_cash_loan: 'Petty Cash Loan',
+                            terms: 'Terms (sem/month)',
+                            monthly: 'Monthly Installment',
+                        },
+                    },
+                    appliance: {
+                        fields: ['old_balance', 'lpp', 'interest', 'handling_fee'],
+                        labels: {
+                            old_balance: 'Previous Balance',
+                            lpp: 'Downpayment / Initial Fee',
+                            interest: 'Interest (3%)',
+                            handling_fee: 'Handling / Delivery Fee',
+                            petty_cash_loan: 'Petty Cash Loan',
+                            terms: 'Terms (months)',
+                            monthly: 'Monthly Installment',
+                        },
+                    },
+                    grocery: {
+                        fields: ['old_balance', 'interest', 'handling_fee'],
+                        labels: {
+                            old_balance: 'Previous Balance',
+                            lpp: 'LPP',
+                            interest: 'Interest (2.5%)',
+                            handling_fee: 'Service Fee',
+                            petty_cash_loan: 'Petty Cash Loan',
+                            terms: 'Terms (months)',
+                            monthly: 'Monthly Installment',
+                        },
+                    },
+                };
 
                 function fmt(n) {
                     const v = Number.isFinite(n) ? n : 0;
@@ -564,14 +659,76 @@
                     const n = parseFloat(v);
                     return Number.isFinite(n) ? n : 0;
                 }
+                function normalizeLoanType(raw) {
+                    const v = String(raw || '').toLowerCase().replaceAll('_', ' ').replaceAll('-', ' ').trim();
+                    if (v.includes('education')) return 'educational';
+                    if (v.includes('appliance')) return 'appliance';
+                    if (v.includes('grocery')) return 'grocery';
+                    return 'regular';
+                }
+                function setText(id, value) {
+                    const el = m(id);
+                    if (el) el.textContent = value;
+                }
+                function setLoanTypePanel(typeKey) {
+                    loanTypePanels.forEach((panel) => {
+                        panel.classList.toggle('hidden', panel.dataset.loanPanel !== typeKey);
+                    });
+                }
+                function setLoanTypeFields(typeKey) {
+                    const config = loanTypeConfigs[typeKey] || loanTypeConfigs.regular;
+                    const allFields = ['old_balance', 'lpp', 'interest', 'handling_fee', 'petty_cash_loan'];
+
+                    allFields.forEach((field) => {
+                        const row = m(`row_${field}`);
+                        if (!row) return;
+                        row.classList.toggle('hidden', !config.fields.includes(field));
+                    });
+
+                    setText('label_old_balance', config.labels.old_balance);
+                    setText('label_lpp', config.labels.lpp);
+                    setText('label_interest', config.labels.interest);
+                    setText('label_handling_fee', config.labels.handling_fee);
+                    setText('label_petty_cash_loan', config.labels.petty_cash_loan);
+                    setText('terms_label', config.labels.terms);
+                    setText('monthly_label', config.labels.monthly);
+                }
+                function visibleValue(fieldId) {
+                    const row = m(`row_${fieldId}`);
+                    if (row && row.classList.contains('hidden')) return 0;
+                    return num(m(fieldId)?.value);
+                }
+                function fillLoanTypeDetails(payload) {
+                    setText('d_edu_beneficiary', payload.eduBeneficiary || payload.fullName || '—');
+                    setText('d_edu_school', payload.eduSchool || '—');
+                    setText('d_edu_program', payload.eduProgram || '—');
+                    setText('d_edu_term', payload.eduTerm || '—');
+
+                    setText('d_app_item', payload.appItem || '—');
+                    setText('d_app_brand', payload.appBrand || '—');
+                    setText('d_app_store', payload.appStore || '—');
+                    setText('d_app_cash_price', payload.appCashPrice !== null && payload.appCashPrice !== undefined
+                        ? ('₱' + fmt(num(payload.appCashPrice)))
+                        : '—');
+
+                    setText('d_gro_store', payload.groStore || '—');
+                    setText('d_gro_coverage', payload.groCoverage || '—');
+                    setText('d_gro_household', payload.groHousehold || '—');
+                }
+                function applyLoanTypeLayout(payload) {
+                    currentLoanType = payload.loanTypeKey || normalizeLoanType(payload.loanTypeRaw || payload.loanTypeLabel);
+                    setLoanTypePanel(currentLoanType);
+                    setLoanTypeFields(currentLoanType);
+                    fillLoanTypeDetails(payload);
+                }
 
                 function recalc() {
                     currentLoanAmount = num(m('approved_amount').value);
-                    const oldBal = num(m('old_balance').value);
-                    const lpp = num(m('lpp').value);
-                    const interest = num(m('interest').value);
-                    const handling = num(m('handling_fee').value);
-                    const petty = num(m('petty_cash_loan').value);
+                    const oldBal = visibleValue('old_balance');
+                    const lpp = visibleValue('lpp');
+                    const interest = visibleValue('interest');
+                    const handling = visibleValue('handling_fee');
+                    const petty = visibleValue('petty_cash_loan');
                     const terms = Math.max(1, Math.floor(num(m('terms').value) || 1));
 
                     const totalDeduction = oldBal + lpp + interest + handling + petty;
@@ -600,6 +757,7 @@
                     m('m_address').textContent = payload.address || 'â€”';
                     m('m_member_key').textContent = payload.memberKey || 'â€”';
                     m('m_loan_type').textContent = payload.loanTypeLabel || 'â€”';
+                    applyLoanTypeLayout(payload);
 
                     const requestedLoanAmount = payload.loanAmount || 0;
                     currentLoanAmount = payload.approvedAmount ?? requestedLoanAmount;
@@ -620,6 +778,9 @@
                     m('handling_fee').value = payload.handling_fee ?? 0;
                     m('petty_cash_loan').value = payload.petty_cash_loan ?? 0;
                     m('terms').value = payload.terms ?? 24;
+                    if (payload.monthly_payment !== null && payload.monthly_payment !== undefined) {
+                        m('monthly_payment').value = num(payload.monthly_payment).toFixed(2);
+                    }
                     const approveRemarksEl = m('approve_remarks');
                     if (approveRemarksEl) approveRemarksEl.value = payload.remarks ?? '';
 
@@ -656,6 +817,8 @@
                             fullName: data.full_name,
                             address: data.address,
                             memberKey: data.member_key,
+                            loanTypeKey: data.loan_type_key || '',
+                            loanTypeRaw: data.loan_type || '',
                             loanTypeLabel: (data.loan_type || '').replaceAll('_', ' ').replace(/\b\w/g, c => c.toUpperCase()),
                             loanAmount: parseFloat(data.loan_amount || '0'),
                             approvedAmount: data.approved_amount !== null && data.approved_amount !== undefined
@@ -671,6 +834,21 @@
                             petty_cash_loan: parseFloat(data.petty_cash_loan || '0'),
                             terms: parseInt(data.terms || '24'),
                             monthly_payment: parseFloat(data.monthly_payment || '0'),
+
+                            // type-specific details
+                            eduBeneficiary: data.beneficiary_name || data.full_name || '',
+                            eduSchool: data.school_name || '',
+                            eduProgram: data.school_program || '',
+                            eduTerm: [data.school_year, data.semester].filter(Boolean).join(' ').trim(),
+
+                            appItem: data.appliance_item || '',
+                            appBrand: data.appliance_brand_model || '',
+                            appStore: data.appliance_store || '',
+                            appCashPrice: data.appliance_cash_price ?? null,
+
+                            groStore: data.grocery_partner_store || '',
+                            groCoverage: [data.grocery_period_from, data.grocery_period_to].filter(Boolean).join(' to ').trim(),
+                            groHousehold: data.household_size || '',
 
                             // âœ… this is the saved notes/remarks
                             remarks: data.remarks || '',

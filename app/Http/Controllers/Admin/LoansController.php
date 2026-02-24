@@ -428,6 +428,14 @@ class LoansController extends Controller
             abort(404);
         }
 
+        $loanTypeRaw = strtolower(trim((string) ($application->loan_type ?? '')));
+        $loanTypeRaw = str_replace(['-', '_'], ' ', $loanTypeRaw);
+        $loanTypeKey = str_contains($loanTypeRaw, 'education')
+            ? 'educational'
+            : (str_contains($loanTypeRaw, 'appliance')
+                ? 'appliance'
+                : (str_contains($loanTypeRaw, 'grocery') ? 'grocery' : 'regular'));
+
         // used by the modal fetch()
         if ($request->wantsJson()) {
             return response()->json([
@@ -437,6 +445,7 @@ class LoansController extends Controller
                 'address' => $application->address,
                 'member_key' => $application->member_key,
                 'loan_type' => $application->loan_type,
+                'loan_type_key' => $loanTypeKey,
                 'loan_amount' => (float) $application->loan_amount,
                 'status' => $application->status,
                 'created_at' => optional($application->created_at)?->format('M d, Y'),
@@ -453,6 +462,23 @@ class LoansController extends Controller
                 'terms' => $application->terms ?? null,
                 'monthly_payment' => $application->monthly_payment ?? null,
                 'lv_no' => $application->lv_no ?? null,
+
+                // Optional loan-type specific data (if stored in DB)
+                'beneficiary_name' => $application->beneficiary_name ?? null,
+                'school_name' => $application->school_name ?? null,
+                'school_program' => $application->school_program ?? null,
+                'school_year' => $application->school_year ?? null,
+                'semester' => $application->semester ?? null,
+
+                'appliance_item' => $application->appliance_item ?? null,
+                'appliance_brand_model' => $application->appliance_brand_model ?? null,
+                'appliance_store' => $application->appliance_store ?? null,
+                'appliance_cash_price' => $application->appliance_cash_price ?? null,
+
+                'grocery_partner_store' => $application->grocery_partner_store ?? null,
+                'grocery_period_from' => $application->grocery_period_from ?? null,
+                'grocery_period_to' => $application->grocery_period_to ?? null,
+                'household_size' => $application->household_size ?? null,
             ]);
         }
 

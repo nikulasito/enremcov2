@@ -11,6 +11,8 @@ use App\Models\Saving;
 
 class HomeController extends Controller
 {
+    private const APPROVED_VISIBILITY_DAYS = 5;
+
     public function index()
     {
         $user = Auth::user();
@@ -59,6 +61,11 @@ class HomeController extends Controller
             ?? $user->employee_id
             ?? null;
 
+        $approvedCutoff = Carbon::now()
+            ->subDays(self::APPROVED_VISIBILITY_DAYS)
+            ->endOfDay();
+        $hasReviewedAt = Schema::hasColumn('loan_applications', 'reviewed_at');
+
         $loanApplications = DB::table('loan_applications')
             ->where(function ($q) use ($userId, $memberKey) {
                 $q->where('user_id', $userId);
@@ -68,7 +75,24 @@ class HomeController extends Controller
                 }
             })
             ->orderByDesc('created_at')
-            ->get();
+            ->get()
+            ->filter(function ($application) use ($approvedCutoff, $hasReviewedAt) {
+                $status = strtolower(trim((string) ($application->status ?? '')));
+
+                if ($status !== 'approved') {
+                    return true;
+                }
+
+                $approvedAt = null;
+                if ($hasReviewedAt && !empty($application->reviewed_at)) {
+                    $approvedAt = Carbon::parse($application->reviewed_at);
+                } elseif (!empty($application->created_at)) {
+                    $approvedAt = Carbon::parse($application->created_at);
+                }
+
+                return $approvedAt ? $approvedAt->gt($approvedCutoff) : true;
+            })
+            ->values();
 
         $recentTransactions = []; // keep empty for now if you don't have this yet
 

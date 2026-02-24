@@ -16,6 +16,39 @@ use Illuminate\Support\Carbon;
 
 class MemberLoanController extends Controller
 {
+    private function normalizeLoanType(?string $loanType): string
+    {
+        $raw = strtolower(trim((string) $loanType));
+        $raw = str_replace(['-', '_'], ' ', $raw);
+
+        if (str_contains($raw, 'education')) {
+            return 'educational';
+        }
+        if (str_contains($raw, 'appliance')) {
+            return 'appliance';
+        }
+        if (str_contains($raw, 'grocery')) {
+            return 'grocery';
+        }
+        if (str_contains($raw, 'regular') || str_contains($raw, 'salary')) {
+            return 'regular';
+        }
+
+        return 'regular';
+    }
+
+    private function printableLoanView(LoanApplication $application): string
+    {
+        $type = $this->normalizeLoanType($application->loan_type);
+
+        return match ($type) {
+            'educational' => 'member.loans.print_educational',
+            'appliance' => 'member.loans.print_appliance',
+            'grocery' => 'member.loans.print_grocery',
+            default => 'member.loans.print_regular',
+        };
+    }
+
     private function coMakerActiveLoanCount(int $userId): int
     {
         $hasLoansTable = Schema::hasTable('loan_applications');
@@ -192,12 +225,16 @@ class MemberLoanController extends Controller
                 ->get();
 
             $approvedApplications = $loanApplications
-                ->filter(fn($application) => strtolower((string) ($application->status ?? '')) === 'approved')
+                ->filter(function ($application) {
+                    $status = strtolower(trim((string) ($application->status ?? '')));
+                    return $status === 'approved';
+                })
                 ->values();
 
-            // Approved items should leave the application queue and appear under Active Loans.
+            // Approved items leave the application queue and appear under Active Loans
+            // regardless of age.
             $loanApplications = $loanApplications
-                ->reject(fn($application) => strtolower((string) ($application->status ?? '')) === 'approved')
+                ->reject(fn($application) => strtolower(trim((string) ($application->status ?? ''))) === 'approved')
                 ->values();
         }
 
@@ -371,7 +408,33 @@ class MemberLoanController extends Controller
             'full_name' => ['required', 'string', 'max:255'],
             'address' => ['nullable', 'string', 'max:500'],
             'loan_type' => ['required', 'in:regular,educational,appliance,grocery'],
-            'loan_amount' => ['required', 'numeric', 'min:1'],
+            'loan_amount' => ['nullable', 'numeric', 'min:1', 'required_unless:loan_type,appliance'],
+
+            // Regular
+            'loan_purpose' => ['nullable', 'string', 'max:500', 'required_if:loan_type,regular'],
+
+            // Educational
+            'beneficiary_name' => ['nullable', 'string', 'max:255', 'required_if:loan_type,educational'],
+            'school_name' => ['nullable', 'string', 'max:255', 'required_if:loan_type,educational'],
+            'school_program' => ['nullable', 'string', 'max:255', 'required_if:loan_type,educational'],
+            'school_year' => ['nullable', 'string', 'max:50', 'required_if:loan_type,educational'],
+            'semester' => ['nullable', 'string', 'max:50', 'required_if:loan_type,educational'],
+
+            // Appliance
+            'appliance_store' => ['nullable', 'string', 'max:255', 'required_if:loan_type,appliance'],
+            'appliance_items' => ['nullable', 'array', 'required_if:loan_type,appliance', 'min:1'],
+            'appliance_items.*.item_name' => ['required_with:appliance_items', 'string', 'max:255'],
+            'appliance_items.*.quantity' => ['required_with:appliance_items', 'integer', 'min:1'],
+            'appliance_items.*.unit_price' => ['required_with:appliance_items', 'numeric', 'min:0'],
+            'appliance_total_amount' => ['nullable', 'numeric', 'min:0'],
+            'appliance_downpayment' => ['nullable', 'numeric', 'min:0'],
+            'appliance_warranty_months' => ['nullable', 'integer', 'min:0'],
+
+            // Grocery
+            'grocery_partner_store' => ['nullable', 'string', 'max:255', 'required_if:loan_type,grocery'],
+            'grocery_period_from' => ['nullable', 'date', 'required_if:loan_type,grocery'],
+            'grocery_period_to' => ['nullable', 'date', 'required_if:loan_type,grocery', 'after_or_equal:grocery_period_from'],
+            'household_size' => ['nullable', 'integer', 'min:1', 'required_if:loan_type,grocery'],
 
             'comaker1_name' => ['required', 'string', 'max:255'],
             'comaker2_name' => ['required', 'string', 'max:255'],
@@ -382,6 +445,48 @@ class MemberLoanController extends Controller
             'comaker1_position' => ['nullable', 'string', 'max:255'],
             'comaker2_position' => ['nullable', 'string', 'max:255'],
         ]);
+
+        $applianceItems = [];
+        $applianceTotal = null;
+        if (($data['loan_type'] ?? '') === 'appliance') {
+            $applianceItems = collect($data['appliance_items'] ?? [])
+                ->map(function ($row) {
+                    $itemName = trim((string) ($row['item_name'] ?? ''));
+                    $qty = (int) ($row['quantity'] ?? 0);
+                    $unitPrice = (float) ($row['unit_price'] ?? 0);
+                    $amount = $qty * $unitPrice;
+
+                    return [
+                        'item_name' => $itemName,
+                        'quantity' => $qty,
+                        'unit_price' => round($unitPrice, 2),
+                        'amount' => round($amount, 2),
+                    ];
+                })
+                ->filter(fn($row) => $row['item_name'] !== '' && $row['quantity'] > 0)
+                ->values()
+                ->all();
+
+            if (empty($applianceItems)) {
+                return back()
+                    ->withInput()
+                    ->withErrors([
+                        'appliance_items' => 'Please add at least one appliance item.',
+                    ]);
+            }
+
+            $applianceTotal = (float) collect($applianceItems)->sum('amount');
+            if ($applianceTotal <= 0) {
+                return back()
+                    ->withInput()
+                    ->withErrors([
+                        'appliance_items' => 'Appliance item total must be greater than zero.',
+                    ]);
+            }
+
+            // For appliance loans, loan amount is based on total item amount.
+            $data['loan_amount'] = $applianceTotal;
+        }
 
         $user = auth()->user();
 
@@ -440,6 +545,35 @@ class MemberLoanController extends Controller
 
         // Create readable ref like APP-202602111234-0001
         $loan->application_no = 'APP-' . now()->format('YmdHis') . '-' . str_pad((string) $loan->id, 4, '0', STR_PAD_LEFT);
+
+        // Save type-specific details only when matching columns exist.
+        $typeSpecific = [
+            'loan_purpose' => $data['loan_purpose'] ?? null,
+            'beneficiary_name' => $data['beneficiary_name'] ?? null,
+            'school_name' => $data['school_name'] ?? null,
+            'school_program' => $data['school_program'] ?? null,
+            'school_year' => $data['school_year'] ?? null,
+            'semester' => $data['semester'] ?? null,
+            'appliance_item' => $applianceItems[0]['item_name'] ?? null,
+            'appliance_brand_model' => null,
+            'appliance_store' => $data['appliance_store'] ?? null,
+            'appliance_cash_price' => $applianceTotal,
+            'appliance_items' => !empty($applianceItems) ? json_encode($applianceItems, JSON_UNESCAPED_UNICODE) : null,
+            'appliance_total_amount' => $applianceTotal,
+            'appliance_downpayment' => $data['appliance_downpayment'] ?? null,
+            'appliance_warranty_months' => $data['appliance_warranty_months'] ?? null,
+            'grocery_partner_store' => $data['grocery_partner_store'] ?? null,
+            'grocery_period_from' => $data['grocery_period_from'] ?? null,
+            'grocery_period_to' => $data['grocery_period_to'] ?? null,
+            'household_size' => $data['household_size'] ?? null,
+        ];
+
+        foreach ($typeSpecific as $column => $value) {
+            if (Schema::hasColumn('loan_applications', $column)) {
+                $loan->{$column} = $value;
+            }
+        }
+
         $loan->save();
 
         // 2) NOTIFY ADMINS
@@ -576,7 +710,7 @@ class MemberLoanController extends Controller
         // Optional: allow only when for_processing
         abort_unless($application->status === 'for_processing', 403);
 
-        $html = view('member.loans.print_regular', [
+        $html = view($this->printableLoanView($application), [
             'app' => $application,
         ])->render();
 
@@ -608,6 +742,7 @@ class MemberLoanController extends Controller
             'address' => $application->address,
             'member_key' => $application->member_key,
             'loan_type' => $application->loan_type,
+            'loan_type_key' => $this->normalizeLoanType($application->loan_type),
             'loan_amount' => (float) $application->loan_amount,
             'approved_amount' => $approvedAmount,
             'total_net' => $netCash,

@@ -12,8 +12,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->timestamp('date_inactive')->nullable()->after('status');
-            $table->timestamp('date_reactive')->nullable()->after('date_inactive');
+            if (!Schema::hasColumn('users', 'date_inactive')) {
+                $table->timestamp('date_inactive')->nullable()->after('status');
+            }
+            if (!Schema::hasColumn('users', 'date_reactive')) {
+                $table->timestamp('date_reactive')->nullable()->after('date_inactive');
+            }
         });
     }
 
@@ -23,7 +27,12 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn(['date_inactive', 'date_reactive']);
+            if (Schema::hasColumn('users', 'date_inactive')) {
+                $table->dropColumn('date_inactive');
+            }
+            if (Schema::hasColumn('users', 'date_reactive')) {
+                $table->dropColumn('date_reactive');
+            }
         });
     }
 };
