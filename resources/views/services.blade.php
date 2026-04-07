@@ -15,7 +15,7 @@
                     <p class="text-[#a0b0a8] max-w-2xl mx-auto text-lg leading-relaxed">
                         As a member-owned cooperative, ENREMCO provides exclusive savings, investment opportunities, and
                         welfare
-                        support designed specifically for ERC employees.
+                        support designed specifically for DENR employees.
                     </p>
                 </div>
             </div>
@@ -220,9 +220,9 @@
                         Start Application
                     </a>
                     <!-- <button
-                            class="px-10 py-5 bg-white text-[#112119] rounded-xl font-black text-lg hover:shadow-xl transition-all">
-                            Download Guide
-                        </button> -->
+                                class="px-10 py-5 bg-white text-[#112119] rounded-xl font-black text-lg hover:shadow-xl transition-all">
+                                Download Guide
+                            </button> -->
                 </div>
             </div>
         </section>

@@ -40,6 +40,8 @@ class LoanApplication extends Model
         'comaker2_name',
         'comaker2_position',
         'status',
+        'credit_reviewed_by',
+        'credit_reviewed_at',
         'reviewed_by',
         'reviewed_at',
         'remarks',
@@ -53,6 +55,15 @@ class LoanApplication extends Model
         'total_net',
         'terms',
         'monthly_payment',
+        'run_term',
+        'first_installment_date',
+        'installment_increased_to',
+        'simple_annual_rate',
+    ];
+
+    protected $casts = [
+        'credit_reviewed_at' => 'datetime',
+        'reviewed_at' => 'datetime',
     ];
 
     public function user()

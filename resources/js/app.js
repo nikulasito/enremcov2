@@ -11,25 +11,47 @@ document.addEventListener('DOMContentLoaded', function () {
     const ledgerMenu = document.getElementById('ledgerMenu');
     const membershipArrow = document.getElementById('membershipArrow');
 
-    membershipMenu.addEventListener('show.bs.collapse', function () {
-        membershipArrow.classList.remove('bi-chevron-down');
-        membershipArrow.classList.add('bi-chevron-up');
-    });
+    // Back to top button
+    var backToTopButton = document.getElementById('back-to-top');
 
-    membershipMenu.addEventListener('hide.bs.collapse', function () {
-        membershipArrow.classList.remove('bi-chevron-up');
-        membershipArrow.classList.add('bi-chevron-down');
-    });
+    if(backToTopButton) {
+        window.addEventListener('scroll', function () {
+            if (window.pageYOffset > 100) { // Show button after 100px of scroll
+                backToTopButton.style.display = 'block';
+            } else {
+                backToTopButton.style.display = 'none';
+            }
+        });
 
-    ledgerMenu.addEventListener('show.bs.collapse', function () {
-        membershipArrow.classList.remove('bi-chevron-down');
-        membershipArrow.classList.add('bi-chevron-up');
-    });
+        backToTopButton.addEventListener('click', function (e) {
+            e.preventDefault();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    }
 
-    ledgerMenu.addEventListener('hide.bs.collapse', function () {
-        membershipArrow.classList.remove('bi-chevron-up');
-        membershipArrow.classList.add('bi-chevron-down');
-    });
+    if(membershipMenu) {
+        membershipMenu.addEventListener('show.bs.collapse', function () {
+            membershipArrow.classList.remove('bi-chevron-down');
+            membershipArrow.classList.add('bi-chevron-up');
+        });
+
+        membershipMenu.addEventListener('hide.bs.collapse', function () {
+            membershipArrow.classList.remove('bi-chevron-up');
+            membershipArrow.classList.add('bi-chevron-down');
+        });
+    }
+
+    if(ledgerMenu) {
+        ledgerMenu.addEventListener('show.bs.collapse', function () {
+            membershipArrow.classList.remove('bi-chevron-down');
+            membershipArrow.classList.add('bi-chevron-up');
+        });
+
+        ledgerMenu.addEventListener('hide.bs.collapse', function () {
+            membershipArrow.classList.remove('bi-chevron-up');
+            membershipArrow.classList.add('bi-chevron-down');
+        });
+    }
 });
 
 document.addEventListener("DOMContentLoaded", function() {

@@ -30,11 +30,15 @@ class AuthenticatedSessionController extends Controller
 
         $user = auth()->user();
 
-        if (strtolower((string) ($user->role ?? '')) === 'exec-admin') {
+        if ($user->isExecAdmin()) {
             return redirect()->route('admin.exec-dashboard');
         }
 
-        if ($user->is_admin) {
+        if ($user->isCreditOfficer()) {
+            return redirect()->route('admin.credit-officer.dashboard');
+        }
+
+        if ($user->isRegularAdmin()) {
             return redirect()->route('admin.dashboard');
         }
 

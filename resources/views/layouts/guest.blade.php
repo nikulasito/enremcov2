@@ -37,7 +37,11 @@
                                 Contact Us</a> -->
                                     <!-- @auth
                                             <a
-                                                href="{{ Auth::user()->is_admin ? url('/admin/dashboard') : url('/dashboard') }}"
+                                                href="{{ Auth::user()->isExecAdmin()
+                                                    ? route('admin.exec-dashboard')
+                                                    : (Auth::user()->isCreditOfficer()
+                                                        ? route('admin.credit-officer.dashboard')
+                                                        : (Auth::user()->isRegularAdmin() ? route('admin.dashboard') : route('dashboard'))) }}"
                                                 class="rounded-md px-3 py-2 text-black ring-1 ring-transparent transition hover:text-black/70 focus:outline-none focus-visible:ring-[#FF2D20] dark:text-white dark:hover:text-white/80 dark:focus-visible:ring-white"
                                             >
                                                 Dashboard
@@ -99,6 +103,9 @@
              <span>ENREMCO Management System V 1.0.12</span>
             </footer>
         </div>
+        <a id="back-to-top" href="#" class="btn btn-primary btn-lg back-to-top" role="button" style="display: none; position: fixed; bottom: 20px; right: 20px; z-index: 1000;">
+        <i class="fas fa-arrow-up"></i>
+    </a>
     </body>
 
     <script>

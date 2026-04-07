@@ -6,6 +6,7 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Str;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -85,9 +86,47 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->is_admin;
     }
 
+    public function normalizedRole(): string
+    {
+        $role = strtolower(trim((string) ($this->role ?? '')));
+        $role = preg_replace('/[\s_]+/', '-', $role) ?? $role;
+
+        return $role;
+    }
+
     public function isExecAdmin(): bool
     {
-        return strtolower((string) ($this->role ?? '')) === 'exec-admin';
+        return $this->normalizedRole() === 'exec-admin';
+    }
+
+    public function isCreditOfficer(): bool
+    {
+        return $this->normalizedRole() === 'credit-officer';
+    }
+
+    public function isRegularAdmin(): bool
+    {
+        return (bool) ($this->is_admin ?? false)
+            && !$this->isExecAdmin()
+            && !$this->isCreditOfficer();
+    }
+
+    public static function findForLogin(string $login): ?self
+    {
+        $normalizedLogin = Str::lower(trim($login));
+
+        $query = static::query();
+
+        if (filter_var($login, FILTER_VALIDATE_EMAIL)) {
+            return $query
+                ->whereRaw('LOWER(email) = ?', [$normalizedLogin])
+                ->first();
+        }
+
+        return $query
+            ->whereRaw('LOWER(username) = ?', [$normalizedLogin])
+            ->orWhereRaw('LOWER(email) = ?', [$normalizedLogin])
+            ->first();
     }
 
     public function loans()

@@ -1,57 +1,65 @@
-@extends('layouts.app')
+@extends('layouts.auth')
+
+@section('title', 'ENREMCO Reset Password')
+@section('left_title', 'Set your new password')
+@section('left_desc', 'Use a strong password so your account stays secure.')
 
 @section('content')
-    <div class="container position-sticky z-index-sticky top-0">
-        <div class="row">
-            <div class="col-12">
-                @include('layouts.navbars.guest.navbar')
+    <div class="w-full">
+        <h2 class="text-3xl font-black text-[#111814] sm:text-4xl">Reset Password</h2>
+        <p class="mt-2 text-base text-[#638875]">
+            Enter your email and new password to complete your password reset.
+        </p>
+
+        @if (session('status'))
+            <div class="mt-6 rounded-xl border border-green-200 bg-green-50 p-4 text-sm font-bold text-green-700">
+                {{ session('status') }}
             </div>
+        @endif
+
+        <form class="mt-10 flex flex-col gap-6" method="POST" action="{{ route('password.store') }}">
+            @csrf
+
+            <input type="hidden" name="token" value="{{ $request->route('token') }}">
+
+            <div class="flex flex-col gap-2">
+                <label class="text-sm font-bold text-[#111814]" for="email">Email Address</label>
+                <input id="email" name="email" type="email" value="{{ old('email', $request->email) }}" required autofocus
+                    autocomplete="username"
+                    class="h-14 w-full rounded-xl border-[#dce5e0] bg-[#f6f8f7] px-4 text-base focus:border-primary focus:ring-primary" />
+                @error('email')
+                    <p class="text-sm font-bold text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <div class="flex flex-col gap-2">
+                <label class="text-sm font-bold text-[#111814]" for="password">New Password</label>
+                <input id="password" name="password" type="password" required autocomplete="new-password"
+                    class="h-14 w-full rounded-xl border-[#dce5e0] bg-[#f6f8f7] px-4 text-base focus:border-primary focus:ring-primary" />
+                @error('password')
+                    <p class="text-sm font-bold text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <div class="flex flex-col gap-2">
+                <label class="text-sm font-bold text-[#111814]" for="password_confirmation">Confirm New Password</label>
+                <input id="password_confirmation" name="password_confirmation" type="password" required
+                    autocomplete="new-password"
+                    class="h-14 w-full rounded-xl border-[#dce5e0] bg-[#f6f8f7] px-4 text-base focus:border-primary focus:ring-primary" />
+            </div>
+
+            <button type="submit"
+                class="mt-4 flex h-14 w-full items-center justify-center rounded-xl bg-primary text-lg font-black text-background-dark shadow-lg shadow-primary/20 transition-all hover:brightness-105 active:scale-[0.98]">
+                Reset Password
+            </button>
+        </form>
+
+        <div class="mt-8 text-center">
+            <a class="inline-flex items-center gap-2 text-sm font-bold text-primary hover:underline"
+                href="{{ route('login') }}">
+                <span class="material-symbols-outlined text-sm">arrow_back</span>
+                Back to Login
+            </a>
         </div>
     </div>
-    <main class="main-content  mt-0">
-        <section>
-            <div class="page-header min-vh-100">
-                <div class="container">
-                    <div class="row">
-                        <div class="col-xl-4 col-lg-5 col-md-7 d-flex flex-column mx-lg-0 mx-auto">
-                            <div class="card card-plain">
-                                <div class="card-header pb-0 text-start">
-                                    <h4 class="font-weight-bolder">Reset your password</h4>
-                                    <p class="mb-0">Enter your email and please wait a few seconds</p>
-                                </div>
-                                <div class="card-body">
-                                    <form role="form" method="POST" action="{{ route('reset.perform') }}">
-                                        @csrf
-                                        @method('post')
-                                        <div class="flex flex-col mb-3">
-                                            <input type="email" name="email" class="form-control form-control-lg" placeholder="Email" value="{{ old('email') }}" aria-label="Email">
-                                            @error('email') <p class="text-danger text-xs pt-1"> {{$message}} </p>@enderror
-                                        </div>
-                                        <div class="text-center">
-                                            <button type="submit" class="btn btn-lg btn-primary btn-lg w-100 mt-4 mb-0">Send Reset Link</button>
-                                        </div>
-                                    </form>
-                                </div>
-                                <div id="alert">
-                                    @include('components.alert')
-                                </div>
-                            </div>
-                        </div>
-                        <div
-                            class="col-6 d-lg-flex d-none h-100 my-auto pe-0 position-absolute top-0 end-0 text-center justify-content-center flex-column">
-                            <div class="position-relative bg-gradient-primary h-100 m-3 px-7 border-radius-lg d-flex flex-column justify-content-center overflow-hidden"
-                                style="background-image: url('https://raw.githubusercontent.com/creativetimofficial/public-assets/master/argon-dashboard-pro/assets/img/signin-ill.jpg');
-                                        background-size: cover;">
-                                <span class="mask bg-gradient-primary opacity-6"></span>
-                                <h4 class="mt-5 text-white font-weight-bolder position-relative">"Attention is the new
-                                    currency"</h4>
-                                <p class="text-white position-relative">The more effortless the writing looks, the more
-                                    effort the writer actually put into the process.</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-    </main>
 @endsection

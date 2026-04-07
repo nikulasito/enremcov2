@@ -15,10 +15,11 @@ class CanViewLoanApproval
             return redirect('/login');
         }
 
-        $isExecAdmin = strtolower((string) ($user->role ?? '')) === 'exec-admin';
-        $isRegularAdmin = (bool) ($user->is_admin ?? false) && !$isExecAdmin;
+        $isExecAdmin = $user->isExecAdmin();
+        $isRegularAdmin = $user->isRegularAdmin();
+        $isCreditOfficer = $user->isCreditOfficer();
 
-        if ($isRegularAdmin || $isExecAdmin) {
+        if ($isRegularAdmin || $isExecAdmin || $isCreditOfficer) {
             return $next($request);
         }
 

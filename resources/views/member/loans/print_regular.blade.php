@@ -225,8 +225,13 @@
         // Optional display helpers (adjust field names to your DB if needed)
         $runTerm = $app->run_term ?? ($app->terms ?? '');
         $firstInstallmentDate = $app->first_installment_date ?? '';
-        $installmentIncreasedTo = $app->installment_increased_to ?? '';
-        $simpleAnnualRate = $app->simple_annual_rate ?? '';
+        $installmentIncreasedTo = $app->installment_increased_to ?? ($app->monthly_payment ?? '');
+        $installmentIncreasedDisplay = ($installmentIncreasedTo !== null && $installmentIncreasedTo !== '')
+            ? (is_numeric($installmentIncreasedTo)
+                ? ('P' . number_format((float) $installmentIncreasedTo, 2))
+                : $installmentIncreasedTo)
+            : '';
+        $simpleAnnualRate = $app->simple_annual_rate ?? '12%';
         $resolutionNo = $app->resolution_no ?? '';
         $resolutionDate = $app->resolution_date ?? '';
         $receivedDate = $app->received_date ?? '';
@@ -339,17 +344,17 @@
         </table>
 
         <div class="mt-10">
-            <div>1. This is to run <span class="line-sm">{{ $runTerm }}</span> months/day</div>
+            <div>1. This is to run: <span class="line-sm">{{ $runTerm }}</span> months/day</div>
             <div class="mt-4">
-                2. The first installment increased will be on
+                2. The first installment increased will be on:
                 <span class="line-sm">{{ $firstInstallmentDate }}</span>
             </div>
             <div class="mt-4">
-                3. Loan Installment increased to
-                <span class="line-sm">{{ $installmentIncreasedTo }}</span>
+                3. Loan Installment increased to:
+                <span class="line-sm">{{ $installmentIncreasedDisplay }}</span>
             </div>
             <div class="mt-4">
-                4. Simple annual rate required to
+                4. Simple annual rate required to:
                 <span class="line-sm">{{ $simpleAnnualRate }}</span>
             </div>
             <div class="mt-4">5. Disclosed Under R.A. 365</div>

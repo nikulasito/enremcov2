@@ -4,22 +4,107 @@
 <head>
     <meta charset="utf-8">
     <style>
-        body { font-family: DejaVu Sans, sans-serif; font-size: 12px; color: #111; margin: 18px; }
-        .center { text-align: center; }
-        .small { font-size: 11px; }
-        .xsmall { font-size: 10px; }
-        .title { font-size: 16px; font-weight: 700; margin: 6px 0 12px; }
-        .box { border: 1px solid #222; padding: 10px; }
-        .line { border-bottom: 1px solid #222; display: inline-block; min-width: 190px; line-height: 1.2; }
-        .line-sm { border-bottom: 1px solid #222; display: inline-block; min-width: 120px; line-height: 1.2; }
-        .sigline { border-bottom: 1px solid #222; width: 260px; display: inline-block; height: 16px; }
-        .mt-4 { margin-top: 4px; } .mt-8 { margin-top: 8px; } .mt-10 { margin-top: 10px; }
-        .mt-12 { margin-top: 12px; } .mt-16 { margin-top: 16px; } .mt-20 { margin-top: 20px; }
-        table { width: 100%; border-collapse: collapse; }
-        .plain td, .plain th { padding: 4px 6px; vertical-align: top; }
-        .bordered { border: 1px solid #222; }
-        .bordered td, .bordered th { border: 1px solid #222; padding: 6px; vertical-align: top; }
-        .justify { text-align: justify; line-height: 1.35; }
+        body {
+            font-family: DejaVu Sans, sans-serif;
+            font-size: 12px;
+            color: #111;
+            margin: 18px;
+        }
+
+        .center {
+            text-align: center;
+        }
+
+        .small {
+            font-size: 11px;
+        }
+
+        .xsmall {
+            font-size: 10px;
+        }
+
+        .title {
+            font-size: 16px;
+            font-weight: 700;
+            margin: 6px 0 12px;
+        }
+
+        .box {
+            border: 1px solid #222;
+            padding: 10px;
+        }
+
+        .line {
+            border-bottom: 1px solid #222;
+            display: inline-block;
+            min-width: 190px;
+            line-height: 1.2;
+        }
+
+        .line-sm {
+            border-bottom: 1px solid #222;
+            display: inline-block;
+            min-width: 120px;
+            line-height: 1.2;
+        }
+
+        .sigline {
+            border-bottom: 1px solid #222;
+            width: 260px;
+            display: inline-block;
+            height: 16px;
+        }
+
+        .mt-4 {
+            margin-top: 4px;
+        }
+
+        .mt-8 {
+            margin-top: 8px;
+        }
+
+        .mt-10 {
+            margin-top: 10px;
+        }
+
+        .mt-12 {
+            margin-top: 12px;
+        }
+
+        .mt-16 {
+            margin-top: 16px;
+        }
+
+        .mt-20 {
+            margin-top: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .plain td,
+        .plain th {
+            padding: 4px 6px;
+            vertical-align: top;
+        }
+
+        .bordered {
+            border: 1px solid #222;
+        }
+
+        .bordered td,
+        .bordered th {
+            border: 1px solid #222;
+            padding: 6px;
+            vertical-align: top;
+        }
+
+        .justify {
+            text-align: justify;
+            line-height: 1.35;
+        }
     </style>
 </head>
 
@@ -39,12 +124,14 @@
         $periodFrom = $app->grocery_period_from ?? '';
         $periodTo = $app->grocery_period_to ?? '';
         $householdSize = $app->household_size ?? '';
+        $coMaker1 = $app->comaker1_name ?? $app->co_maker_1 ?? '';
+        $coMaker2 = $app->comaker2_name ?? $app->co_maker_2 ?? '';
     @endphp
 
     <div class="center small">
         <div>REPUBLIC OF THE PHILIPPINES</div>
         <div>Department of Environment and Natural Resources</div>
-        <div style="font-weight:700;">ENVIRONMENT AND NATURAL RESOURCES MULTI-PURPOSE CREDIT COOPERATIVE</div>
+        <div style="font-weight:700;">ENVIRONMENT AND NATURAL RESOURCES EMPLOYEES MULTI-PURPOSE COOPERATIVE</div>
         <div>Puntod, Cagayan de Oro City</div>
     </div>
 
@@ -89,14 +176,37 @@
                 <td><b>Loan (Specify) Grocery Loan</b></td>
                 <td align="right"><b>P{{ number_format($loanAmount, 2) }}</b></td>
             </tr>
-            <tr><td colspan="2" class="small"><b>Less: Deductions</b></td></tr>
-            <tr><td>Balance (Old Bal)</td><td align="right">P{{ number_format($old, 2) }}</td></tr>
-            <tr><td>LPP</td><td align="right">P{{ number_format($lpp, 2) }}</td></tr>
-            <tr><td>Interest (2.5%)</td><td align="right">P{{ number_format($int, 2) }}</td></tr>
-            <tr><td>Handling Fee</td><td align="right">P{{ number_format($fee, 2) }}</td></tr>
-            <tr><td>Petty Cash Loan</td><td align="right">P{{ number_format($pet, 2) }}</td></tr>
-            <tr><td><b>Total Deduction</b></td><td align="right"><b>P{{ number_format($ded, 2) }}</b></td></tr>
-            <tr><td><b>NET CASH RECEIVED</b></td><td align="right"><b>P{{ number_format($net, 2) }}</b></td></tr>
+            <tr>
+                <td colspan="2" class="small"><b>Less: Deductions</b></td>
+            </tr>
+            <tr>
+                <td>Balance (Old Bal)</td>
+                <td align="right">P{{ number_format($old, 2) }}</td>
+            </tr>
+            <tr>
+                <td>LPP</td>
+                <td align="right">P{{ number_format($lpp, 2) }}</td>
+            </tr>
+            <tr>
+                <td>Interest (2.5%)</td>
+                <td align="right">P{{ number_format($int, 2) }}</td>
+            </tr>
+            <tr>
+                <td>Handling Fee</td>
+                <td align="right">P{{ number_format($fee, 2) }}</td>
+            </tr>
+            <tr>
+                <td>Petty Cash Loan</td>
+                <td align="right">P{{ number_format($pet, 2) }}</td>
+            </tr>
+            <tr>
+                <td><b>Total Deduction</b></td>
+                <td align="right"><b>P{{ number_format($ded, 2) }}</b></td>
+            </tr>
+            <tr>
+                <td><b>NET CASH RECEIVED</b></td>
+                <td align="right"><b>P{{ number_format($net, 2) }}</b></td>
+            </tr>
         </table>
     </div>
 
@@ -109,7 +219,7 @@
         <table class="plain">
             <tr>
                 <td class="center" style="width:50%;">
-                    <span class="sigline"></span><br>
+                    <span class="sigline">{{ strtoupper($app->full_name ?? '') }}</span><br>
                     <span class="small">Applicant Signature over Printed Name</span>
                 </td>
                 <td class="center" style="width:50%;">
@@ -120,7 +230,41 @@
         </table>
     </div>
 
-    <div class="mt-20 xsmall center">Grocery Loan Printable Form</div>
+    <div class="mt-16">
+        <b>CO MAKERS WARRANTY:</b>
+        <div class="small justify mt-4">
+            I/WE HEREBY bind myself/ourselves for the payment of this loan if, at date of maturity, our PRINCIPAL,
+            fails to make full settlement thereof, for whatever reason or reasons, and so hereby authorized the BOARD OF
+            DIRECTORS to deduct from my/our salary the full payment of the unpaid balance including accrued interest, if
+            any, with due notice to me/us by the Association.
+        </div>
+
+        <table class="plain mt-16">
+            <tr>
+                <td class="center" style="width:50%;">
+                    <span class="sigline"></span><br>
+                    <span class="small">{{ $coMaker1 ?: 'PRINTED NAME & SIG. CO MAKER (1)' }}</span>
+                </td>
+                <td class="center" style="width:50%;">
+                    <span class="sigline"></span><br>
+                    <span class="small">{{ $coMaker2 ?: 'PRINTED NAME & SIG. CO MAKER (2)' }}</span>
+                </td>
+            </tr>
+        </table>
+
+        <div class="mt-10">
+            <b>Kind of Loan</b><br>
+            <span class="small">
+                ( ) Salary Loan
+                &nbsp;&nbsp;&nbsp;
+                ( ) Educational Loan
+                &nbsp;&nbsp;&nbsp;
+                ( ) Appliance Loan
+                &nbsp;&nbsp;&nbsp;
+                (X) Grocery Loan
+            </span>
+        </div>
+    </div>
 </body>
 
 </html>

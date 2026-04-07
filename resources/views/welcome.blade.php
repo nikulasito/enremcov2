@@ -220,9 +220,9 @@
                                             class="bg-white dark:bg-[#2a3a32] border border-[#dce5e0] dark:border-[#354a3f] rounded-lg text-sm font-semibold p-2 focus:ring-primary focus:border-primary"
                                             id="loan-type" onchange="updateCalculator()">
                                             <option value="0.12">Regular (12.0%)</option>
-                                            <option value="0.045">Educational (4.5%)</option>
-                                            <option value="0.03">Appliance (3.0%)</option>
-                                            <option value="0.025">Grocery (2.5%)</option>
+                                            <option value="0.10">Educational (10.0%)</option>
+                                            <option value="0.18">Appliance (18.0%)</option>
+                                            <option value="0.10">Grocery (10.0%)</option>
                                         </select>
                                     </div>
                                 </div>
@@ -423,7 +423,7 @@
                             <span class="text-xs font-bold text-primary uppercase tracking-[0.2em] mb-4">Educational
                                 Loan</span>
                             <div class="text-4xl font-black text-white mb-2">
-                                4.5% <span class="text-sm font-normal text-[#a0b0a8]">p.a.</span>
+                                10% <span class="text-sm font-normal text-[#a0b0a8]">p.a.</span>
                             </div>
                             <p class="text-sm text-[#a0b0a8] mb-6">Up to 36 months term</p>
                             <a href="{{ $applyHref }}"
@@ -437,7 +437,7 @@
                             <span class="text-xs font-bold text-primary uppercase tracking-[0.2em] mb-4">Appliance
                                 Loan</span>
                             <div class="text-4xl font-black text-white mb-2">
-                                18.0% <span class="text-sm font-normal text-[#a0b0a8]">p.a.</span>
+                                18% <span class="text-sm font-normal text-[#a0b0a8]">p.a.</span>
                             </div>
                             <p class="text-sm text-[#a0b0a8] mb-6">Up to 36 months term</p>
                             <a href="{{ $applyHref }}"
@@ -502,7 +502,7 @@
 
         <footer class="bg-white dark:bg-[#0a1410] pt-16 pb-10 border-t border-[#dce5e0] dark:border-[#2a3a32]">
             <div class="mx-auto max-w-[1280px] px-6 lg:px-10">
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12 mb-16">
                     <div class="flex flex-col gap-6">
                         <div class="flex items-center gap-3 text-primary">
                             <h2 class="text-2xl font-black tracking-tight uppercase">ENREMCO</h2>
@@ -549,21 +549,6 @@
                     </div>
 
                     <div class="flex flex-col gap-6">
-                        <h3 class="text-sm font-black uppercase tracking-widest text-[#111814] dark:text-white">Legal
-                        </h3>
-                        <nav class="flex flex-col gap-3">
-                            <a class="text-[#638875] dark:text-[#a0b0a8] text-sm hover:text-primary transition-colors"
-                                href="#">Privacy Policy</a>
-                            <a class="text-[#638875] dark:text-[#a0b0a8] text-sm hover:text-primary transition-colors"
-                                href="#">Terms of Service</a>
-                            <a class="text-[#638875] dark:text-[#a0b0a8] text-sm hover:text-primary transition-colors"
-                                href="#">CDA Compliance</a>
-                            <a class="text-[#638875] dark:text-[#a0b0a8] text-sm hover:text-primary transition-colors"
-                                href="#">Bylaws</a>
-                        </nav>
-                    </div>
-
-                    <div class="flex flex-col gap-6">
                         <h3 class="text-sm font-black uppercase tracking-widest text-[#111814] dark:text-white">Contact
                             Us</h3>
                         <div class="flex flex-col gap-4">
@@ -590,8 +575,8 @@
 
                 <div
                     class="pt-8 border-t border-[#dce5e0] dark:border-[#2a3a32] flex flex-col md:flex-row justify-between items-center gap-4">
-                    <p class="text-[#638875] dark:text-[#a0b0a8] text-xs">© 2024 ENREMCO Multi-Purpose Cooperative. All
-                        rights reserved.</p>
+                    <p class="text-[#638875] dark:text-[#a0b0a8] text-xs">© {{ date('Y') }} ENREMCO. All rights
+                        reserved.</p>
                 </div>
             </div>
         </footer>
@@ -599,16 +584,16 @@
     </div>
 
     <script>
-        (function () {
-            const btn = document.getElementById('mobileMenuBtn');
-            const menu = document.getElementById('mobileMenu');
-            if (!btn || !menu) return;
+            (function () {
+                const btn = document.getElementById('mobileMenuBtn');
+                const menu = document.getElementById('mobileMenu');
+                if (!btn || !menu) return;
 
-            btn.addEventListener('click', () => {
-                const isHidden = menu.classList.toggle('hidden');
-                btn.setAttribute('aria-expanded', (!isHidden).toString());
-            });
-        })();
+                btn.addEventListener('click', () => {
+                    const isHidden = menu.classList.toggle('hidden');
+                    btn.setAttribute('aria-expanded', (!isHidden).toString());
+                });
+            })();
 
         function updateCalculator() {
             const amount = parseInt(document.getElementById('loan-amount').value, 10);

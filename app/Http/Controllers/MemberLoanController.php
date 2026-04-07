@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Carbon;
 
 class MemberLoanController extends Controller
@@ -49,6 +50,13 @@ class MemberLoanController extends Controller
         };
     }
 
+    private function canPrintApplication(LoanApplication $application): bool
+    {
+        $status = strtolower(trim((string) ($application->status ?? '')));
+
+        return in_array($status, ['reviewed', 'for_processing', 'for_approval', 'approved'], true);
+    }
+
     private function coMakerActiveLoanCount(int $userId): int
     {
         $hasLoansTable = Schema::hasTable('loan_applications');
@@ -60,7 +68,7 @@ class MemberLoanController extends Controller
             return 0;
         }
 
-        $activeStatuses = ['pending', 'in_review', 'for_review', 'for_approval', 'for_processing', 'approved'];
+        $activeStatuses = ['pending', 'reviewed', 'in_review', 'for_review', 'for_approval', 'for_processing', 'approved'];
 
         return (int) LoanApplication::query()
             ->whereIn(DB::raw('LOWER(status)'), $activeStatuses)
@@ -240,6 +248,7 @@ class MemberLoanController extends Controller
 
         $activeLoans = collect();
         $historyItems = collect();
+        $memberLedgerLoanIds = collect();
 
         if (Schema::hasTable('loan_details')) {
             $loanMemberColumn = null;
@@ -248,6 +257,19 @@ class MemberLoanController extends Controller
                     $loanMemberColumn = $col;
                     break;
                 }
+            }
+
+            if (
+                $loanMemberColumn !== null
+                && $memberKeys->isNotEmpty()
+                && Schema::hasColumn('loan_details', 'loan_id')
+            ) {
+                $memberLedgerLoanIds = LoanDetail::query()
+                    ->whereIn($loanMemberColumn, $memberKeys->all())
+                    ->pluck('loan_id')
+                    ->map(fn($id) => trim((string) $id))
+                    ->filter()
+                    ->values();
             }
 
             $query = LoanDetail::query()
@@ -287,6 +309,14 @@ class MemberLoanController extends Controller
                 ? 'date_approved'
                 : (Schema::hasColumn('loan_details', 'created_at') ? 'created_at' : 'loan_id');
 
+            Log::info('Member loans query debug', [
+                'user_id' => $user->id ?? null,
+                'memberKeys' => $memberKeys->toArray(),
+                'loanMemberColumn' => $loanMemberColumn,
+                'query_count' => $query->count(),
+                'historySearch' => $historySearch,
+            ]);
+
             $historyItems = $query
                 ->orderByDesc($orderBy)
                 ->get()
@@ -320,6 +350,16 @@ class MemberLoanController extends Controller
                     $loan->maturity_date_label = $maturityAt ? $maturityAt->format('M d, Y') : 'N/A';
                     $loan->next_due_date_label = $nextDueAt ? $nextDueAt->format('M d, Y') : 'N/A';
 
+                    // Derive terms if null
+                    if (empty($loan->terms) && $loan->date_approved && $loan->last_payment) {
+                        $start = Carbon::parse($loan->date_approved);
+                        $end = Carbon::parse($loan->last_payment);
+                        $loan->terms = (string) round($end->diffInMonths($start, false));
+                    } elseif (empty($loan->terms) && optional($loan->latestPayment)->total_payments_count > 0) {
+                        $loan->terms = (string) $loan->latestPayment->total_payments_count;
+                    }
+                    $loan->terms = $loan->terms ?? 'Not set - contact admin';
+
                     return $loan;
                 })
                 ->values();
@@ -330,6 +370,25 @@ class MemberLoanController extends Controller
         }
 
         if ($approvedApplications->isNotEmpty()) {
+            $ledgerLoanIdSet = $memberLedgerLoanIds->flip();
+            $approvedApplications = $approvedApplications
+                ->filter(function ($application) use ($ledgerLoanIdSet) {
+                    $lvNo = trim((string) ($application->lv_no ?? ''));
+                    if ($lvNo !== '' && $ledgerLoanIdSet->has($lvNo)) {
+                        return false;
+                    }
+
+                    $syntheticBase = 'LN-APP-' . str_pad((string) $application->id, 6, '0', STR_PAD_LEFT);
+                    if ($ledgerLoanIdSet->has($syntheticBase)) {
+                        return false;
+                    }
+
+                    return !$ledgerLoanIdSet->keys()->contains(
+                        fn($loanId) => str_starts_with((string) $loanId, $syntheticBase . '-')
+                    );
+                })
+                ->values();
+
             $approvedAsActive = $approvedApplications->map(function ($application) {
                 $approvedAt = $application->reviewed_at
                     ? Carbon::parse($application->reviewed_at)
@@ -350,6 +409,7 @@ class MemberLoanController extends Controller
                     'approved_date_label' => $approvedAt ? $approvedAt->format('M d, Y') : 'N/A',
                     'maturity_date_label' => 'N/A',
                     'is_paid' => false,
+                    'terms' => $application->terms,
                 ];
             });
 
@@ -409,6 +469,7 @@ class MemberLoanController extends Controller
             'address' => ['nullable', 'string', 'max:500'],
             'loan_type' => ['required', 'in:regular,educational,appliance,grocery'],
             'loan_amount' => ['nullable', 'numeric', 'min:1', 'required_unless:loan_type,appliance'],
+            'terms' => ['required', 'integer', 'min:1', 'max:120'],
 
             // Regular
             'loan_purpose' => ['nullable', 'string', 'max:500', 'required_if:loan_type,regular'],
@@ -554,7 +615,17 @@ class MemberLoanController extends Controller
             'school_program' => $data['school_program'] ?? null,
             'school_year' => $data['school_year'] ?? null,
             'semester' => $data['semester'] ?? null,
-            'appliance_item' => $applianceItems[0]['item_name'] ?? null,
+            'appliance_item' => !empty($applianceItems)
+                ? collect($applianceItems)
+                    ->map(function ($row) {
+                        $name = trim((string) ($row['item_name'] ?? ''));
+                        $qty = (int) ($row['quantity'] ?? 0);
+
+                        return $name === '' ? null : ($qty > 0 ? "{$name} (x{$qty})" : $name);
+                    })
+                    ->filter()
+                    ->implode(', ')
+                : null,
             'appliance_brand_model' => null,
             'appliance_store' => $data['appliance_store'] ?? null,
             'appliance_cash_price' => $applianceTotal,
@@ -572,6 +643,9 @@ class MemberLoanController extends Controller
             if (Schema::hasColumn('loan_applications', $column)) {
                 $loan->{$column} = $value;
             }
+        }
+        if (Schema::hasColumn('loan_applications', 'terms')) {
+            $loan->terms = (int) $data['terms'];
         }
 
         $loan->save();
@@ -656,7 +730,7 @@ class MemberLoanController extends Controller
         if ($hasLoansTable && $hasStatusCol && ($hasCm1Col || $hasCm2Col) && $users->isNotEmpty()) {
             $ids = $users->pluck('id')->values();
 
-            $activeStatuses = ['pending', 'in_review', 'for_review', 'for_approval', 'for_processing', 'approved'];
+            $activeStatuses = ['pending', 'reviewed', 'in_review', 'for_review', 'for_approval', 'for_processing', 'approved'];
             $activeStatuses = array_map('strtolower', $activeStatuses);
 
             $loanRows = LoanApplication::query()
@@ -706,9 +780,7 @@ class MemberLoanController extends Controller
     {
         // ✅ security: only the owner can view
         abort_unless($this->canAccessApplication($application), 403);
-
-        // Optional: allow only when for_processing
-        abort_unless($application->status === 'for_processing', 403);
+        abort_unless($this->canPrintApplication($application), 403);
 
         $html = view($this->printableLoanView($application), [
             'app' => $application,
@@ -748,8 +820,12 @@ class MemberLoanController extends Controller
             'total_net' => $netCash,
             'status' => $application->status,
             'created_at' => optional($application->created_at)?->format('M d, Y'),
-            'remarks' => $application->remarks, // ✅ admin note
-            'pdf_url' => route('member.loans.print', $application->id), // ✅ PDF viewer source
+            'remarks' => $application->remarks,
+            'can_print' => $this->canPrintApplication($application),
+            'pdf_url' => $this->canPrintApplication($application)
+                ? route('member.loans.print', $application->id)
+                : null,
+            'terms' => $application->terms,
         ]);
     }
 }

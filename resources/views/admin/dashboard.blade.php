@@ -15,20 +15,7 @@
     @endphp
 
     {{-- Summary Cards --}}
-    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-10">
-        <div class="summary-card">
-            <div class="flex items-center justify-between mb-5">
-                <div class="size-12 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-600">
-                    <span class="material-symbols-outlined text-[28px]">person_pin</span>
-                </div>
-                <div class="text-[11px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">
-                    +{{ (int) ($newMembersLast30Days ?? 0) }} New
-                </div>
-            </div>
-            <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Pending Memberships</p>
-            <p class="text-3xl font-black text-slate-900 mt-1">{{ (int) ($pendingMemberships ?? 0) }}</p>
-        </div>
-
+    <div class="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-3 gap-6 mb-10">
         <div class="summary-card">
             <div class="flex items-center justify-between mb-5">
                 <div class="size-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
@@ -108,6 +95,18 @@
             </div>
             <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Loan Items Pending</p>
             <p class="text-3xl font-black text-slate-900 mt-1">{{ $pendingLoansCount }}</p>
+        </div>
+        <div class="summary-card">
+            <div class="flex items-center justify-between mb-5">
+                <div class="size-12 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-600">
+                    <span class="material-symbols-outlined text-[28px]">person_pin</span>
+                </div>
+                <div class="text-[11px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">
+                    +{{ (int) ($newMembersLast30Days ?? 0) }} New
+                </div>
+            </div>
+            <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Pending Memberships</p>
+            <p class="text-3xl font-black text-slate-900 mt-1">{{ (int) ($pendingMemberships ?? 0) }}</p>
         </div>
     </div>
 
@@ -224,6 +223,14 @@
                                             class="status-pill bg-emerald-50 text-emerald-600 border border-emerald-100">Approved</span>
                                     @elseif($statusRaw === 'rejected')
                                         <span class="status-pill bg-red-50 text-red-600 border border-red-100">Rejected</span>
+                                    @elseif($statusRaw === 'reviewed')
+                                        <span class="status-pill bg-sky-50 text-sky-600 border border-sky-100">Reviewed</span>
+                                    @elseif($statusRaw === 'for_processing')
+                                        <span class="status-pill bg-purple-50 text-purple-600 border border-purple-100">For
+                                            Processing</span>
+                                    @elseif($statusRaw === 'for_approval')
+                                        <span class="status-pill bg-blue-50 text-blue-600 border border-blue-100">For
+                                            Approval</span>
                                     @elseif($statusRaw === 'in_review')
                                         <span class="status-pill bg-blue-50 text-blue-600 border border-blue-100">In
                                             Review</span>

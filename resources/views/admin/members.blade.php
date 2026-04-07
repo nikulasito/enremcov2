@@ -252,7 +252,7 @@
         <div id="updateMemberModal" class="fixed inset-0 z-50 hidden">
             <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" data-modal-close="updateMemberModal"></div>
 
-            <div class="relative mx-auto mt-10 w-[92%] max-w-3xl overflow-hidden rounded-xl bg-white shadow-2xl dark:bg-[#1a2e24]
+            <div class="relative mx-auto mt-10 w-[92%] max-w-6xl overflow-hidden rounded-xl bg-white shadow-2xl dark:bg-[#1a2e24]
                 max-h-[85vh] flex flex-col">
 
                 {{-- Header --}}

@@ -15,11 +15,41 @@ use App\Imports\LoanImport;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\LoanApprovedMail;
 use App\Notifications\LoanStatusUpdatedNotification;
 use App\Notifications\LoanForApprovalNotification;
 
 class LoansController extends Controller
 {
+    private function currentUserIsExecAdmin(): bool
+    {
+        return (bool) auth()->user()?->isExecAdmin();
+    }
+
+    private function currentUserIsCreditOfficer(): bool
+    {
+        return (bool) auth()->user()?->isCreditOfficer();
+    }
+
+    private function currentUserIsRegularAdmin(): bool
+    {
+        return (bool) auth()->user()?->isRegularAdmin();
+    }
+
+    private function applicationHasCreditReview(LoanApplication $application): bool
+    {
+        if (Schema::hasColumn('loan_applications', 'credit_reviewed_at') && !empty($application->credit_reviewed_at)) {
+            return true;
+        }
+
+        return in_array(strtolower(trim((string) ($application->status ?? ''))), [
+            'reviewed',
+            'for_processing',
+            'for_approval',
+            'approved',
+        ], true);
+    }
 
     public function index(Request $request) // Add Request $request
     {
@@ -400,7 +430,7 @@ class LoansController extends Controller
 
     public function loanRequestsIndex(Request $request)
     {
-        $isExecAdmin = strtolower((string) (auth()->user()->role ?? '')) === 'exec-admin';
+        $isExecAdmin = $this->currentUserIsExecAdmin();
         $q = trim((string) $request->get('q', ''));
         $loanType = $request->get('loan_type', 'all');
         $status = $isExecAdmin ? 'for_approval' : $request->get('status', 'all');
@@ -423,7 +453,7 @@ class LoansController extends Controller
 
     public function loanRequestsShow(LoanApplication $application, Request $request)
     {
-        $isExecAdmin = strtolower((string) (auth()->user()->role ?? '')) === 'exec-admin';
+        $isExecAdmin = $this->currentUserIsExecAdmin();
         if ($isExecAdmin && strtolower((string) ($application->status ?? '')) !== 'for_approval') {
             abort(404);
         }
@@ -435,6 +465,49 @@ class LoansController extends Controller
             : (str_contains($loanTypeRaw, 'appliance')
                 ? 'appliance'
                 : (str_contains($loanTypeRaw, 'grocery') ? 'grocery' : 'regular'));
+        $autoBalances = $this->computeMemberExistingBalances($application);
+
+        $applianceItems = [];
+        $applianceItemsRaw = $application->appliance_items ?? null;
+        if (is_string($applianceItemsRaw) && trim($applianceItemsRaw) !== '') {
+            $decoded = json_decode($applianceItemsRaw, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                $applianceItemsRaw = $decoded;
+            }
+        }
+        if (is_array($applianceItemsRaw)) {
+            $applianceItems = collect($applianceItemsRaw)
+                ->map(function ($row) {
+                    $itemName = trim((string) ($row['item_name'] ?? ''));
+                    $quantity = (int) ($row['quantity'] ?? 0);
+                    $unitPrice = (float) ($row['unit_price'] ?? 0);
+                    $amount = (float) ($row['amount'] ?? ($quantity * $unitPrice));
+
+                    return [
+                        'item_name' => $itemName,
+                        'quantity' => max($quantity, 0),
+                        'unit_price' => round($unitPrice, 2),
+                        'amount' => round($amount, 2),
+                    ];
+                })
+                ->filter(fn($row) => $row['item_name'] !== '' && $row['quantity'] > 0)
+                ->values()
+                ->all();
+        }
+        if (empty($applianceItems) && !empty($application->appliance_item)) {
+            $fallbackPrice = (float) ($application->appliance_cash_price ?? $application->loan_amount ?? 0);
+            $fallbackNames = preg_split('/\s*,\s*/', (string) $application->appliance_item, -1, PREG_SPLIT_NO_EMPTY);
+            $fallbackNames = is_array($fallbackNames) ? $fallbackNames : [(string) $application->appliance_item];
+
+            foreach ($fallbackNames as $index => $name) {
+                $applianceItems[] = [
+                    'item_name' => trim((string) $name),
+                    'quantity' => 1,
+                    'unit_price' => count($fallbackNames) === 1 ? round($fallbackPrice, 2) : 0.0,
+                    'amount' => count($fallbackNames) === 1 ? round($fallbackPrice, 2) : 0.0,
+                ];
+            }
+        }
 
         // used by the modal fetch()
         if ($request->wantsJson()) {
@@ -448,20 +521,34 @@ class LoansController extends Controller
                 'loan_type_key' => $loanTypeKey,
                 'loan_amount' => (float) $application->loan_amount,
                 'status' => $application->status,
+                'credit_reviewed' => $this->applicationHasCreditReview($application),
+                'credit_reviewed_at' => $application->credit_reviewed_at
+                    ? Carbon::parse($application->credit_reviewed_at)->format('M d, Y h:i A')
+                    : null,
                 'created_at' => optional($application->created_at)?->format('M d, Y'),
                 'remarks' => $application->remarks,
                 'approved_amount' => $application->approved_amount ?? null,
                 // If you add these columns later, modal will auto-fill
-                'old_balance' => $application->old_balance ?? null,
+                'old_balance' => $application->old_balance !== null
+                    ? (float) $application->old_balance
+                    : $autoBalances['old_balance'],
                 'lpp' => $application->lpp ?? null,
                 'interest' => $application->interest ?? null,
                 'handling_fee' => $application->handling_fee ?? null,
-                'petty_cash_loan' => $application->petty_cash_loan ?? null,
+                'petty_cash_loan' => $application->petty_cash_loan !== null
+                    ? (float) $application->petty_cash_loan
+                    : $autoBalances['petty_cash_loan'],
                 'total_deduction' => $application->total_deduction ?? null,
                 'total_net' => $application->total_net ?? null,
                 'terms' => $application->terms ?? null,
                 'monthly_payment' => $application->monthly_payment ?? null,
                 'lv_no' => $application->lv_no ?? null,
+                'run_term' => $application->run_term ?? null,
+                'first_installment_date' => $application->first_installment_date
+                    ? Carbon::parse($application->first_installment_date)->format('Y-m-d')
+                    : null,
+                'installment_increased_to' => $application->installment_increased_to ?? null,
+                'simple_annual_rate' => $application->simple_annual_rate ?? null,
 
                 // Optional loan-type specific data (if stored in DB)
                 'beneficiary_name' => $application->beneficiary_name ?? null,
@@ -474,6 +561,10 @@ class LoansController extends Controller
                 'appliance_brand_model' => $application->appliance_brand_model ?? null,
                 'appliance_store' => $application->appliance_store ?? null,
                 'appliance_cash_price' => $application->appliance_cash_price ?? null,
+                'appliance_items' => $applianceItems,
+                'appliance_total_amount' => $application->appliance_total_amount ?? null,
+                'appliance_downpayment' => $application->appliance_downpayment ?? null,
+                'appliance_warranty_months' => $application->appliance_warranty_months ?? null,
 
                 'grocery_partner_store' => $application->grocery_partner_store ?? null,
                 'grocery_period_from' => $application->grocery_period_from ?? null,
@@ -487,10 +578,19 @@ class LoansController extends Controller
 
     public function loanRequestsApprove(Request $request, LoanApplication $application)
     {
-        $isExecAdmin = strtolower((string) (auth()->user()->role ?? '')) === 'exec-admin';
+        $isExecAdmin = $this->currentUserIsExecAdmin();
         if (!$isExecAdmin) {
             abort(403, 'Only exec-admin can approve loan requests.');
         }
+
+        if (!$this->applicationHasCreditReview($application)) {
+            return back()->with('error', 'Credit Officer review is required before approval.');
+        }
+
+        if (strtolower((string) ($application->status ?? '')) !== 'for_approval') {
+            return back()->with('error', 'Only applications marked For Approval can be approved.');
+        }
+        $previousStatus = strtolower((string) ($application->status ?? ''));
 
         $validated = $request->validate([
             'remarks' => 'nullable|string|max:1000',
@@ -574,6 +674,10 @@ class LoansController extends Controller
             }
         }
 
+        if ($previousStatus !== 'approved') {
+            $this->sendLoanApprovedEmail($application);
+        }
+
 
 
         return back()->with('success', 'Application approved.');
@@ -581,6 +685,21 @@ class LoansController extends Controller
 
     public function loanRequestsReject(Request $request, LoanApplication $application)
     {
+        $isCreditOfficer = $this->currentUserIsCreditOfficer();
+        $isExecAdmin = $this->currentUserIsExecAdmin();
+
+        if (!$isCreditOfficer && !$isExecAdmin) {
+            return back()->with('error', 'You are not allowed to reject this application.');
+        }
+
+        if ($isCreditOfficer && strtolower(trim((string) ($application->status ?? ''))) !== 'pending') {
+            return back()->with('error', 'Credit Officer can only reject pending applications.');
+        }
+
+        if ($isExecAdmin && strtolower(trim((string) ($application->status ?? ''))) !== 'for_approval') {
+            return back()->with('error', 'Only applications awaiting approval can be rejected here.');
+        }
+
         $request->validate([
             'remarks' => 'nullable|string|max:255',
         ]);
@@ -596,6 +715,12 @@ class LoansController extends Controller
         if (Schema::hasColumn('loan_applications', 'reviewed_at')) {
             $updates['reviewed_at'] = now();
         }
+        if ($isCreditOfficer && Schema::hasColumn('loan_applications', 'credit_reviewed_by')) {
+            $updates['credit_reviewed_by'] = auth()->id();
+        }
+        if ($isCreditOfficer && Schema::hasColumn('loan_applications', 'credit_reviewed_at')) {
+            $updates['credit_reviewed_at'] = now();
+        }
 
         $application->forceFill($updates)->save();
         $application->refresh();
@@ -609,15 +734,146 @@ class LoansController extends Controller
     public function loanRequestsSetStatus(Request $request, LoanApplication $application)
     {
         $previousStatus = strtolower((string) ($application->status ?? ''));
+        $isCreditOfficer = $this->currentUserIsCreditOfficer();
+        $isRegularAdmin = $this->currentUserIsRegularAdmin();
+
+        if (!$isCreditOfficer && !$isRegularAdmin) {
+            abort(403, 'Unauthorized loan status action.');
+        }
+
+        if ($isCreditOfficer) {
+            $validated = $request->validate([
+                'status' => 'required|string|in:reviewed',
+                'remarks' => 'nullable|string|max:1000',
+                'approved_amount' => 'nullable|numeric|min:0',
+                'old_balance' => 'nullable|numeric|min:0',
+                'lpp' => 'nullable|numeric|min:0',
+                'interest' => 'nullable|numeric|min:0',
+                'handling_fee' => 'nullable|numeric|min:0',
+                'petty_cash_loan' => 'nullable|numeric|min:0',
+                'total_deduction' => 'nullable|numeric|min:0',
+                'total_net' => 'nullable|numeric',
+                'terms' => 'nullable|integer|min:1',
+                'monthly_payment' => 'nullable|numeric|min:0',
+                'run_term' => 'nullable|string|max:50',
+                'first_installment_date' => 'nullable|date',
+                'installment_increased_to' => 'nullable|numeric|min:0',
+                'simple_annual_rate' => 'nullable|string|max:50',
+            ]);
+
+            if ($previousStatus !== 'pending') {
+                return back()->with('error', 'Only pending applications can be marked as reviewed.');
+            }
+
+            $updates = [
+                'status' => 'reviewed',
+            ];
+
+            if (array_key_exists('remarks', $validated)) {
+                $updates['remarks'] = $validated['remarks'];
+            }
+
+            if (array_key_exists('approved_amount', $validated) && Schema::hasColumn('loan_applications', 'approved_amount')) {
+                $updates['approved_amount'] = $validated['approved_amount'] ?? $application->loan_amount;
+            }
+
+            foreach ([
+                'old_balance',
+                'lpp',
+                'interest',
+                'handling_fee',
+                'petty_cash_loan',
+                'total_deduction',
+                'terms',
+                'monthly_payment',
+            ] as $field) {
+                if (array_key_exists($field, $validated) && Schema::hasColumn('loan_applications', $field)) {
+                    $updates[$field] = $validated[$field];
+                }
+            }
+
+            if (array_key_exists('total_net', $validated) && Schema::hasColumn('loan_applications', 'total_net')) {
+                $updates['total_net'] = $validated['total_net'];
+            } elseif (Schema::hasColumn('loan_applications', 'total_net')) {
+                $totalDeduction = $validated['total_deduction'] ?? $application->total_deduction ?? 0;
+                $approvedAmount = $updates['approved_amount'] ?? $application->approved_amount ?? $application->loan_amount;
+                $updates['total_net'] = $approvedAmount - $totalDeduction;
+            }
+
+            foreach ([
+                'run_term',
+                'first_installment_date',
+                'installment_increased_to',
+                'simple_annual_rate',
+            ] as $field) {
+                if (array_key_exists($field, $validated) && Schema::hasColumn('loan_applications', $field)) {
+                    $updates[$field] = $validated[$field];
+                }
+            }
+
+            if (Schema::hasColumn('loan_applications', 'credit_reviewed_by')) {
+                $updates['credit_reviewed_by'] = auth()->id();
+            }
+            if (Schema::hasColumn('loan_applications', 'credit_reviewed_at')) {
+                $updates['credit_reviewed_at'] = now();
+            }
+
+            $application->forceFill($updates)->save();
+            $application->refresh();
+
+            if ($application->user) {
+                try {
+                    $application->user->notify(new LoanStatusUpdatedNotification($application));
+                } catch (\Throwable $e) {
+                    Log::warning('Loan status notification failed', [
+                        'application_id' => $application->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            return back()->with('success', 'Application status updated to Reviewed.');
+        }
 
         $validated = $request->validate([
-            'status' => 'required|string|in:for_review,for_approval,for_processing,approved',
+            'status' => 'required|string|in:for_approval,for_processing',
             'remarks' => 'nullable|string|max:1000',
+            'approved_amount' => 'nullable|numeric|min:0',
+            'old_balance' => 'nullable|numeric|min:0',
+            'lpp' => 'nullable|numeric|min:0',
+            'interest' => 'nullable|numeric|min:0',
+            'handling_fee' => 'nullable|numeric|min:0',
+            'petty_cash_loan' => 'nullable|numeric|min:0',
+            'total_deduction' => 'nullable|numeric|min:0',
+            'total_net' => 'nullable|numeric',
+            'terms' => 'nullable|integer|min:1',
+            'monthly_payment' => 'nullable|numeric|min:0',
+            'run_term' => 'nullable|string|max:50',
+            'first_installment_date' => 'nullable|date',
+            'installment_increased_to' => 'nullable|numeric|min:0',
+            'simple_annual_rate' => 'nullable|string|max:50',
         ]);
+
+        if (!$this->applicationHasCreditReview($application)) {
+            return back()->with('error', 'Credit Officer review is required before admin processing.');
+        }
+
+        if (in_array($previousStatus, ['approved', 'rejected'], true)) {
+            return back()->with('error', 'This application can no longer be updated.');
+        }
 
         $updates = [
             'status' => $validated['status'],
         ];
+
+        // existing approved amount or fallback to loan amount
+        if (array_key_exists('approved_amount', $validated) && Schema::hasColumn('loan_applications', 'approved_amount')) {
+            $updates['approved_amount'] = $validated['approved_amount'] ?? $application->loan_amount;
+        }
+
+        $loanTypeRaw = strtolower(trim((string) ($application->loan_type ?? '')));
+        $loanTypeRaw = str_replace(['-', '_'], ' ', $loanTypeRaw);
+        $isRegularLoan = str_contains($loanTypeRaw, 'regular') || str_contains($loanTypeRaw, 'salary');
 
         if (array_key_exists('remarks', $validated)) {
             $updates['remarks'] = $validated['remarks'];
@@ -628,6 +884,50 @@ class LoansController extends Controller
         }
         if (Schema::hasColumn('loan_applications', 'reviewed_at')) {
             $updates['reviewed_at'] = now();
+        }
+        foreach ([
+            'old_balance',
+            'lpp',
+            'interest',
+            'handling_fee',
+            'petty_cash_loan',
+            'total_deduction',
+            'terms',
+            'monthly_payment',
+        ] as $field) {
+            if (array_key_exists($field, $validated) && Schema::hasColumn('loan_applications', $field)) {
+                $updates[$field] = $validated[$field];
+            }
+        }
+        
+        if (array_key_exists('total_net', $validated) && Schema::hasColumn('loan_applications', 'total_net')) {
+            $updates['total_net'] = $validated['total_net'];
+        } else {
+            $totalDeduction = ($validated['total_deduction'] ?? $application->total_deduction ?? 0);
+            $updates['total_net'] = ($updates['approved_amount'] ?? $application->approved_amount) - $totalDeduction;
+        }
+        
+        if ($isRegularLoan
+            && array_key_exists('run_term', $validated)
+            && Schema::hasColumn('loan_applications', 'run_term')) {
+            $runTerm = trim((string) ($validated['run_term'] ?? ''));
+            $updates['run_term'] = $runTerm !== '' ? $runTerm : null;
+        }
+        if ($isRegularLoan
+            && array_key_exists('first_installment_date', $validated)
+            && Schema::hasColumn('loan_applications', 'first_installment_date')) {
+            $updates['first_installment_date'] = $validated['first_installment_date'] ?: null;
+        }
+        if ($isRegularLoan
+            && array_key_exists('simple_annual_rate', $validated)
+            && Schema::hasColumn('loan_applications', 'simple_annual_rate')) {
+            $simpleAnnualRate = trim((string) ($validated['simple_annual_rate'] ?? ''));
+            $updates['simple_annual_rate'] = $simpleAnnualRate !== '' ? $simpleAnnualRate : null;
+        }
+        if ($isRegularLoan
+            && array_key_exists('installment_increased_to', $validated)
+            && Schema::hasColumn('loan_applications', 'installment_increased_to')) {
+            $updates['installment_increased_to'] = $validated['installment_increased_to'];
         }
 
         $application->forceFill($updates)->save();
@@ -662,8 +962,12 @@ class LoansController extends Controller
             }
         }
 
+        if ($validated['status'] === 'approved' && $previousStatus !== 'approved') {
+            $this->sendLoanApprovedEmail($application);
+        }
+
         $statusLabel = match ($validated['status']) {
-            'for_review' => 'For Review',
+            'reviewed' => 'Reviewed',
             'for_approval' => 'For Approval',
             'for_processing' => 'For processing',
             'approved' => 'Approved',
@@ -671,6 +975,101 @@ class LoansController extends Controller
         };
 
         return back()->with('success', "Application status updated to {$statusLabel}.");
+    }
+
+    private function sendLoanApprovedEmail(LoanApplication $application): void
+    {
+        $application->loadMissing('user');
+        $member = $application->user;
+
+        if (!$member || empty($member->email)) {
+            return;
+        }
+
+        try {
+            Mail::mailer('brevo')
+                ->to($member->email)
+                ->send(new LoanApprovedMail($member, $application));
+        } catch (\Throwable $e) {
+            Log::warning('Loan approved email failed', [
+                'application_id' => $application->id,
+                'user_id' => $member->id ?? null,
+                'email' => $member->email ?? null,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    private function computeMemberExistingBalances(LoanApplication $application): array
+    {
+        if (!Schema::hasTable('loan_details') || !Schema::hasColumn('loan_details', 'employee_ID')) {
+            return ['old_balance' => 0.0, 'petty_cash_loan' => 0.0];
+        }
+
+        $memberKeys = $this->resolveMemberKeys($application);
+        if ($memberKeys->isEmpty()) {
+            return ['old_balance' => 0.0, 'petty_cash_loan' => 0.0];
+        }
+
+        $loanRows = LoanDetail::query()
+            ->with('latestPayment')
+            ->whereIn('employee_ID', $memberKeys->all())
+            ->get(['loan_id', 'employee_ID', 'loan_type', 'loan_amount']);
+
+        $oldBalance = 0.0;
+        $pettyCashLoan = 0.0;
+
+        foreach ($loanRows as $loan) {
+            $outstanding = $this->resolveOutstandingBalance($loan);
+            if ($outstanding <= 0) {
+                continue;
+            }
+
+            if ($this->isPettyCashLoanType($loan->loan_type ?? '')) {
+                $pettyCashLoan += $outstanding;
+            } else {
+                $oldBalance += $outstanding;
+            }
+        }
+
+        return [
+            'old_balance' => round($oldBalance, 2),
+            'petty_cash_loan' => round($pettyCashLoan, 2),
+        ];
+    }
+
+    private function resolveMemberKeys(LoanApplication $application)
+    {
+        $application->loadMissing('user');
+        $user = $application->user;
+
+        return collect([
+            $application->member_key,
+            $user->employee_ID ?? null,
+            $user->employees_id ?? null,
+            $user->employee_id ?? null,
+        ])
+            ->map(fn($value) => trim((string) $value))
+            ->filter(fn($value) => $value !== '' && strtolower($value) !== 'n/a')
+            ->unique()
+            ->values();
+    }
+
+    private function resolveOutstandingBalance(LoanDetail $loan): float
+    {
+        $latestOutstanding = optional($loan->latestPayment)->outstanding_balance;
+        if ($latestOutstanding !== null && is_numeric($latestOutstanding)) {
+            return max((float) $latestOutstanding, 0.0);
+        }
+
+        return max((float) ($loan->loan_amount ?? 0), 0.0);
+    }
+
+    private function isPettyCashLoanType(?string $loanType): bool
+    {
+        $normalized = strtolower(str_replace(['-', '_'], ' ', trim((string) $loanType)));
+        $normalized = preg_replace('/\s+/', ' ', $normalized);
+        return str_contains((string) $normalized, 'petty cash');
     }
 
 

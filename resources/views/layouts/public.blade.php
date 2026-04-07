@@ -238,24 +238,24 @@
 
                 <div
                     class="pt-8 border-t border-[#dce5e0] dark:border-[#2a3a32] flex flex-col md:flex-row justify-between items-center gap-4">
-                    <p class="text-[#638875] dark:text-[#a0b0a8] text-xs">© 2024 ENREMCO Multi-Purpose Cooperative. All
-                        rights reserved.</p>
+                    <p class="text-[#638875] dark:text-[#a0b0a8] text-xs">© {{ date('Y') }} ENREMCO. All rights
+                        reserved.</p>
                 </div>
             </div>
         </footer>
 
     </div>
     <script>
-        (function () {
-            const btn = document.getElementById('mobileMenuBtn');
-            const menu = document.getElementById('mobileMenu');
-            if (!btn || !menu) return;
+            (function () {
+                const btn = document.getElementById('mobileMenuBtn');
+                const menu = document.getElementById('mobileMenu');
+                if (!btn || !menu) return;
 
-            btn.addEventListener('click', () => {
-                const isHidden = menu.classList.toggle('hidden');
-                btn.setAttribute('aria-expanded', (!isHidden).toString());
-            });
-        })();
+                btn.addEventListener('click', () => {
+                    const isHidden = menu.classList.toggle('hidden');
+                    btn.setAttribute('aria-expanded', (!isHidden).toString());
+                });
+            })();
 
         function updateCalculator() {
             const amount = parseInt(document.getElementById('loan-amount').value, 10);

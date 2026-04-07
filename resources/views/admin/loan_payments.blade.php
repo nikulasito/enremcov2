@@ -193,14 +193,13 @@
                             $loanTypeLower = strtolower($loan->loan_type ?? '');
 
                             $balance = $loan->current_balance ?? 0;
-                          @endphp
-
-                        @if($balance > 0)
+                            $isPaid = $balance <= 0;
+                        @endphp
                             <tr class="loanPaymentRow ..." data-office="{{ $userOffice }}" data-loan-type="{{ $loanTypeLower }}"
                                 data-loan-id="{{ $loan->loan_id }}">
 
                                 <td class="px-6 py-4">
-                                    <input type="checkbox" class="rowCheckbox">
+                                    <input type="checkbox" class="rowCheckbox" @disabled($isPaid)>
                                 </td>
 
                                 <td class="px-6 py-4">{{ $index + 1 }}</td>
@@ -246,7 +245,8 @@
 
                                 <td class="px-6 py-4">
                                     <input type="number" class="payment-amount w-28 rounded-lg border"
-                                        value="{{ $loan->monthly_payment }}" placeholder="Enter Amount">
+                                        value="{{ $isPaid ? 0 : $loan->monthly_payment }}" placeholder="Enter Amount"
+                                        @disabled($isPaid)>
                                 </td>
 
                                 <td class="px-6 py-4">
@@ -268,7 +268,6 @@
                                 </td>
 
                             </tr>
-                        @endif
                     @endforeach
                 </tbody>
 
@@ -671,7 +670,7 @@
                 const selectAllCheckbox = document.getElementById("selectAll");
                 const bulkAddPaymentBtn = document.querySelector(".bulkAddPayment");
 
-                const getRowCheckboxes = () => Array.from(document.querySelectorAll("#loanPaymentTable input[type='checkbox']"));
+                const getRowCheckboxes = () => Array.from(document.querySelectorAll("#loanPaymentTable .rowCheckbox:not(:disabled)"));
 
                 function updateButtonState() {
                     const checkboxes = getRowCheckboxes();
@@ -782,8 +781,18 @@
                                     if (remittanceNoCell) remittanceNoCell.textContent = p.remittance_no ?? 'N/A';
                                     if (dateOfRemittanceCell) dateOfRemittanceCell.textContent = p.date_of_remittance ?? 'N/A';
                                     if (dateCoveredCell) dateCoveredCell.textContent = `${p.date_covered_month ?? 'N/A'}, ${p.date_covered_year ?? 'N/A'}`;
-
-                                    if (parseFloat(p.latest_outstanding_balance) === 0) row.remove();
+                                    if (parseFloat(p.latest_outstanding_balance) === 0) {
+                                        const rowCheckbox = row.querySelector(".rowCheckbox");
+                                        const paymentInput = row.querySelector(".payment-amount");
+                                        if (rowCheckbox) {
+                                            rowCheckbox.checked = false;
+                                            rowCheckbox.disabled = true;
+                                        }
+                                        if (paymentInput) {
+                                            paymentInput.value = "0";
+                                            paymentInput.disabled = true;
+                                        }
+                                    }
                                 }
                             });
 

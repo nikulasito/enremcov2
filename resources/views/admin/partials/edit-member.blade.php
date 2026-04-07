@@ -55,6 +55,11 @@
                     </div>
 
                     <div>
+                        <div class="{{ $lbl }}">Username</div>
+                        <div class="{{ $box }}">{{ $member->username ?? 'N/A' }}</div>
+                    </div>
+
+                    <div>
                         <div class="{{ $lbl }}">Position</div>
                         <div class="{{ $box }}">{{ $member->position ?? '—' }}</div>
                     </div>

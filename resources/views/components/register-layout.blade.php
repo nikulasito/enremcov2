@@ -129,7 +129,7 @@
         {{-- Footer (shared like other pages) --}}
         <footer class="bg-white dark:bg-[#0a1410] pt-16 pb-10 border-t border-[#dce5e0] dark:border-[#2a3a32]">
             <div class="mx-auto max-w-[1280px] px-6 lg:px-10">
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12 mb-16">
                     <div class="flex flex-col gap-6">
                         <div class="flex items-center gap-3 text-primary">
                             <h2 class="text-2xl font-black tracking-tight uppercase">ENREMCO</h2>
@@ -176,21 +176,6 @@
                     </div>
 
                     <div class="flex flex-col gap-6">
-                        <h3 class="text-sm font-black uppercase tracking-widest text-[#111814] dark:text-white">Legal
-                        </h3>
-                        <nav class="flex flex-col gap-3">
-                            <a class="text-[#638875] dark:text-[#a0b0a8] text-sm hover:text-primary transition-colors"
-                                href="#">Privacy Policy</a>
-                            <a class="text-[#638875] dark:text-[#a0b0a8] text-sm hover:text-primary transition-colors"
-                                href="#">Terms of Service</a>
-                            <a class="text-[#638875] dark:text-[#a0b0a8] text-sm hover:text-primary transition-colors"
-                                href="#">CDA Compliance</a>
-                            <a class="text-[#638875] dark:text-[#a0b0a8] text-sm hover:text-primary transition-colors"
-                                href="#">Bylaws</a>
-                        </nav>
-                    </div>
-
-                    <div class="flex flex-col gap-6">
                         <h3 class="text-sm font-black uppercase tracking-widest text-[#111814] dark:text-white">Contact
                             Us</h3>
                         <div class="flex flex-col gap-4">
@@ -217,8 +202,8 @@
 
                 <div
                     class="pt-8 border-t border-[#dce5e0] dark:border-[#2a3a32] flex flex-col md:flex-row justify-between items-center gap-4">
-                    <p class="text-[#638875] dark:text-[#a0b0a8] text-xs">© 2026 ENREMCO Multi-Purpose Cooperative. All
-                        rights reserved.</p>
+                    <p class="text-[#638875] dark:text-[#a0b0a8] text-xs">© {{ date('Y') }} ENREMCO. All rights
+                        reserved.</p>
                 </div>
             </div>
         </footer>
@@ -230,16 +215,16 @@
     {{--
     <script src="{{ asset('...bootstrap.bundle.js') }}"></script> --}}
     <script>
-        (function () {
-            const btn = document.getElementById('mobileMenuBtn');
-            const menu = document.getElementById('mobileMenu');
-            if (!btn || !menu) return;
+            (function () {
+                const btn = document.getElementById('mobileMenuBtn');
+                const menu = document.getElementById('mobileMenu');
+                if (!btn || !menu) return;
 
-            btn.addEventListener('click', () => {
-                const isHidden = menu.classList.toggle('hidden');
-                btn.setAttribute('aria-expanded', (!isHidden).toString());
-            });
-        })();
+                btn.addEventListener('click', () => {
+                    const isHidden = menu.classList.toggle('hidden');
+                    btn.setAttribute('aria-expanded', (!isHidden).toString());
+                });
+            })();
     </script>
 </body>
 
