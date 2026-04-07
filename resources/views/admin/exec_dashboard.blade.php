@@ -197,6 +197,7 @@
                             $statusText = match ($status) {
                                 'approved' => 'Verified',
                                 'for_approval' => 'For Approval.',
+                                'reviewed' => 'Reviewed',
                                 'for_review', 'for_processing' => 'Under Review',
                                 'rejected' => 'Rejected',
                                 default => 'Pending',
@@ -204,6 +205,7 @@
                             $statusClass = match ($status) {
                                 'approved' => 'bg-emerald-50 text-emerald-600 border border-emerald-100',
                                 'for_approval' => 'bg-amber-50 text-amber-600 border border-amber-100',
+                                'reviewed' => 'bg-sky-50 text-sky-600 border border-sky-100',
                                 'for_review', 'for_processing' => 'bg-blue-50 text-blue-600 border border-blue-100',
                                 'rejected' => 'bg-red-50 text-red-600 border border-red-100',
                                 default => 'bg-slate-100 text-slate-700 border border-slate-200',

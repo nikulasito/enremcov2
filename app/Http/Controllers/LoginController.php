@@ -2,10 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\ValidationException;
-use Illuminate\Support\Facades\Password;
 
 class LoginController extends Controller
 {
@@ -26,15 +25,19 @@ class LoginController extends Controller
             'password' => ['required'],
         ]);
 
-        // Attempt to log in using the username and password
-        if (Auth::attempt(['username' => $request->username, 'password' => $request->password])) {
+        $user = User::findForLogin($credentials['username']);
+
+        if ($user && Auth::attempt(['id' => $user->getAuthIdentifier(), 'password' => $credentials['password']])) {
             $request->session()->regenerate();
 
             $user = Auth::user();
-            if (strtolower((string) ($user->role ?? '')) === 'exec-admin') {
+            if ($user->isExecAdmin()) {
                 return redirect()->route('admin.exec-dashboard');
             }
-            if ($user->is_admin) {
+            if ($user->isCreditOfficer()) {
+                return redirect()->route('admin.credit-officer.dashboard');
+            }
+            if ($user->isRegularAdmin()) {
                 return redirect()->route('admin.dashboard');
             }
 

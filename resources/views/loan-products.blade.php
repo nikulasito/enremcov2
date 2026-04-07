@@ -92,9 +92,9 @@
                                         class="bg-white dark:bg-[#2a3a32] border border-[#dce5e0] dark:border-[#354a3f] rounded-lg text-sm font-semibold p-2 focus:ring-primary focus:border-primary"
                                         id="loan-type" onchange="updateCalculator()">
                                         <option value="0.12">Regular (12.0%)</option>
-                                        <option value="0.045">Educational (4.5%)</option>
-                                        <option value="0.03">Appliance (3.0%)</option>
-                                        <option value="0.025">Grocery (2.5%)</option>
+                                        <option value="0.10">Educational (10.0%)</option>
+                                        <option value="0.18">Appliance (18.0%)</option>
+                                        <option value="0.10">Grocery (10.0%)</option>
                                     </select>
                                 </div>
                             </div>
@@ -214,7 +214,7 @@
                                     <p
                                         class="text-xs font-bold text-[#638875] dark:text-[#a0b0a8] uppercase tracking-wider">
                                         Interest Rate</p>
-                                    <p class="text-2xl font-black text-[#111814] dark:text-white">5.0% <span
+                                    <p class="text-2xl font-black text-[#111814] dark:text-white">12.0% <span
                                             class="text-xs font-normal">p.a.</span></p>
                                 </div>
                                 <div>
@@ -366,7 +366,7 @@
                                     </h4>
                                     <ul class="text-sm text-[#638875] dark:text-[#a0b0a8] space-y-2 list-disc list-inside">
                                         <li>Immediate medical or urgent needs</li>
-                                        <li>Probationary or Regular ERC employee</li>
+                                        <li>Probationary or Regular DENR employee</li>
                                         <li>Available only once per 6-month period</li>
                                     </ul>
                                 </div>

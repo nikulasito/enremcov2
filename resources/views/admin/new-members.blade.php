@@ -476,19 +476,85 @@
                     }
 
                     win.document.write(`
-                              <html>
-                              <head>
-                                  <title>Registration Details</title>
-                                  <meta name="viewport" content="width=device-width, initial-scale=1">
-                                  <style>
-                                      body { font-family: Arial, sans-serif; line-height: 1.5; margin: 10px; }
-                                      table { width: 100%; border-collapse: collapse; }
-                                      td { vertical-align: top; }
-                                  </style>
-                              </head>
-                              <body>${content}</body>
-                              </html>
-                          `);
+                <html>
+                <head>
+                    <title>Registration Details</title>
+                    <meta name="viewport" content="width=device-width, initial-scale=1">
+                    <style>
+                        body {
+                            font-family: Arial, sans-serif;
+                            line-height: 1.4;
+                            margin: 20px;
+                            color: #000;
+                        }
+
+                        .text-center { text-align: center; }
+                        .mt-6 { margin-top: 20px; }
+                        .mt-8 { margin-top: 30px; }
+                        .mt-10 { margin-top: 40px; }
+
+                        img {
+                            display: block;
+                            margin: 0 auto 10px;
+                            max-width: 80px; /* ✅ FIX LOGO SIZE */
+                            height: auto;
+                        }
+
+                        h1 {
+                            font-size: 16px;
+                            font-weight: bold;
+                            margin: 5px 0;
+                        }
+
+                        p {
+                            margin: 5px 0;
+                            font-size: 13px;
+                        }
+
+                        table {
+                            width: 100%;
+                            border-collapse: collapse;
+                            margin-top: 15px;
+                        }
+
+                        td {
+                            border: 1px solid #ccc;
+                            padding: 8px;
+                            font-size: 13px;
+                            vertical-align: top;
+                        }
+
+                        .grid {
+                            display: flex;
+                            justify-content: space-between;
+                            margin-top: 40px;
+                        }
+
+                        .col {
+                            width: 45%;
+                            text-align: center;
+                        }
+
+                        .line {
+                            margin-top: 40px;
+                            border-top: 1px solid #000;
+                            width: 70%;
+                            margin-left: auto;
+                            margin-right: auto;
+                        }
+
+                        @media print {
+                            body {
+                                margin: 10px;
+                            }
+                        }
+                    </style>
+                </head>
+                <body>
+                    ${content}
+                </body>
+                </html>
+            `);
 
                     win.document.close();
                     win.focus();

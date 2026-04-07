@@ -58,6 +58,9 @@
             <span>ENREMCO Management System V 1.0.12</span>
         </footer>
     </div>
+    <a id="back-to-top" href="#" class="btn btn-primary btn-lg back-to-top" role="button" style="display: none; position: fixed; bottom: 20px; right: 20px; z-index: 1000;">
+        <i class="fas fa-arrow-up"></i>
+    </a>
     </body>
 
 

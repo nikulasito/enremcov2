@@ -125,6 +125,7 @@
                     $loanStatus = $loanApplication->status;
                     $loanStatusLabel = match ($loanStatus) {
                         'pending' => 'Pending',
+                        'reviewed' => 'Reviewed',
                         'for_review' => 'In Review',
                         'for_approval' => 'For Approval',
                         'for_processing' => 'For Processing',
@@ -134,6 +135,7 @@
                     };
                     $loanStatusClass = match ($loanStatus) {
                         'pending' => 'bg-amber-100 text-amber-700 border border-amber-200',
+                        'reviewed' => 'bg-sky-100 text-sky-700 border border-sky-200',
                         'for_review', 'for_approval' => 'bg-blue-100 text-blue-700 border border-blue-200',
                         'for_processing' => 'bg-purple-100 text-purple-700 border border-purple-200',
                         'approved' => 'bg-green-100 text-green-700 border border-green-200',
@@ -214,7 +216,7 @@
                         <button type="button"
                             class="py-3 px-4 rounded-xl font-black text-sm bg-slate-200 text-slate-500 cursor-not-allowed"
                             title="Requires ₱{{ number_format($minRequired, 0) }} combined Shares + Savings">
-                            Locked (₱{{ number_format($minRequired, 0) }} required)
+                            Locked (₱{{ number_format($minRequired, 0) }} required shares)
                         </button>
                     @endif
                 </div>
@@ -254,19 +256,19 @@
                     @if($canApplyLoan)
                         <a href="{{ route('member.loans.apply', ['type' => $loan['type']]) }}"
                             class="mt-6 w-full py-3 px-4 rounded-xl font-black text-sm transition-all hover:brightness-105 active:scale-95 shadow-md
-                                                                                                                                                            {{ $loan['style'] === 'secondary' ? 'bg-secondary text-white shadow-secondary/10' : 'bg-primary text-background-dark shadow-primary/10' }}">
+                                                                                                                                                                            {{ $loan['style'] === 'secondary' ? 'bg-secondary text-white shadow-secondary/10' : 'bg-primary text-background-dark shadow-primary/10' }}">
                             Apply Now
                         </a>
                     @else
                         <button type="button" disabled
                             class="mt-6 w-full py-3 px-4 rounded-xl font-black text-sm shadow-md
-                                                                                                                                                                   bg-slate-100 text-slate-400 cursor-not-allowed">
+                                                                                                                                                                                   bg-slate-100 text-slate-400 cursor-not-allowed">
                             Apply Now
                         </button>
 
                         <!-- <p class="mt-2 text-[11px] font-bold text-amber-600">
-                                                                                                                            Need ₱{{ number_format($minRequired, 2) }} total Shares + Savings to apply.
-                                                                                                                        </p> -->
+                                                                                                                                            Need ₱{{ number_format($minRequired, 2) }} total Shares + Savings to apply.
+                                                                                                                                        </p> -->
                     @endif
                 </div>
             @endforeach
@@ -347,6 +349,7 @@
             const raw = (status || '').toString().toLowerCase();
             if (!raw) return 'N/A';
             if (raw === 'pending') return 'Pending';
+            if (raw === 'reviewed') return 'Reviewed';
             if (raw === 'for_review' || raw === 'in_review') return 'In Review';
             if (raw === 'for_approval') return 'For Approval';
             if (raw === 'for_processing') return 'For Processing';
@@ -358,6 +361,7 @@
         function loanStatusClass(status) {
             const raw = (status || '').toString().toLowerCase();
             if (raw === 'pending') return 'bg-amber-100 text-amber-700 border border-amber-200';
+            if (raw === 'reviewed') return 'bg-sky-100 text-sky-700 border border-sky-200';
             if (raw === 'for_review' || raw === 'in_review' || raw === 'for_approval')
                 return 'bg-blue-100 text-blue-700 border border-blue-200';
             if (raw === 'for_processing') return 'bg-purple-100 text-purple-700 border border-purple-200';
@@ -421,7 +425,7 @@
                         ? data.remarks
                         : 'No approval notes were provided.';
 
-                    if ((data.status || '').toLowerCase() === 'for_processing' && data.pdf_url) {
+                    if ((data.status || '').toLowerCase() === 'reviewed' && data.pdf_url) {
                         openPrintable.href = data.pdf_url;
                         openPrintable.classList.remove('hidden');
                     }

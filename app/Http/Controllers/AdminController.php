@@ -26,9 +26,13 @@ class AdminController extends Controller
     public function execDashboard()
     {
         $user = auth()->user();
-        $isExecAdmin = strtolower((string) ($user->role ?? '')) === 'exec-admin';
+        $isExecAdmin = $user?->isExecAdmin();
 
         if (!$isExecAdmin) {
+            if ($user?->isCreditOfficer()) {
+                return redirect()->route('admin.credit-officer.dashboard')->with('error', 'Unauthorized access.');
+            }
+
             return redirect()->route('admin.dashboard')->with('error', 'Unauthorized access.');
         }
 
@@ -97,6 +101,42 @@ class AdminController extends Controller
         ));
     }
 
+    public function creditOfficerDashboard()
+    {
+        $user = auth()->user();
+
+        if (!$user?->isCreditOfficer()) {
+            return redirect()->route('dashboard')->with('error', 'Unauthorized access.');
+        }
+
+        $pendingReviewsCount = Schema::hasTable('loan_applications')
+            ? LoanApplication::whereRaw('LOWER(status) = ?', ['pending'])->count()
+            : 0;
+
+        $reviewedCount = Schema::hasTable('loan_applications')
+            ? LoanApplication::whereRaw('LOWER(status) = ?', ['reviewed'])->count()
+            : 0;
+
+        $rejectedCount = Schema::hasTable('loan_applications')
+            ? LoanApplication::whereRaw('LOWER(status) = ?', ['rejected'])->count()
+            : 0;
+
+        $recentLoanEntries = Schema::hasTable('loan_applications')
+            ? LoanApplication::query()
+                ->with('user')
+                ->latest()
+                ->take(6)
+                ->get()
+            : collect();
+
+        return view('admin.credit_officer_dashboard', compact(
+            'pendingReviewsCount',
+            'reviewedCount',
+            'rejectedCount',
+            'recentLoanEntries'
+        ));
+    }
+
     // Dashboard Method
     public function dashboard()
     {
@@ -138,12 +178,12 @@ class AdminController extends Controller
 
         // Count ALL pending/in_review loan applications (admin dashboard is global)
         $pendingLoansCount = Schema::hasTable('loan_applications')
-            ? LoanApplication::whereIn(DB::raw('LOWER(status)'), ['pending', 'in_review'])->count()
+            ? LoanApplication::whereIn(DB::raw('LOWER(status)'), ['pending', 'reviewed', 'for_processing'])->count()
             : 0;
 
         // Optional: list latest pending/in_review (for table/preview)
         $pendingLoans = Schema::hasTable('loan_applications')
-            ? LoanApplication::whereIn(DB::raw('LOWER(status)'), ['pending', 'in_review'])
+            ? LoanApplication::whereIn(DB::raw('LOWER(status)'), ['pending', 'reviewed', 'for_processing'])
                 ->latest()
                 ->take(5)
                 ->get()

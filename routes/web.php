@@ -12,14 +12,12 @@ use App\Http\Controllers\Admin\LoansController;
 use App\Http\Controllers\MemberLoanController;
 use App\Http\Controllers\Admin\LoanPaymentController;
 use App\Http\Middleware\IsAdmin;
+use App\Http\Middleware\IsCreditOfficer;
 use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\CanViewLoanApproval;
 use App\Http\Middleware\CanApproveLoanRequest;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\Auth\RegisteredUserController;
-use App\Http\Controllers\Auth\ResetPasswordController;
-use App\Http\Controllers\Auth\NewPasswordController;
-use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Models\User;
 use Dompdf\Dompdf;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
@@ -29,10 +27,6 @@ use App\Http\Controllers\LoginController;
 use App\Http\Controllers\MemberContributionsController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\PageController;
-
-Auth::routes();
-
-
 
 Route::post('/admin/update-remittances', function () {
     return response()->json(['hit' => true]);
@@ -276,7 +270,12 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', CanViewLoanApproval:
     Route::get('/loan-requests/{application}', [LoansController::class, 'loanRequestsShow'])->name('loan-requests.show');
 });
 
-Route::prefix('admin')->name('admin.')->middleware(['auth', IsAdmin::class])->group(function () {
+Route::prefix('admin')->name('admin.')->middleware(['auth', IsCreditOfficer::class])->group(function () {
+    Route::get('/credit-officer/dashboard', [AdminController::class, 'creditOfficerDashboard'])
+        ->name('credit-officer.dashboard');
+});
+
+Route::prefix('admin')->name('admin.')->middleware(['auth', CanViewLoanApproval::class])->group(function () {
     Route::patch('/loan-requests/{application}/status', [LoansController::class, 'loanRequestsSetStatus'])->name('loan-requests.status');
 });
 
@@ -325,35 +324,6 @@ Route::get('/profile/changepassword', function () {
 
 Route::put('/profile/changepassword', [ProfileController::class, 'changepassword'])
     ->middleware(['auth'])
-    ->name('password.update');
-
-
-// Route::get('/forgot-password', [PasswordResetLinkController::class, 'create'])
-//     ->middleware('guest')
-//     ->name('password.request');
-
-// Route::post('/forgot-password', [PasswordResetLinkController::class, 'store'])
-//     ->middleware('guest')
-//     ->name('password.email');
-
-
-
-// Show "Forgot Password" page
-Route::get('/forgot-password', [ForgotPasswordController::class, 'showLinkRequestForm'])
-    ->middleware('guest')
-    ->name('password.request');
-
-// Handle form submission to send reset email
-Route::post('/forgot-password', [ForgotPasswordController::class, 'sendResetLinkEmail'])
-    ->middleware('guest')
-    ->name('password.email');
-
-Route::get('/reset-password/{token}', [NewPasswordController::class, 'create'])
-    ->middleware('guest')
-    ->name('password.reset');
-
-Route::post('/reset-password', [NewPasswordController::class, 'store'])
-    ->middleware('guest')
     ->name('password.update');
 
 

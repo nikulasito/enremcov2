@@ -16,12 +16,18 @@ class IsAdmin
      */
     public function handle($request, Closure $next)
     {
-        if (
-            Auth::check() &&
-            Auth::user()->is_admin &&
-            strtolower((string) (Auth::user()->role ?? '')) !== 'exec-admin'
-        ) {
+        $user = Auth::user();
+
+        if (Auth::check() && $user && $user->isRegularAdmin()) {
             return $next($request);
+        }
+
+        if ($user?->isExecAdmin()) {
+            return redirect()->route('admin.exec-dashboard')->with('error', 'You do not have admin access.');
+        }
+
+        if ($user?->isCreditOfficer()) {
+            return redirect()->route('admin.credit-officer.dashboard')->with('error', 'You do not have admin access.');
         }
 
         return redirect('/dashboard')->with('error', 'You do not have admin access.');

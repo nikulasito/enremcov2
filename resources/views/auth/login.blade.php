@@ -104,7 +104,7 @@
 
                         {{-- IMPORTANT: keep name="username" to match your existing Breeze LoginRequest --}}
                         <div class="flex flex-col gap-2">
-                            <label class="text-sm font-bold text-[#111814]" for="username">Member ID or Email</label>
+                            <label class="text-sm font-bold text-[#111814]" for="username">Username or Email</label>
                             <div class="relative">
                                 <span
                                     class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#a0b0a8]">person</span>

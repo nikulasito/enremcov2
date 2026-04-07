@@ -1,6 +1,10 @@
 ﻿<x-admin-v2-layout title="ENREMCO - Loan Requests" pageTitle="Loan Requests" :showSearch="false">
     @php
-        $isExecAdmin = strtolower((string) (auth()->user()->role ?? '')) === 'exec-admin';
+        $loanAdmin = auth()->user();
+        $isExecAdmin = $loanAdmin?->isExecAdmin() ?? false;
+        $isCreditOfficer = $loanAdmin?->isCreditOfficer() ?? false;
+        $isRegularAdmin = $loanAdmin?->isRegularAdmin() ?? false;
+        $canEditLoanFields = $isCreditOfficer;
     @endphp
     {{-- Page Header (matches how other pages do it) --}}
     <x-slot name="header">
@@ -22,7 +26,8 @@
 
                     {{-- keep filters while searching --}}
                     <input type="hidden" name="loan_type" value="{{ $loanType ?? request('loan_type', 'all') }}">
-                    <input type="hidden" name="status" value="{{ $isExecAdmin ? 'for_approval' : ($status ?? request('status', 'all')) }}">
+                    <input type="hidden" name="status"
+                        value="{{ $isExecAdmin ? 'for_approval' : ($status ?? request('status', 'all')) }}">
                 </form>
             </div>
         </div>
@@ -32,6 +37,12 @@
     @if(session('success'))
         <div class="rounded-2xl border border-green-200 bg-green-50 px-6 py-4 text-sm font-bold text-green-800">
             {{ session('success') }}
+        </div>
+    @endif
+
+    @if(session('error'))
+        <div class="rounded-2xl border border-red-200 bg-red-50 px-6 py-4 text-sm font-bold text-red-800">
+            {{ session('error') }}
         </div>
     @endif
 
@@ -64,8 +75,8 @@
                             class="h-10 pl-4 pr-10 bg-white border border-slate-200 rounded-lg text-xs font-semibold focus:ring-2 focus:ring-primary/20 focus:border-primary cursor-pointer min-w-[160px]">
                             <option value="all" @selected(($status ?? request('status', 'all')) === 'all')>All Status</option>
                             <option value="pending" @selected(($status ?? request('status')) === 'pending')>Pending</option>
-                            <option value="for_review" @selected(($status ?? request('status')) === 'for_review')>In Review
-                            </option>
+                            <option value="reviewed" @selected(($status ?? request('status')) === 'reviewed')>Reviewed</option>
+                            <option value="for_processing" @selected(($status ?? request('status')) === 'for_processing')>For Processing</option>
                             <option value="for_approval" @selected(($status ?? request('status')) === 'for_approval')>For
                                 Approval</option>
                             <option value="approved" @selected(($status ?? request('status')) === 'approved')>Approved
@@ -76,7 +87,8 @@
                     </div>
                 @else
                     <input type="hidden" name="status" value="for_approval">
-                    <div class="h-10 px-4 inline-flex items-center rounded-lg border border-indigo-200 bg-indigo-50 text-xs font-black text-indigo-700">
+                    <div
+                        class="h-10 px-4 inline-flex items-center rounded-lg border border-indigo-200 bg-indigo-50 text-xs font-black text-indigo-700">
                         Showing: For Approval Only
                     </div>
                 @endif
@@ -145,7 +157,7 @@
 
                             $statusLabel = match ($app->status) {
                                 'pending' => 'Pending',
-                                'for_review' => 'In Review',
+                                'reviewed' => 'Reviewed',
                                 'for_approval' => 'For Approval',
                                 'for_processing' => 'For Processing',
                                 'approved' => 'Approved',
@@ -155,7 +167,8 @@
 
                             $statusClass = match ($app->status) {
                                 'pending' => 'bg-amber-100 text-amber-700 border border-amber-200',
-                                'for_review', 'for_approval' => 'bg-blue-100 text-blue-700 border border-blue-200',
+                                'reviewed' => 'bg-sky-100 text-sky-700 border border-sky-200',
+                                'for_approval' => 'bg-blue-100 text-blue-700 border border-blue-200',
                                 'for_processing' => 'bg-purple-100 text-purple-700 border border-purple-200',
                                 'approved' => 'bg-green-100 text-green-700 border border-green-200',
                                 'rejected' => 'bg-red-100 text-red-700 border border-red-200',
@@ -220,20 +233,20 @@
                                         <span class="material-symbols-outlined text-[20px]">visibility</span>
                                     </button>
 
-                                    @if(!$isExecAdmin && $app->status !== 'approved')
+                                    @if($isCreditOfficer && strtolower((string) $app->status) === 'pending')
                                         {{-- Reject --}}
                                         <form method="POST" action="{{ route('admin.loan-requests.reject', $app->id) }}"
                                             onsubmit="return confirm('Reject this application?');">
                                             @csrf
                                             @method('PATCH')
-                                            <input type="hidden" name="remarks" value="Rejected by admin.">
+                                            <input type="hidden" name="remarks" value="Rejected by Credit Officer.">
                                             <button type="submit"
                                                 class="flex items-center justify-center p-2 rounded-lg text-red-600 hover:bg-red-50 transition-all"
                                                 title="Reject">
                                                 <span class="material-symbols-outlined text-[20px]">cancel</span>
                                             </button>
                                         </form>
-                                    @elseif($app->status === 'approved')
+                                    @elseif(in_array(strtolower((string) $app->status), ['approved', 'rejected'], true))
                                         <div class="text-right text-xs font-bold text-slate-400">No actions</div>
                                     @endif
                                 </div>
@@ -323,40 +336,115 @@
                 {{-- Loan-type specific details --}}
                 <div class="mb-8 rounded-xl border border-slate-200 bg-white overflow-hidden">
                     <div class="px-5 py-3 border-b border-slate-100 bg-slate-50">
-                        <p class="text-[10px] font-black text-slate-500 uppercase tracking-wider">Loan-Specific Details</p>
+                        <p class="text-[10px] font-black text-slate-500 uppercase tracking-wider">Loan-Specific Details
+                        </p>
                     </div>
                     <div class="p-5">
                         <div data-loan-panel="regular" class="js-loan-type-panel hidden">
                             <p class="text-sm font-bold text-slate-800">Regular Loan Review</p>
-                            <p class="text-xs text-slate-500 mt-1">Verify deductions, prior balances, and repayment terms for salary-based regular loan processing.</p>
+                            <p class="text-xs text-slate-500 mt-1">Verify deductions, prior balances, and repayment
+                                terms for salary-based regular loan processing.</p>
+                            <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                                <div>
+                                    <label for="regular_run_term" class="font-black text-slate-600">1. This is to
+                                        run:</label>
+                                    <div class="mt-1 flex items-center gap-2">
+                                        <input id="regular_run_term" name="run_term" form="approveForm"
+                                            class="w-full rounded-lg border-slate-200 bg-white px-3 py-2 font-semibold"
+                                            type="text" placeholder="e.g. 24" @if(!$canEditLoanFields) readonly @endif>
+                                        <span class="whitespace-nowrap text-slate-500">months/day</span>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label for="regular_first_installment_date" class="font-black text-slate-600">2.
+                                        The first installment increased will be on:</label>
+                                    <input id="regular_first_installment_date" name="first_installment_date"
+                                        form="approveForm"
+                                        class="mt-1 w-full rounded-lg border-slate-200 bg-white px-3 py-2 font-semibold"
+                                        type="date" @if(!$canEditLoanFields) readonly @endif>
+                                </div>
+
+                                <div>
+                                    <label for="regular_installment_increased_to" class="font-black text-slate-600">3.
+                                        Loan Installment increased to:</label>
+                                    <input id="regular_installment_increased_to" name="installment_increased_to"
+                                        form="approveForm"
+                                        class="mt-1 w-full rounded-lg border-slate-200 bg-white px-3 py-2 font-semibold"
+                                        type="number" step="0.01" min="0" value="0" @if(!$canEditLoanFields) readonly @endif>
+                                </div>
+
+                                <div>
+                                    <label for="regular_simple_annual_rate" class="font-black text-slate-600">4.
+                                        Simple annual rate required to:</label>
+                                    <input id="regular_simple_annual_rate" name="simple_annual_rate" form="approveForm"
+                                        class="mt-1 w-full rounded-lg border-slate-200 bg-white px-3 py-2 font-semibold"
+                                        type="text" placeholder="e.g. 12%" @if(!$canEditLoanFields) readonly @endif>
+                                </div>
+                            </div>
+                            <p class="mt-4 text-xs font-black text-slate-600">5. Disclosed Under R.A. 365</p>
                         </div>
 
                         <div data-loan-panel="educational" class="js-loan-type-panel hidden">
                             <p class="text-sm font-bold text-slate-800">Educational Loan Review</p>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2 text-xs">
-                                <div><span class="font-black text-slate-600">Beneficiary:</span> <span id="d_edu_beneficiary">—</span></div>
-                                <div><span class="font-black text-slate-600">School:</span> <span id="d_edu_school">—</span></div>
-                                <div><span class="font-black text-slate-600">Program/Course:</span> <span id="d_edu_program">—</span></div>
-                                <div><span class="font-black text-slate-600">School Year/Sem:</span> <span id="d_edu_term">—</span></div>
+                                <div><span class="font-black text-slate-600">Beneficiary:</span> <span
+                                        id="d_edu_beneficiary">—</span></div>
+                                <div><span class="font-black text-slate-600">School:</span> <span
+                                        id="d_edu_school">—</span></div>
+                                <div><span class="font-black text-slate-600">Program/Course:</span> <span
+                                        id="d_edu_program">—</span></div>
+                                <div><span class="font-black text-slate-600">School Year/Sem:</span> <span
+                                        id="d_edu_term">—</span></div>
                             </div>
                         </div>
 
                         <div data-loan-panel="appliance" class="js-loan-type-panel hidden">
                             <p class="text-sm font-bold text-slate-800">Appliance Loan Review</p>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2 text-xs">
-                                <div><span class="font-black text-slate-600">Item:</span> <span id="d_app_item">—</span></div>
-                                <div><span class="font-black text-slate-600">Brand/Model:</span> <span id="d_app_brand">—</span></div>
-                                <div><span class="font-black text-slate-600">Store/Supplier:</span> <span id="d_app_store">—</span></div>
-                                <div><span class="font-black text-slate-600">Cash Price:</span> <span id="d_app_cash_price">—</span></div>
+                                <div class="md:col-span-2">
+                                    <p class="font-black text-slate-600">Requested Items:</p>
+                                    <p id="d_app_items_empty" class="text-slate-700 mt-1">—</p>
+                                    <div id="d_app_items_wrap"
+                                        class="hidden mt-2 overflow-x-auto rounded-lg border border-slate-200">
+                                        <table class="w-full text-xs">
+                                            <thead class="bg-slate-50 border-b border-slate-200">
+                                                <tr>
+                                                    <th class="px-3 py-2 text-left font-black text-slate-600">Item</th>
+                                                    <th class="px-3 py-2 text-right font-black text-slate-600 w-20">Qty
+                                                    </th>
+                                                    <th class="px-3 py-2 text-right font-black text-slate-600 w-28">Unit
+                                                        Price</th>
+                                                    <th class="px-3 py-2 text-right font-black text-slate-600 w-28">
+                                                        Amount</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="d_app_items" class="divide-y divide-slate-100 bg-white"></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div><span class="font-black text-slate-600">Brand/Model:</span> <span
+                                        id="d_app_brand">—</span></div>
+                                <div><span class="font-black text-slate-600">Store/Supplier:</span> <span
+                                        id="d_app_store">—</span></div>
+                                <div><span class="font-black text-slate-600">Total Amount:</span> <span
+                                        id="d_app_cash_price">—</span></div>
+                                <div><span class="font-black text-slate-600">Downpayment:</span> <span
+                                        id="d_app_downpayment">—</span></div>
+                                <div><span class="font-black text-slate-600">Warranty (months):</span> <span
+                                        id="d_app_warranty">—</span></div>
                             </div>
                         </div>
 
                         <div data-loan-panel="grocery" class="js-loan-type-panel hidden">
                             <p class="text-sm font-bold text-slate-800">Grocery Loan Review</p>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2 text-xs">
-                                <div><span class="font-black text-slate-600">Preferred Store:</span> <span id="d_gro_store">—</span></div>
-                                <div><span class="font-black text-slate-600">Coverage Period:</span> <span id="d_gro_coverage">—</span></div>
-                                <div><span class="font-black text-slate-600">Household Size:</span> <span id="d_gro_household">—</span></div>
+                                <div><span class="font-black text-slate-600">Preferred Store:</span> <span
+                                        id="d_gro_store">—</span></div>
+                                <div><span class="font-black text-slate-600">Coverage Period:</span> <span
+                                        id="d_gro_coverage">—</span></div>
+                                <div><span class="font-black text-slate-600">Household Size:</span> <span
+                                        id="d_gro_household">—</span></div>
                             </div>
                         </div>
                     </div>
@@ -389,7 +477,8 @@
                                     <td class="px-6 py-4 text-right">
                                         <input id="approved_amount" name="approved_amount" form="approveForm"
                                             class="w-40 text-right rounded-lg border-slate-200 bg-white px-3 py-2 font-black"
-                                            type="number" step="0.01" min="0" value="0" @if($isExecAdmin) readonly @endif>
+                                            type="number" step="0.01" min="0" value="0" @if(!$canEditLoanFields) readonly
+                                            @endif>
                                     </td>
                                 </tr>
 
@@ -400,11 +489,12 @@
                                 </tr>
 
                                 <tr id="row_old_balance">
-                                    <td class="px-6 py-3 pl-10 text-slate-600" id="label_old_balance">Balance (Old Bal)</td>
+                                    <td class="px-6 py-3 pl-10 text-slate-600" id="label_old_balance">Balance (Old Bal)
+                                    </td>
                                     <td class="px-6 py-3 text-right">
                                         <input id="old_balance" name="old_balance" form="approveForm"
                                             class="w-40 text-right rounded-lg border-slate-200 bg-white px-3 py-2 font-black"
-                                            type="number" step="0.01" value="0" @if($isExecAdmin) readonly @endif>
+                                            type="number" step="0.01" value="0" @if(!$canEditLoanFields) readonly @endif>
                                     </td>
                                 </tr>
                                 <tr id="row_lpp">
@@ -412,15 +502,16 @@
                                     <td class="px-6 py-3 text-right">
                                         <input id="lpp" name="lpp" form="approveForm"
                                             class="w-40 text-right rounded-lg border-slate-200 bg-white px-3 py-2 font-black"
-                                            type="number" step="0.01" value="0" @if($isExecAdmin) readonly @endif>
+                                            type="number" step="0.01" value="0" readonly>
                                     </td>
                                 </tr>
                                 <tr id="row_interest">
-                                    <td class="px-6 py-3 pl-10 text-slate-600" id="label_interest">Interest (amount)</td>
+                                    <td class="px-6 py-3 pl-10 text-slate-600" id="label_interest">Interest (amount)
+                                    </td>
                                     <td class="px-6 py-3 text-right">
                                         <input id="interest" name="interest" form="approveForm"
                                             class="w-40 text-right rounded-lg border-slate-200 bg-white px-3 py-2 font-black"
-                                            type="number" step="0.01" value="0" @if($isExecAdmin) readonly @endif>
+                                            type="number" step="0.01" value="0" readonly>
                                     </td>
                                 </tr>
                                 <tr id="row_handling_fee">
@@ -428,15 +519,16 @@
                                     <td class="px-6 py-3 text-right">
                                         <input id="handling_fee" name="handling_fee" form="approveForm"
                                             class="w-40 text-right rounded-lg border-slate-200 bg-white px-3 py-2 font-black"
-                                            type="number" step="0.01" value="0" @if($isExecAdmin) readonly @endif>
+                                            type="number" step="0.01" value="0" @if(!$canEditLoanFields) readonly @endif>
                                     </td>
                                 </tr>
                                 <tr id="row_petty_cash_loan">
-                                    <td class="px-6 py-3 pl-10 text-slate-600" id="label_petty_cash_loan">Petty Cash Loan</td>
+                                    <td class="px-6 py-3 pl-10 text-slate-600" id="label_petty_cash_loan">Petty Cash
+                                        Loan</td>
                                     <td class="px-6 py-3 text-right">
                                         <input id="petty_cash_loan" name="petty_cash_loan" form="approveForm"
                                             class="w-40 text-right rounded-lg border-slate-200 bg-white px-3 py-2 font-black"
-                                            type="number" step="0.01" value="0" @if($isExecAdmin) readonly @endif>
+                                            type="number" step="0.01" value="0" @if(!$canEditLoanFields) readonly @endif>
                                     </td>
                                 </tr>
 
@@ -466,19 +558,21 @@
                         </div>
 
                         <div class="pt-4 border-t border-slate-200">
-                            <label id="terms_label" class="text-[10px] font-black text-slate-500 uppercase tracking-wider">Terms
+                            <label id="terms_label"
+                                class="text-[10px] font-black text-slate-500 uppercase tracking-wider">Terms
                                 (months)</label>
                             <input id="terms" name="terms" form="approveForm"
                                 class="mt-2 w-full rounded-lg border-slate-200 bg-white px-3 py-2 font-black"
-                                type="number" min="1" value="24" @if($isExecAdmin) readonly @endif>
+                                type="number" min="1" value="24" @if(!$canEditLoanFields) readonly @endif>
                         </div>
 
                         <div>
-                            <label id="monthly_label" class="text-[10px] font-black text-slate-500 uppercase tracking-wider">Monthly
+                            <label id="monthly_label"
+                                class="text-[10px] font-black text-slate-500 uppercase tracking-wider">Monthly
                                 Installment</label>
                             <input id="monthly_payment" name="monthly_payment" form="approveForm"
                                 class="mt-2 w-full rounded-lg border-slate-200 bg-white px-3 py-2 font-black"
-                                type="number" step="0.01" value="0" @if($isExecAdmin) readonly @endif>
+                                type="number" step="0.01" value="0" @if(!$canEditLoanFields) readonly @endif>
                         </div>
 
                         {{-- computed hidden fields --}}
@@ -489,29 +583,32 @@
                 </div>
 
                 {{-- Forms --}}
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <form id="rejectForm" method="POST" action="#">
-                        @csrf
-                        @method('PATCH')
-                        <div class="rounded-xl border border-slate-200 bg-white p-6">
-                            <p class="text-xs font-black text-slate-500 uppercase tracking-widest mb-3">Rejection
-                                Remarks</p>
-                            <textarea id="reject_remarks" name="remarks" required
-                                class="w-full rounded-xl border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium"
-                                rows="3" placeholder="Reason for rejection..."></textarea>
-                        </div>
-                    </form>
+                <div class="grid grid-cols-1 {{ ($isCreditOfficer || $isExecAdmin) ? 'md:grid-cols-2' : '' }} gap-6">
+                    @if($isCreditOfficer || $isExecAdmin)
+                        <form id="rejectForm" method="POST" action="#">
+                            @csrf
+                            @method('PATCH')
+                            <div class="rounded-xl border border-slate-200 bg-white p-6">
+                                <p class="text-xs font-black text-slate-500 uppercase tracking-widest mb-3">Rejection
+                                    Remarks</p>
+                                <textarea id="reject_remarks" name="remarks" required
+                                    class="w-full rounded-xl border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium"
+                                    rows="3" placeholder="Reason for rejection..."></textarea>
+                            </div>
+                        </form>
+                    @endif
 
                     <form id="approveForm" method="POST" action="#">
                         @csrf
                         @method('PATCH')
                         <div class="rounded-xl border border-slate-200 bg-white p-6">
-                            <p class="text-xs font-black text-slate-500 uppercase tracking-widest mb-3">Approval Notes
-                                (optional)</p>
-                            {{-- Approve --}}
+                            <p class="text-xs font-black text-slate-500 uppercase tracking-widest mb-3">
+                                {{ $isCreditOfficer ? 'Review Notes' : 'Approval Notes' }} (optional)
+                            </p>
                             <textarea id="approve_remarks" name="remarks"
                                 class="w-full rounded-xl border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium"
-                                rows="3" placeholder="Notes for approval (optional)..."></textarea>
+                                rows="3"
+                                placeholder="{{ $isCreditOfficer ? 'Notes for review (optional)...' : 'Notes for approval (optional)...' }}"></textarea>
                         </div>
                     </form>
 
@@ -520,18 +617,44 @@
                         @method('PATCH')
                         <input type="hidden" id="status_action_value" name="status" value="">
                         <input type="hidden" id="status_action_remarks" name="remarks" value="">
+                        <input type="hidden" id="status_approved_amount" name="approved_amount" value="">
+                        <input type="hidden" id="status_old_balance" name="old_balance" value="">
+                        <input type="hidden" id="status_lpp" name="lpp" value="">
+                        <input type="hidden" id="status_interest" name="interest" value="">
+                        <input type="hidden" id="status_handling_fee" name="handling_fee" value="">
+                        <input type="hidden" id="status_petty_cash_loan" name="petty_cash_loan" value="">
+                        <input type="hidden" id="status_total_deduction" name="total_deduction" value="">
+                        <input type="hidden" id="status_total_net" name="total_net" value="">
+                        <input type="hidden" id="status_terms" name="terms" value="">
+                        <input type="hidden" id="status_monthly_payment" name="monthly_payment" value="">
+                        <input type="hidden" id="status_run_term" name="run_term" value="">
+                        <input type="hidden" id="status_first_installment_date" name="first_installment_date" value="">
+                        <input type="hidden" id="status_installment_increased_to" name="installment_increased_to"
+                            value="">
+                        <input type="hidden" id="status_simple_annual_rate" name="simple_annual_rate" value="">
                     </form>
                 </div>
             </div>
 
             {{-- Footer buttons --}}
-            <div class="p-6 bg-slate-50 border-t border-slate-100 flex justify-end gap-3 shrink-0">
-                @if(!$isExecAdmin)
-                    <button type="button" data-loan-status="for_review" data-loan-modal-action="true"
-                        class="js-set-loan-status px-5 py-3 rounded-xl border border-blue-200 bg-blue-50 text-blue-700 text-sm font-black hover:bg-blue-100 transition-all">
-                        For Review
+            <div class="p-6 bg-slate-50 border-t border-slate-100 flex flex-col gap-3 shrink-0">
+                <p id="loan_action_helper" class="hidden text-xs font-bold text-amber-700">
+                    Credit Officer review is required before admin processing or endorsement for approval.
+                </p>
+
+                <div class="flex justify-end gap-3">
+                @if($isCreditOfficer)
+                    <button type="button" data-loan-status="reviewed" data-loan-modal-action="true"
+                        class="js-set-loan-status px-5 py-3 rounded-xl border border-sky-200 bg-sky-50 text-sky-700 text-sm font-black hover:bg-sky-100 transition-all">
+                        Reviewed
                     </button>
 
+                    <button type="submit" form="rejectForm" data-loan-modal-action="true"
+                        class="px-8 py-3 rounded-xl border-2 border-red-500 text-red-500 text-sm font-black hover:bg-red-50 transition-all flex items-center gap-2">
+                        <span class="material-symbols-outlined text-[20px]">cancel</span>
+                        Reject Application
+                    </button>
+                @elseif(!$isExecAdmin)
                     <button type="button" data-loan-status="for_processing" data-loan-modal-action="true"
                         class="js-set-loan-status px-5 py-3 rounded-xl border border-purple-200 bg-purple-50 text-purple-700 text-sm font-black hover:bg-purple-100 transition-all">
                         For Processing
@@ -540,17 +663,6 @@
                     <button type="button" data-loan-status="for_approval" data-loan-modal-action="true"
                         class="js-set-loan-status px-5 py-3 rounded-xl border border-indigo-200 bg-indigo-50 text-indigo-700 text-sm font-black hover:bg-indigo-100 transition-all">
                         For Approval
-                    </button>
-
-                    <!-- <button type="button" data-loan-status="approved"
-                            class="js-set-loan-status px-5 py-3 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 text-sm font-black hover:bg-emerald-100 transition-all">
-                            Approved
-                        </button> -->
-
-                    <button type="submit" form="rejectForm" data-loan-modal-action="true"
-                        class="px-8 py-3 rounded-xl border-2 border-red-500 text-red-500 text-sm font-black hover:bg-red-50 transition-all flex items-center gap-2">
-                        <span class="material-symbols-outlined text-[20px]">cancel</span>
-                        Reject Application
                     </button>
                 @else
                     <button type="submit" form="rejectForm" data-loan-modal-action="true"
@@ -567,6 +679,7 @@
                         Approve Application
                     </button>
                 @endif
+                </div>
 
                 <!-- <button type="submit" form="approveForm"
                     class="px-8 py-3 rounded-xl bg-primary text-[#0d1a14] text-sm font-black hover:bg-[#15c26b] transition-all shadow-lg shadow-primary/20 flex items-center gap-2">
@@ -592,6 +705,9 @@
                 const rejectUrlTpl = "{{ route('admin.loan-requests.reject', '__ID__') }}";
                 const statusUrlTpl = "{{ route('admin.loan-requests.status', '__ID__') }}";
                 const showUrlTpl = "{{ route('admin.loan-requests.show', '__ID__') }}";
+                const isExecAdmin = @json($isExecAdmin);
+                const isCreditOfficer = @json($isCreditOfficer);
+                const isRegularAdmin = @json($isRegularAdmin);
 
                 // modal fields
                 const m = (id) => document.getElementById(id);
@@ -605,7 +721,7 @@
                         fields: ['old_balance', 'lpp', 'interest', 'handling_fee', 'petty_cash_loan'],
                         labels: {
                             old_balance: 'Balance (Old Bal)',
-                            lpp: 'LPP',
+                            lpp: 'LPP (1.2%)',
                             interest: 'Interest (12%)',
                             handling_fee: 'Handling Fee',
                             petty_cash_loan: 'Petty Cash Loan',
@@ -617,8 +733,8 @@
                         fields: ['old_balance', 'lpp', 'interest', 'handling_fee'],
                         labels: {
                             old_balance: 'Previous Balance',
-                            lpp: 'Tuition & School Fees',
-                            interest: 'Interest (4.5%)',
+                            lpp: 'LPP (1.2%)',
+                            interest: 'Interest (10%)',
                             handling_fee: 'Processing Fee',
                             petty_cash_loan: 'Petty Cash Loan',
                             terms: 'Terms (sem/month)',
@@ -629,8 +745,8 @@
                         fields: ['old_balance', 'lpp', 'interest', 'handling_fee'],
                         labels: {
                             old_balance: 'Previous Balance',
-                            lpp: 'Downpayment / Initial Fee',
-                            interest: 'Interest (3%)',
+                            lpp: 'LPP (1.2%)',
+                            interest: 'Interest (18%)',
                             handling_fee: 'Handling / Delivery Fee',
                             petty_cash_loan: 'Petty Cash Loan',
                             terms: 'Terms (months)',
@@ -638,17 +754,24 @@
                         },
                     },
                     grocery: {
-                        fields: ['old_balance', 'interest', 'handling_fee'],
+                        fields: ['old_balance', 'lpp', 'interest', 'handling_fee'],
                         labels: {
                             old_balance: 'Previous Balance',
-                            lpp: 'LPP',
-                            interest: 'Interest (2.5%)',
+                            lpp: 'LPP (1.2%)',
+                            interest: 'Interest (10%)',
                             handling_fee: 'Service Fee',
                             petty_cash_loan: 'Petty Cash Loan',
                             terms: 'Terms (months)',
                             monthly: 'Monthly Installment',
                         },
                     },
+                };
+                const lppRate = 0.012;
+                const loanTypeInterestRates = {
+                    regular: 0.12,
+                    educational: 0.10,
+                    appliance: 0.18,
+                    grocery: 0.10,
                 };
 
                 function fmt(n) {
@@ -659,12 +782,36 @@
                     const n = parseFloat(v);
                     return Number.isFinite(n) ? n : 0;
                 }
+                function escapeHtml(v) {
+                    return String(v ?? '')
+                        .replaceAll('&', '&amp;')
+                        .replaceAll('<', '&lt;')
+                        .replaceAll('>', '&gt;')
+                        .replaceAll('"', '&quot;')
+                        .replaceAll("'", '&#039;');
+                }
                 function normalizeLoanType(raw) {
                     const v = String(raw || '').toLowerCase().replaceAll('_', ' ').replaceAll('-', ' ').trim();
                     if (v.includes('education')) return 'educational';
                     if (v.includes('appliance')) return 'appliance';
                     if (v.includes('grocery')) return 'grocery';
                     return 'regular';
+                }
+                function statusLabel(rawStatus) {
+                    const status = String(rawStatus || '').toLowerCase();
+                    if (status === 'pending') return 'Pending';
+                    if (status === 'reviewed') return 'Reviewed';
+                    if (status === 'for_processing') return 'For Processing';
+                    if (status === 'for_approval') return 'For Approval';
+                    if (status === 'approved') return 'Approved';
+                    if (status === 'rejected') return 'Rejected';
+                    return String(rawStatus || '—').replaceAll('_', ' ');
+                }
+                function setButtonState(button, disabled) {
+                    if (!button) return;
+                    button.disabled = !!disabled;
+                    button.classList.toggle('opacity-50', !!disabled);
+                    button.classList.toggle('cursor-not-allowed', !!disabled);
                 }
                 function setText(id, value) {
                     const el = m(id);
@@ -693,10 +840,67 @@
                     setText('terms_label', config.labels.terms);
                     setText('monthly_label', config.labels.monthly);
                 }
+                function computeInterest(amount, typeKey) {
+                    const rate = loanTypeInterestRates[typeKey] ?? loanTypeInterestRates.regular;
+                    return num(amount) * rate;
+                }
+                function computeMonthlyInstallment(amount, typeKey, terms) {
+                    const principal = num(amount);
+                    const n = Math.max(1, Math.floor(num(terms) || 1));
+                    const interestAmount = computeInterest(principal, typeKey);
+                    return (principal + interestAmount) / n;
+                }
+                function computeLpp(amount) {
+                    return num(amount) * lppRate;
+                }
+                function setComputedLpp() {
+                    const lppInput = m('lpp');
+                    if (!lppInput) return;
+                    lppInput.value = computeLpp(m('approved_amount')?.value).toFixed(2);
+                }
+                function setComputedInterest() {
+                    const interestInput = m('interest');
+                    if (!interestInput) return;
+                    interestInput.value = computeInterest(m('approved_amount')?.value, currentLoanType).toFixed(2);
+                }
                 function visibleValue(fieldId) {
                     const row = m(`row_${fieldId}`);
                     if (row && row.classList.contains('hidden')) return 0;
                     return num(m(fieldId)?.value);
+                }
+                function renderApplianceItems(items, fallbackItem) {
+                    const wrap = m('d_app_items_wrap');
+                    const tbody = m('d_app_items');
+                    const empty = m('d_app_items_empty');
+                    if (!wrap || !tbody || !empty) return;
+
+                    const rows = Array.isArray(items) ? items : [];
+                    if (!rows.length) {
+                        tbody.innerHTML = '';
+                        wrap.classList.add('hidden');
+                        empty.classList.remove('hidden');
+                        empty.textContent = fallbackItem || '—';
+                        return;
+                    }
+
+                    tbody.innerHTML = rows.map((row) => {
+                        const itemName = String(row.item_name || '');
+                        const qty = Math.max(0, parseInt(row.quantity || '0', 10) || 0);
+                        const unitPrice = num(row.unit_price);
+                        const amount = num(row.amount);
+
+                        return `
+                                <tr>
+                                    <td class="px-3 py-2 text-slate-700">${escapeHtml(itemName || '—')}</td>
+                                    <td class="px-3 py-2 text-right text-slate-700">${qty}</td>
+                                    <td class="px-3 py-2 text-right text-slate-700">₱${fmt(unitPrice)}</td>
+                                    <td class="px-3 py-2 text-right font-semibold text-slate-800">₱${fmt(amount)}</td>
+                                </tr>
+                            `;
+                    }).join('');
+
+                    empty.classList.add('hidden');
+                    wrap.classList.remove('hidden');
                 }
                 function fillLoanTypeDetails(payload) {
                     setText('d_edu_beneficiary', payload.eduBeneficiary || payload.fullName || '—');
@@ -704,26 +908,109 @@
                     setText('d_edu_program', payload.eduProgram || '—');
                     setText('d_edu_term', payload.eduTerm || '—');
 
-                    setText('d_app_item', payload.appItem || '—');
+                    renderApplianceItems(payload.appItems || [], payload.appItem || '');
                     setText('d_app_brand', payload.appBrand || '—');
                     setText('d_app_store', payload.appStore || '—');
-                    setText('d_app_cash_price', payload.appCashPrice !== null && payload.appCashPrice !== undefined
-                        ? ('₱' + fmt(num(payload.appCashPrice)))
+                    setText('d_app_cash_price', payload.appTotalAmount !== null && payload.appTotalAmount !== undefined
+                        ? ('₱' + fmt(num(payload.appTotalAmount)))
+                        : (payload.appCashPrice !== null && payload.appCashPrice !== undefined
+                            ? ('₱' + fmt(num(payload.appCashPrice)))
+                            : '—'));
+                    setText('d_app_downpayment', payload.appDownpayment !== null && payload.appDownpayment !== undefined
+                        ? ('₱' + fmt(num(payload.appDownpayment)))
+                        : '—');
+                    setText('d_app_warranty', payload.appWarrantyMonths !== null && payload.appWarrantyMonths !== undefined && payload.appWarrantyMonths !== ''
+                        ? String(payload.appWarrantyMonths)
                         : '—');
 
                     setText('d_gro_store', payload.groStore || '—');
                     setText('d_gro_coverage', payload.groCoverage || '—');
                     setText('d_gro_household', payload.groHousehold || '—');
                 }
+                function syncStatusFormValues() {
+                    const fieldPairs = [
+                        ['approved_amount', 'status_approved_amount'],
+                        ['old_balance', 'status_old_balance'],
+                        ['lpp', 'status_lpp'],
+                        ['interest', 'status_interest'],
+                        ['handling_fee', 'status_handling_fee'],
+                        ['petty_cash_loan', 'status_petty_cash_loan'],
+                        ['terms', 'status_terms'],
+                        ['monthly_payment', 'status_monthly_payment'],
+                        ['regular_run_term', 'status_run_term'],
+                        ['regular_first_installment_date', 'status_first_installment_date'],
+                        ['regular_installment_increased_to', 'status_installment_increased_to'],
+                        ['regular_simple_annual_rate', 'status_simple_annual_rate'],
+                    ];
+
+                    fieldPairs.forEach(([sourceId, targetId]) => {
+                        const source = m(sourceId);
+                        const target = m(targetId);
+                        if (!target) return;
+                        target.value = source ? source.value : '';
+                    });
+
+                    const statusTotalDeduction = m('status_total_deduction');
+                    if (statusTotalDeduction) statusTotalDeduction.value = m('total_deduction_input')?.value ?? '0';
+
+                    const statusTotalNet = m('status_total_net');
+                    if (statusTotalNet) statusTotalNet.value = m('total_net_input')?.value ?? '0';
+                }
                 function applyLoanTypeLayout(payload) {
                     currentLoanType = payload.loanTypeKey || normalizeLoanType(payload.loanTypeRaw || payload.loanTypeLabel);
                     setLoanTypePanel(currentLoanType);
                     setLoanTypeFields(currentLoanType);
                     fillLoanTypeDetails(payload);
+                    setComputedLpp();
+                    setComputedInterest();
+                }
+                function updateActionAvailability(payload) {
+                    const status = String(payload.status || '').toLowerCase();
+                    const isFinalized = status === 'approved' || status === 'rejected';
+                    const creditReviewed = !!payload.creditReviewed;
+                    const helper = m('loan_action_helper');
+                    const reviewedBtn = modal?.querySelector('[data-loan-status="reviewed"]');
+                    const forProcessingBtn = modal?.querySelector('[data-loan-status="for_processing"]');
+                    const forApprovalBtn = modal?.querySelector('[data-loan-status="for_approval"]');
+                    const rejectBtn = modal?.querySelector('button[form="rejectForm"]');
+                    const approveBtn = modal?.querySelector('button[form="approveForm"]');
+
+                    modalActionButtons.forEach((btn) => btn.classList.toggle('hidden', isFinalized));
+
+                    if (helper) {
+                        helper.classList.add('hidden');
+                    }
+
+                    if (isCreditOfficer) {
+                        const canReject = status === 'pending';
+                        setButtonState(reviewedBtn, status !== 'pending');
+                        if (rejectBtn) {
+                            rejectBtn.classList.toggle('hidden', !canReject);
+                        }
+                        setButtonState(rejectBtn, !canReject);
+                        return;
+                    }
+
+                    if (isRegularAdmin) {
+                        const canMoveForward = creditReviewed && !isFinalized;
+                        setButtonState(forProcessingBtn, !canMoveForward);
+                        setButtonState(forApprovalBtn, !canMoveForward);
+
+                        if (helper && !canMoveForward) {
+                            helper.textContent = 'Credit Officer review is required before admin processing or endorsement for approval.';
+                            helper.classList.remove('hidden');
+                        }
+                        return;
+                    }
+
+                    setButtonState(rejectBtn, status !== 'for_approval');
+                    setButtonState(approveBtn, status !== 'for_approval');
                 }
 
                 function recalc() {
                     currentLoanAmount = num(m('approved_amount').value);
+                    setComputedLpp();
+                    setComputedInterest();
                     const oldBal = visibleValue('old_balance');
                     const lpp = visibleValue('lpp');
                     const interest = visibleValue('interest');
@@ -738,8 +1025,8 @@
                     m('gross_total').textContent = '₱' + fmt(currentLoanAmount);
                     m('net_cash').textContent = fmt(netCash);
 
-                    // simple monthly
-                    m('monthly_payment').value = (currentLoanAmount / terms).toFixed(2);
+                    // monthly installment = (approved amount + interest by rate) / terms
+                    m('monthly_payment').value = computeMonthlyInstallment(currentLoanAmount, currentLoanType, terms).toFixed(2);
 
                     // hidden submit values
                     m('total_deduction_input').value = totalDeduction.toFixed(2);
@@ -768,19 +1055,32 @@
 
                     // set form actions
                     approveForm.action = approveUrlTpl.replace('__ID__', payload.id);
-                    rejectForm.action = rejectUrlTpl.replace('__ID__', payload.id);
+                    if (rejectForm) {
+                        rejectForm.action = rejectUrlTpl.replace('__ID__', payload.id);
+                    }
                     statusForm.action = statusUrlTpl.replace('__ID__', payload.id);
 
                     // reset inputs (optional)
                     m('old_balance').value = payload.old_balance ?? 0;
-                    m('lpp').value = payload.lpp ?? 0;
-                    m('interest').value = payload.interest ?? 0;
+                    m('lpp').value = computeLpp(currentLoanAmount).toFixed(2);
+                    m('interest').value = computeInterest(currentLoanAmount, currentLoanType).toFixed(2);
                     m('handling_fee').value = payload.handling_fee ?? 0;
                     m('petty_cash_loan').value = payload.petty_cash_loan ?? 0;
                     m('terms').value = payload.terms ?? 24;
                     if (payload.monthly_payment !== null && payload.monthly_payment !== undefined) {
                         m('monthly_payment').value = num(payload.monthly_payment).toFixed(2);
                     }
+                    m('regular_run_term').value = payload.run_term ?? payload.terms ?? '';
+                    m('regular_first_installment_date').value = payload.first_installment_date ?? '';
+                    if (payload.installment_increased_to !== null && payload.installment_increased_to !== undefined) {
+                        m('regular_installment_increased_to').value = num(payload.installment_increased_to).toFixed(2);
+                    } else if (payload.monthly_payment !== null && payload.monthly_payment !== undefined) {
+                        m('regular_installment_increased_to').value = num(payload.monthly_payment).toFixed(2);
+                    } else {
+                        m('regular_installment_increased_to').value = '0.00';
+                    }
+                    m('regular_simple_annual_rate').value = payload.simple_annual_rate
+                        || (currentLoanType === 'regular' ? '12%' : '');
                     const approveRemarksEl = m('approve_remarks');
                     if (approveRemarksEl) approveRemarksEl.value = payload.remarks ?? '';
 
@@ -789,6 +1089,7 @@
 
 
                     recalc();
+                    updateActionAvailability(payload);
 
                     modal.classList.remove('hidden');
                     document.body.classList.add('overflow-hidden');
@@ -834,6 +1135,10 @@
                             petty_cash_loan: parseFloat(data.petty_cash_loan || '0'),
                             terms: parseInt(data.terms || '24'),
                             monthly_payment: parseFloat(data.monthly_payment || '0'),
+                            run_term: data.run_term ?? '',
+                            first_installment_date: data.first_installment_date ?? '',
+                            installment_increased_to: data.installment_increased_to ?? null,
+                            simple_annual_rate: data.simple_annual_rate ?? '',
 
                             // type-specific details
                             eduBeneficiary: data.beneficiary_name || data.full_name || '',
@@ -842,9 +1147,13 @@
                             eduTerm: [data.school_year, data.semester].filter(Boolean).join(' ').trim(),
 
                             appItem: data.appliance_item || '',
+                            appItems: Array.isArray(data.appliance_items) ? data.appliance_items : [],
                             appBrand: data.appliance_brand_model || '',
                             appStore: data.appliance_store || '',
                             appCashPrice: data.appliance_cash_price ?? null,
+                            appTotalAmount: data.appliance_total_amount ?? null,
+                            appDownpayment: data.appliance_downpayment ?? null,
+                            appWarrantyMonths: data.appliance_warranty_months ?? null,
 
                             groStore: data.grocery_partner_store || '',
                             groCoverage: [data.grocery_period_from, data.grocery_period_to].filter(Boolean).join(' to ').trim(),
@@ -852,7 +1161,8 @@
 
                             // âœ… this is the saved notes/remarks
                             remarks: data.remarks || '',
-                            status: data.status || ''
+                            status: data.status || '',
+                            creditReviewed: !!data.credit_reviewed
                         });
                     });
                 });
@@ -869,6 +1179,8 @@
 
                 document.querySelectorAll('.js-set-loan-status').forEach(btn => {
                     btn.addEventListener('click', () => {
+                        if (btn.disabled) return;
+
                         const status = btn.dataset.loanStatus || '';
                         if (!status || !statusForm?.action || statusForm.action.endsWith('#'))
                             return;
@@ -879,6 +1191,8 @@
 
                         statusInput.value = status;
                         remarksInput.value = approveRemarks;
+                        recalc();
+                        syncStatusFormValues();
                         statusForm.submit();
                     });
                 });

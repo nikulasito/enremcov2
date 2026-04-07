@@ -11,16 +11,19 @@
 
 use Illuminate\Support\Facades\DB;
     use Illuminate\Support\Facades\Schema;
-    $searchAction = $searchAction ?? route('admin.members');
     $admin = auth()->user();
-    $isExecAdmin = strtolower((string) ($admin->role ?? '')) === 'exec-admin';
+    $isExecAdmin = $admin?->isExecAdmin() ?? false;
+    $isCreditOfficer = $admin?->isCreditOfficer() ?? false;
+    $searchAction = $searchAction ?? ($isCreditOfficer ? route('admin.loan-requests.index') : route('admin.members'));
     $adminName = $admin->name ?? 'Administrator';
-    $adminRole = $isExecAdmin ? 'Exec Admin' : (($admin->is_admin ?? 1) ? 'Super Admin' : 'Admin');
+    $adminRole = $isExecAdmin
+        ? 'Exec Admin'
+        : ($isCreditOfficer ? 'Credit Officer' : (($admin->is_admin ?? 1) ? 'ENREMCO Admin' : 'Admin'));
 
     $navClass = fn (bool $active) => $active ? 'nav-item nav-item-active' : 'nav-item';
 
     // ✅ Notifications (counts)
-    $pendingMemberCount = $isExecAdmin
+    $pendingMemberCount = ($isExecAdmin || $isCreditOfficer)
         ? 0
         : \App\Models\User::query()
             ->where('is_admin', 0)
@@ -30,25 +33,31 @@ use Illuminate\Support\Facades\DB;
             ])
             ->count();
 
-    $pendingLoanCount = Schema::hasTable('loan_applications')
-        ? \App\Models\LoanApplication::query()
-            ->when($isExecAdmin, function ($q) {
-                $q->whereRaw('LOWER(status) = ?', ['for_approval']);
-            }, function ($q) {
-                $q->whereIn(DB::raw('LOWER(status)'), [
-                    'pending',
-                    'for_review',
-                    'for_processing',
-                ]);
-            })
-            ->count()
-        : 0;
+    $pendingLoanCount = 0;
+    if (Schema::hasTable('loan_applications')) {
+        $pendingLoanQuery = \App\Models\LoanApplication::query();
+
+        if ($isExecAdmin) {
+            $pendingLoanQuery->whereRaw('LOWER(status) = ?', ['for_approval']);
+        } elseif ($isCreditOfficer) {
+            $pendingLoanQuery->whereIn(DB::raw('LOWER(status)'), [
+                'pending',
+            ]);
+        } else {
+            $pendingLoanQuery->whereIn(DB::raw('LOWER(status)'), [
+                'reviewed',
+                'for_processing',
+            ]);
+        }
+
+        $pendingLoanCount = $pendingLoanQuery->count();
+    }
 
     $notifCount = $pendingMemberCount + $pendingLoanCount;
 
     $notifItems = [];
 
-    if (!$isExecAdmin && $pendingMemberCount > 0) {
+    if (!$isExecAdmin && !$isCreditOfficer && $pendingMemberCount > 0) {
         $notifItems[] = [
             'title' => 'New Member Requests',
             'message' => $pendingMemberCount . ' pending membership approval',
@@ -63,10 +72,12 @@ use Illuminate\Support\Facades\DB;
 
     if ($pendingLoanCount > 0) {
         $notifItems[] = [
-            'title' => $isExecAdmin ? 'For Approval Queue' : 'Loan Requests',
+            'title' => $isExecAdmin ? 'For Approval Queue' : ($isCreditOfficer ? 'Credit Reviews' : 'Loan Requests'),
             'message' => $isExecAdmin
                 ? ($pendingLoanCount . ' loans awaiting your approval')
-                : ($pendingLoanCount . ' loans pending action'),
+                : ($isCreditOfficer
+                    ? ($pendingLoanCount . ' loans waiting for credit review')
+                    : ($pendingLoanCount . ' loans pending admin action')),
             'count' => $pendingLoanCount,
             'href' => route('admin.loan-requests.index'), // or add ?status=pending if your page supports it
             'icon' => 'checkbook',
@@ -123,6 +134,18 @@ use Illuminate\Support\Facades\DB;
                     <a class="{{ $navClass(request()->routeIs('admin.loan-requests.*')) }}" href="{{ route('admin.loan-requests.index') }}">
                         <span class="material-symbols-outlined text-[22px]">checkbook</span>
                         Loan Approvals
+                    </a>
+                </div>
+            @elseif($isCreditOfficer)
+                <div class="mb-4">
+                    <p class="px-6 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-600 mb-3">Credit Officer</p>
+                    <a class="{{ $navClass(request()->routeIs('admin.credit-officer.dashboard')) }}" href="{{ route('admin.credit-officer.dashboard') }}">
+                        <span class="material-symbols-outlined text-[22px]">dashboard</span>
+                        Dashboard
+                    </a>
+                    <a class="{{ $navClass(request()->routeIs('admin.loan-requests.*')) }}" href="{{ route('admin.loan-requests.index') }}">
+                        <span class="material-symbols-outlined text-[22px]">fact_check</span>
+                        Loan Reviews
                     </a>
                 </div>
             @else

@@ -3,16 +3,18 @@
     @push('styles')
         <style type="text/tailwindcss">
             .info-label { @apply text-xs font-bold uppercase tracking-wider text-slate-400 mb-1; }
-                                                                                                    .info-value { @apply text-base font-semibold text-slate-900; }
-                                                                                                    .section-card { @apply bg-white rounded-2xl border border-slate-200 overflow-hidden; }
-                                                                                                    .section-header { @apply px-6 py-4 border-b border-slate-100 bg-white; }
-                                                                                                </style>
+                                                                                                        .info-value { @apply text-base font-semibold text-slate-900; }
+                                                                                                        .section-card { @apply bg-white rounded-2xl border border-slate-200 overflow-hidden; }
+                                                                                                        .section-header { @apply px-6 py-4 border-b border-slate-100 bg-white; }
+                                                                                                    </style>
     @endpush
 
     @php
         $user = auth()->user();
         $fullName = $user->name ?? 'N/A';
         $memberId = $user->employee_ID ?? $user->employees_id ?? $user->employee_id ?? 'N/A';
+        $photoUrl = $user->photo ? asset('storage/' . ltrim($user->photo, '/')) : null;
+        $nameInitial = strtoupper(substr($fullName, 0, 1));
 
         $dob = $user->birthdate ?? null;
         $tin = $user->tin ?? null;
@@ -41,19 +43,7 @@
 
         {{-- LEFT CONTENT --}}
         <div class="lg:col-span-2 space-y-8">
-            <div class="flex items-center gap-3">
-                <!-- <button onclick="window.print()"
-                    class="flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 font-bold text-slate-900 bg-white hover:bg-slate-50 transition-all text-sm">
-                    <span class="material-symbols-outlined text-lg">print</span>
-                    Print Record
-                </button> -->
 
-                <a href="{{ route('profile.edit') }}"
-                    class="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-background-dark font-black hover:brightness-105 transition-all shadow-md shadow-primary/10 text-sm">
-                    <span class="material-symbols-outlined text-lg">edit</span>
-                    Edit Details
-                </a>
-            </div>
             {{-- Personal Details (with actions moved here) --}}
             <section class="bg-white rounded-2xl border border-[#dce5e0] shadow-sm overflow-hidden">
                 <div class="p-6 border-b border-[#dce5e0] bg-[#fcfdfc]">
@@ -70,34 +60,44 @@
                 <div class="p-6">
                     <h4 class="font-black text-sm uppercase tracking-wider text-slate-700 mb-4">Personal Details</h4>
 
+                    @if($photoUrl)
+                        <img src="{{ $photoUrl }}" alt="Member Photo"
+                            class="mb-4 h-40 w-40 object-cover border border-[#dce5e0]">
+                    @else
+                        <div
+                            class="h-20 w-20 rounded-full bg-[#f6f8f7] border border-[#dce5e0] flex items-center justify-center text-2xl font-black text-[#638875]">
+                            {{ $nameInitial }}
+                        </div>
+                    @endif
+
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-12">
                         <div>
-                            <p class="info-label">Full Name</p>
+                            <p class="info-label" style="font-weight: bold;">Full Name</p>
                             <p class="info-value">{{ $fullName }}</p>
                         </div>
 
                         <div>
-                            <p class="info-label">Date of Birth</p>
+                            <p class="info-label" style="font-weight: bold;">Date of Birth</p>
                             <p class="info-value">{{ $dob ? \Carbon\Carbon::parse($dob)->format('F d, Y') : 'N/A' }}</p>
                         </div>
 
                         <div>
-                            <p class="info-label">Residential Address</p>
+                            <p class="info-label" style="font-weight: bold;">Residential Address</p>
                             <p class="info-value leading-relaxed">{{ $address ?? 'N/A' }}</p>
                         </div>
 
                         <div>
-                            <p class="info-label">Contact Number</p>
+                            <p class="info-label" style="font-weight: bold;">Contact Number</p>
                             <p class="info-value">{{ $contact ?? 'N/A' }}</p>
                         </div>
 
                         <div>
-                            <p class="info-label">Personal Email</p>
+                            <p class="info-label" style="font-weight: bold;">Personal Email</p>
                             <p class="info-value">{{ $email ?? 'N/A' }}</p>
                         </div>
 
                         <div>
-                            <p class="info-label">Civil Status</p>
+                            <p class="info-label" style="font-weight: bold;">Civil Status</p>
                             <p class="info-value">{{ $civilStatus ?? 'N/A' }}</p>
                         </div>
                     </div>
@@ -121,17 +121,17 @@
                 <div class="p-6">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-12">
                         <div>
-                            <p class="info-label">Office / Department</p>
+                            <p class="info-label" style="font-weight: bold;">Office / Department</p>
                             <p class="info-value">{{ $office ?? 'N/A' }}</p>
                         </div>
 
                         <div>
-                            <p class="info-label">Current Position</p>
+                            <p class="info-label" style="font-weight: bold;">Current Position</p>
                             <p class="info-value">{{ $position ?? 'N/A' }}</p>
                         </div>
 
                         <div>
-                            <p class="info-label">Annual Income</p>
+                            <p class="info-label" style="font-weight: bold;">Annual Income</p>
                             <p class="info-value">
                                 {{ $salary !== null ? '₱ ' . number_format((float) $salary, 2) : 'N/A' }}
                             </p>
@@ -139,11 +139,24 @@
                     </div>
                 </div>
             </section>
+            <div class="flex items-center gap-3">
+                <!-- <button onclick="window.print()"
+                    class="flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 font-bold text-slate-900 bg-white hover:bg-slate-50 transition-all text-sm">
+                    <span class="material-symbols-outlined text-lg">print</span>
+                    Print Record
+                </button> -->
 
+                <a href="{{ route('profile.edit') }}"
+                    class="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-background-dark font-black hover:brightness-105 transition-all shadow-md shadow-primary/10 text-sm">
+                    <span class="material-symbols-outlined text-lg">edit</span>
+                    Edit Details
+                </a>
+            </div>
         </div>
 
         {{-- RIGHT PANEL --}}
         <div class="lg:col-span-1 space-y-6">
+
             <section
                 class="rounded-2xl bg-background-dark text-white overflow-hidden border border-white/10 card-shadow">
                 <div class="p-6 border-b border-white/10 flex items-center gap-3">

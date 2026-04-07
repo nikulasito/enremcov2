@@ -15,9 +15,7 @@ class CanApproveLoanRequest
             return redirect('/login');
         }
 
-        $isExecAdmin = strtolower((string) ($user->role ?? '')) === 'exec-admin';
-
-        if ($isExecAdmin) {
+        if ($user->isExecAdmin()) {
             return $next($request);
         }
 

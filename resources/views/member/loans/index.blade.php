@@ -37,6 +37,7 @@
             $raw = strtolower((string) $status);
             return match ($raw) {
                 'pending' => 'Pending Approval',
+                'reviewed' => 'Reviewed',
                 'for_review', 'in_review' => 'In Review',
                 'for_approval' => 'For Approval',
                 'for_processing' => 'For Processing',
@@ -50,6 +51,7 @@
             $raw = strtolower((string) $status);
             return match ($raw) {
                 'pending' => 'bg-amber-100 text-amber-700 border border-amber-200',
+                'reviewed' => 'bg-sky-100 text-sky-700 border border-sky-200',
                 'for_review', 'for_approval' => 'bg-blue-100 text-blue-700 border border-blue-200',
                 'for_processing' => 'bg-purple-100 text-purple-700 border border-purple-200',
                 'approved' => 'bg-green-100 text-green-700 border border-green-200',
@@ -143,12 +145,12 @@
 
                         <div class="grid grid-cols-2 md:grid-cols-3 gap-8 w-full md:w-auto md:flex-1 md:justify-end md:px-8">
                             <div>
-                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Amount Requested
+                                <p class="text-[12px] font-bold text-slate-400 uppercase mb-1">Amount Requested
                                 </p>
                                 <p class="text-lg font-black text-slate-900">&#8369;{{ number_format($appAmount, 2) }}</p>
                             </div>
                             <div>
-                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Date Applied</p>
+                                <p class="text-[12px] font-bold text-slate-400 uppercase mb-1">Date Applied</p>
                                 <p class="text-sm font-bold text-slate-700">{{ $appDate }}</p>
                             </div>
                             <div class="col-span-2 md:col-span-1 flex items-center md:justify-end">
@@ -210,58 +212,70 @@
         @if($activeLoans->isNotEmpty())
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 @foreach($activeLoans as $loan)
-                    @php
-                        $loanTypeText = $loan->loan_type_label ?? $typeLabel($loan->loan_type ?? '');
-                        $loanId = $loan->loan_id ?? 'N/A';
-                        $netCash = (float) ($loan->total_net ?? $loan->loan_amount ?? 0);
-                        $remaining = (float) ($loan->remaining_balance ?? 0);
-                        $monthly = (float) ($loan->monthly_payment ?? 0);
-                        $nextDue = $loan->next_due_date_label ?? 'N/A';
-                        $approved = $loan->approved_date_label ?? 'N/A';
-                        $maturity = $loan->maturity_date_label ?? 'N/A';
-                    @endphp
-
-                    <div class="bg-white p-8 rounded-2xl border-l-4 border-l-primary border border-slate-200 card-shadow">
-                        <div class="flex items-start justify-between mb-8">
-                            <div>
-                                <div class="flex items-center gap-3 mb-1">
-                                    <h4 class="text-sm font-bold text-slate-400 uppercase tracking-widest">{{ $loanTypeText }}
-                                    </h4>
-                                    <span
-                                        class="px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-[10px] font-bold uppercase">Ongoing</span>
-                                </div>
-                                <p class="text-sm font-medium text-slate-500 mb-2">Loan ID: {{ $loanId }}</p>
-                                <p class="text-3xl font-black text-slate-900">&#8369;{{ number_format($remaining, 2) }}</p>
-                                <p class="text-xs font-bold text-slate-400 mt-1 uppercase">Remaining Balance</p>
-                            </div>
-                            <div class="size-12 rounded-xl bg-slate-50 text-slate-400 flex items-center justify-center">
-                                <span class="material-symbols-outlined text-3xl">{{ $typeIcon($loanTypeText) }}</span>
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-4 pt-6 border-t border-slate-50">
-                            <div>
-                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Next Due Date</p>
-                                <p class="text-sm font-bold text-slate-800">{{ $nextDue }}</p>
-                            </div>
-                            <div class="text-right">
-                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Monthly Installment
-                                </p>
-                                <p class="text-sm font-black text-primary">&#8369;{{ number_format($monthly, 2) }}</p>
-                            </div>
-                        </div>
-
-                        <button type="button"
-                            class="js-loan-record-btn mt-6 w-full py-2.5 text-sm font-bold text-secondary bg-secondary/5 rounded-lg hover:bg-secondary/10 transition-colors"
-                            data-loan-id="{{ $loanId }}" data-loan-type="{{ $loanTypeText }}"
-                            data-principal="{{ (float) ($loan->loan_amount ?? 0) }}" data-net-cash="{{ $netCash }}"
-                            data-remaining="{{ $remaining }}"
-                            data-approved="{{ $approved }}" data-maturity="{{ $maturity }}" data-monthly="{{ $monthly }}"
-                            data-status="Ongoing">
-                            View Loan Breakdown
-                        </button>
-                    </div>
-                @endforeach
+                                         @php
+                                            $loanTypeText = $loan->loan_type_label ?? $typeLabel($loan->loan_type ?? '');
+                                            $loanId = $loan->loan_id ?? 'N/A';
+                                            $netCash = (float) ($loan->total_net ?? $loan->loan_amount ?? 0);
+                                            $remaining = (float) ($loan->remaining_balance ?? 0);
+                                            $monthly = (float) ($loan->monthly_payment ?? 0);
+                                            $nextDue = $loan->next_due_date_label ?? 'N/A';
+                                            $approved = $loan->approved_date_label ?? 'N/A';
+                                            $maturity = $loan->maturity_date_label ?? 'N/A';
+                                            $terms = $loan->terms ?? 'N/A';
+                                        @endphp
+                    
+                                        <div class="bg-white p-8 rounded-2xl border-l-4 border-l-primary border border-slate-200 card-shadow">
+                                            <div class="flex items-start justify-between mb-8">
+                                                <div>
+                                                    <div class="flex items-center gap-3 mb-1">
+                                                        <h4 class="text-sm font-bold text-slate-400 uppercase tracking-widest">{{ $loanTypeText }}
+                                                        </h4>
+                                                        <span
+                                                            class="px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-[10px] font-bold uppercase">Ongoing</span>
+                                                    </div>
+                                                    <p class="text-sm font-medium text-slate-500 mb-2">Loan ID: {{ $loanId }}</p>
+                                                    <div class="grid gap-4 pt-6">
+                                                        <div>
+                                                            <p class="text-3xl font-black text-slate-900">&#8369;{{ number_format($remaining, 2) }}</p>
+                                                            <p class="text-xs font-bold text-slate-400 mt-1 uppercase">Remaining Balance</p>
+                                                        </div>
+                                                        <div>
+                                                            <p class="text-3xl font-black text-slate-900">&#8369;{{ number_format($netCash, 2) }}</p>
+                                                            <p class="text-xs font-bold text-slate-400 mt-1 uppercase">Net Cash Received</p>
+                                                        </div>
+                                                        <div>
+                                                            <p class="text-3xl font-black text-slate-900">{{ $terms }}</p>
+                                                            <p class="text-xs font-bold text-slate-400 mt-1 uppercase">Terms (month)</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="size-12 rounded-xl bg-slate-50 text-slate-400 flex items-center justify-center">
+                                                    <span class="material-symbols-outlined text-3xl">{{ $typeIcon($loanTypeText) }}</span>
+                                                </div>
+                                            </div>
+                    
+                                            <div class="grid grid-cols-2 gap-4 border-t border-slate-50">
+                                                <div>
+                                                    <p class="text-[12px] font-bold text-slate-400 uppercase">Next Due Date</p>
+                                                    <p class="text-sm font-bold text-slate-800">{{ $nextDue }}</p>
+                                                </div>
+                                                <div class="text-right">
+                                                    <p class="text-[12px] font-bold text-slate-400 uppercase">Monthly Installment
+                                                    </p>
+                                                    <p class="text-sm font-black text-primary">&#8369;{{ number_format($monthly, 2) }}</p>
+                                                </div>
+                                            </div>
+                    
+                                            <button type="button"
+                                                class="js-loan-record-btn mt-6 w-full py-2.5 text-sm font-bold text-secondary bg-secondary/5 rounded-lg hover:bg-secondary/10 transition-colors"
+                                                data-loan-id="{{ $loanId }}" data-loan-type="{{ $loanTypeText }}"
+                                                data-principal="{{ (float) ($loan->loan_amount ?? 0) }}" data-net-cash="{{ $netCash }}"
+                                                data-remaining="{{ $remaining }}"
+                                                data-approved="{{ $approved }}" data-maturity="{{ $maturity }}" data-monthly="{{ $monthly }}"
+                                                data-status="Ongoing" data-terms="{{ $terms }}">
+                                                View Loan Breakdown
+                                            </button>
+                                        </div>                @endforeach
             </div>
         @else
             <div class="bg-white rounded-2xl border border-slate-200 card-shadow p-8">
@@ -294,9 +308,9 @@
                             <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">No.</th>
                             <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Loan Type
                             </th>
-                            <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Principal
+                            <!-- <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Principal
                                 Amount
-                            </th>
+                            </th> -->
                             <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Date
                                 Approved</th>
                             <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Maturity
@@ -334,8 +348,8 @@
                                         <span class="text-sm font-bold text-slate-900">{{ $rowType }}</span>
                                     </div>
                                 </td>
-                                <td class="px-6 py-4 text-sm font-black text-slate-900">
-                                    &#8369;{{ number_format($rowPrincipal, 2) }}</td>
+                                <!-- <td class="px-6 py-4 text-sm font-black text-slate-900">
+                                    &#8369;{{ number_format($rowPrincipal, 2) }}</td> -->
                                 <td class="px-6 py-4 text-sm text-slate-600">{{ $rowApproved }}</td>
                                 <td class="px-6 py-4 text-sm text-slate-600">{{ $rowMaturity }}</td>
                                 <td class="px-6 py-4">
@@ -350,7 +364,8 @@
                                         data-principal="{{ $rowPrincipal }}" data-net-cash="{{ $rowNetCash }}"
                                         data-remaining="{{ $rowRemaining }}"
                                         data-approved="{{ $rowApproved }}" data-maturity="{{ $rowMaturity }}"
-                                        data-monthly="{{ $rowMonthly }}" data-status="{{ $statusText }}">
+                                        data-monthly="{{ $rowMonthly }}" data-status="{{ $statusText }}"
+                                        data-terms="{{ $loan->terms ?? 'N/A' }}">
                                         View Details
                                     </button>
                                 </td>
@@ -428,7 +443,7 @@
     <div id="loanRecordModal" class="fixed inset-0 z-[90] hidden items-center justify-center p-4">
         <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"></div>
         <div
-            class="relative w-full max-w-5xl overflow-hidden rounded-2xl bg-white shadow-2xl max-h-[90vh] flex flex-col">
+            class="relative w-full max-w-7xl overflow-hidden rounded-2xl bg-white shadow-2xl max-h-[90vh] flex flex-col">
             <div class="bg-sidebar-green p-6 flex items-start justify-between shrink-0 bg-[#fcfdfc]">
                 <h4 class="text-lg font-black text-slate-900">Loan Record Details</h4>
                 <button type="button" class="text-slate-400 hover:text-slate-700" data-close-loan-modal>
@@ -437,40 +452,44 @@
             </div>
             <div class="p-6 grid grid-cols-2 gap-4 text-sm">
                 <div>
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Loan ID</p>
-                    <p class="font-black text-slate-900 mt-1" id="loan_modal_id">N/A</p>
+                    <p class="text-[12px] font-bold text-slate-400 uppercase">Loan ID</p>
+                    <p class="font-black text-slate-900 mt-1 text-[20px]" id="loan_modal_id">N/A</p>
                 </div>
                 <div>
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Loan Type</p>
-                    <p class="font-black text-slate-900 mt-1" id="loan_modal_type">N/A</p>
+                    <p class="text-[12px] font-bold text-slate-400 uppercase">Loan Type</p>
+                    <p class="font-black text-slate-900 mt-1 text-[20px]" id="loan_modal_type">N/A</p>
+                </div>
+                <!-- <div>
+                    <p class="text-[12px] font-bold text-slate-400 uppercase">Principal</p>
+                    <p class="font-black text-slate-900 mt-1 text-[20px]" id="loan_modal_principal">N/A</p>
+                </div> -->
+                <div>
+                    <p class="text-[12px] font-bold text-slate-400 uppercase">Net Cash</p>
+                    <p class="font-black text-slate-900 mt-1 text-[20px]" id="loan_modal_net_cash">N/A</p>
                 </div>
                 <div>
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Principal</p>
-                    <p class="font-black text-slate-900 mt-1" id="loan_modal_principal">N/A</p>
+                    <p class="text-[12px] font-bold text-slate-400 uppercase">Terms (month)</p>
+                    <p class="font-black text-slate-900 mt-1 text-[20px]" id="loan_modal_terms">N/A</p>
                 </div>
                 <div>
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Net Cash</p>
-                    <p class="font-black text-slate-900 mt-1" id="loan_modal_net_cash">N/A</p>
+                    <p class="text-[12px] font-bold text-slate-400 uppercase">Remaining Balance</p>
+                    <p class="font-black text-slate-900 mt-1 text-[20px]" id="loan_modal_remaining">N/A</p>
                 </div>
                 <div>
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Remaining Balance</p>
-                    <p class="font-black text-slate-900 mt-1" id="loan_modal_remaining">N/A</p>
+                    <p class="text-[12px] font-bold text-slate-400 uppercase">Date Approved</p>
+                    <p class="font-black text-slate-900 mt-1 text-[20px]" id="loan_modal_approved">N/A</p>
                 </div>
                 <div>
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Date Approved</p>
-                    <p class="font-black text-slate-900 mt-1" id="loan_modal_approved">N/A</p>
+                    <p class="text-[12px] font-bold text-slate-400 uppercase">Maturity Date</p>
+                    <p class="font-black text-slate-900 mt-1 text-[20px]" id="loan_modal_maturity">N/A</p>
                 </div>
                 <div>
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Maturity Date</p>
-                    <p class="font-black text-slate-900 mt-1" id="loan_modal_maturity">N/A</p>
+                    <p class="text-[12px] font-bold text-slate-400 uppercase">Monthly Installment</p>
+                    <p class="font-black text-slate-900 mt-1 text-[20px]" id="loan_modal_monthly">N/A</p>
                 </div>
                 <div>
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Monthly Installment</p>
-                    <p class="font-black text-slate-900 mt-1" id="loan_modal_monthly">N/A</p>
-                </div>
-                <div>
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Status</p>
-                    <p class="font-black text-slate-900 mt-1" id="loan_modal_status">N/A</p>
+                    <p class="text-[12px] font-bold text-slate-400 uppercase">Status</p>
+                    <p class="font-black text-slate-900 mt-1 text-[20px]" id="loan_modal_status">N/A</p>
                 </div>
             </div>
         </div>
@@ -479,7 +498,7 @@
     <div id="applicationModal" class="fixed inset-0 z-[95] hidden items-center justify-center p-4">
         <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"></div>
         <div
-            class="relative w-full max-w-5xl overflow-hidden rounded-2xl bg-white shadow-2xl max-h-[90vh] flex flex-col">
+            class="relative w-full max-w-7xl overflow-hidden rounded-2xl bg-white shadow-2xl max-h-[90vh] flex flex-col">
             <div class="bg-sidebar-green p-6 flex items-start justify-between shrink-0 bg-[#fcfdfc]">
                 <div>
                     <h2 class="text-lg font-black text-slate-900">Application Details</h2>
@@ -495,7 +514,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="rounded-2xl border border-slate-200 bg-slate-50 p-5">
                         <p class="text-[10px] font-black uppercase tracking-widest text-slate-500">Loan Type</p>
-                        <p id="app_modal_type" class="mt-1 text-lg font-black text-slate-900">—</p>
+                        <p id="app_modal_type" class="mt-1 text-lg font-black text-slate-900 uppercase">—</p>
 
                         <div class="mt-4">
                             <p class="text-[10px] font-black uppercase tracking-widest text-slate-500">Requested Amount</p>
@@ -550,6 +569,7 @@
                 const applicationStatusClass = (status) => {
                     const raw = (status || '').toString().toLowerCase();
                     if (raw === 'pending') return 'bg-amber-100 text-amber-700 border border-amber-200';
+                    if (raw === 'reviewed') return 'bg-sky-100 text-sky-700 border border-sky-200';
                     if (raw === 'for_review' || raw === 'in_review' || raw === 'for_approval')
                         return 'bg-blue-100 text-blue-700 border border-blue-200';
                     if (raw === 'for_processing') return 'bg-purple-100 text-purple-700 border border-purple-200';
@@ -566,8 +586,9 @@
                 function openLoanModal(btn) {
                     document.getElementById('loan_modal_id').textContent = btn.dataset.loanId || 'N/A';
                     document.getElementById('loan_modal_type').textContent = btn.dataset.loanType || 'N/A';
-                    document.getElementById('loan_modal_principal').textContent = toCurrency(btn.dataset.principal);
+                    // document.getElementById('loan_modal_principal').textContent = toCurrency(btn.dataset.principal);
                     document.getElementById('loan_modal_net_cash').textContent = toCurrency(btn.dataset.netCash);
+                    document.getElementById('loan_modal_terms').textContent = btn.dataset.terms || 'N/A';
                     document.getElementById('loan_modal_remaining').textContent = toCurrency(btn.dataset.remaining);
                     document.getElementById('loan_modal_approved').textContent = btn.dataset.approved || 'N/A';
                     document.getElementById('loan_modal_maturity').textContent = btn.dataset.maturity || 'N/A';
@@ -630,7 +651,7 @@
                         document.getElementById('app_modal_remarks').textContent = (data.remarks || '').trim() ||
                             'No remarks provided.';
 
-                        if ((data.status || '').toLowerCase() === 'for_processing' && data.pdf_url) {
+                        if (data.can_print && data.pdf_url) {
                             const printLink = document.getElementById('app_modal_print');
                             printLink.href = data.pdf_url;
                             printLink.classList.remove('hidden');

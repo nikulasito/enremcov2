@@ -340,7 +340,35 @@
 
     {{-- Keep your SAME bootstrap modals (verifyEmailModal + errorModal) here --}}
     {{-- (Paste your existing modal markup exactly as-is) --}}
+    <div class="modal fade" id="errorModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Registration Error</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="errorMessage" class="text-sm"></div>
+                </div>
+            </div>
+        </div>
+    </div>
 
+    <div id="verifyEmailModal" class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/50 p-4">
+        <div class="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl">
+            <div class="flex items-center justify-between">
+                <h2 class="text-xl font-bold text-[#111814]">Registration Submitted</h2>
+                <button id="verifyModalClose" type="button"
+                    class="rounded-lg px-2 py-1 text-[#638875] hover:bg-[#f6f8f7] hover:text-[#111814]">Close</button>
+            </div>
+            <div class="mt-4 text-sm text-[#456456] space-y-2">
+                <p class="font-semibold text-[#111814]">Thank you for registering!</p>
+                <p>Please check your email for additional instructions.</p>
+                <!-- <a id="verifyPdfLink" class="hidden text-primary font-semibold hover:underline" href="#" target="_blank"
+                    rel="noopener">Download Registration PDF</a> -->
+            </div>
+        </div>
+    </div>
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             const registerForm = document.getElementById("registerForm");
@@ -354,7 +382,68 @@
             const errorModalEl = document.getElementById("errorModal");
             const errorMessageEl = document.getElementById("errorMessage");
             const verifyModalEl = document.getElementById("verifyEmailModal");
-            const verifyEmailFrame = document.getElementById("verifyEmailFrame");
+            const verifyModalClose = document.getElementById("verifyModalClose");
+            const verifyPdfLink = document.getElementById("verifyPdfLink");
+            const hasBootstrapModal = typeof window.bootstrap !== "undefined" && typeof window.bootstrap.Modal === "function";
+
+            if (!registerForm || !registerBtn || !dobUi || !birthMonth || !birthDay || !birthYear) {
+                return;
+            }
+
+            const htmlToText = (html) => {
+                const wrapper = document.createElement("div");
+                wrapper.innerHTML = html;
+                return wrapper.textContent?.trim() || "Something went wrong.";
+            };
+
+            const showError = (html) => {
+                if (errorMessageEl) {
+                    errorMessageEl.innerHTML = html;
+                }
+
+                if (hasBootstrapModal && errorModalEl) {
+                    new bootstrap.Modal(errorModalEl).show();
+                    return;
+                }
+
+                alert(htmlToText(html));
+            };
+
+            const showVerifySuccess = (pdfUrl) => {
+                if (!verifyModalEl) return;
+
+                if (verifyPdfLink) {
+                    if (pdfUrl && pdfUrl !== "#") {
+                        verifyPdfLink.href = pdfUrl;
+                        verifyPdfLink.classList.remove("hidden");
+                    } else {
+                        verifyPdfLink.href = "#";
+                        verifyPdfLink.classList.add("hidden");
+                    }
+                }
+
+                verifyModalEl.classList.remove("hidden");
+                verifyModalEl.classList.add("flex");
+            };
+
+            const closeVerifyModal = () => {
+                if (!verifyModalEl) return;
+                verifyModalEl.classList.add("hidden");
+                verifyModalEl.classList.remove("flex");
+                registerForm.reset();
+            };
+
+            if (verifyModalClose) {
+                verifyModalClose.addEventListener("click", closeVerifyModal);
+            }
+
+            if (verifyModalEl) {
+                verifyModalEl.addEventListener("click", function (e) {
+                    if (e.target === verifyModalEl) {
+                        closeVerifyModal();
+                    }
+                });
+            }
 
             const syncDob = () => {
                 if (!dobUi.value) return;
@@ -379,8 +468,7 @@
                 });
 
                 if (hasErrors) {
-                    errorMessageEl.innerHTML = `<div class="text-danger">Please fill in all required fields.</div>`;
-                    new bootstrap.Modal(errorModalEl).show();
+                    showError(`<div class="text-danger">Please fill in all required fields.</div>`);
                     return;
                 }
 
@@ -405,27 +493,17 @@
                         if (!response.ok || !data.success) throw data;
 
                         const pdfUrl = data.user_id ? `/user/pdf/${data.user_id}` : "#";
-                        verifyEmailFrame.srcdoc = `
-                        <div style="padding:2rem; font-family:Arial; text-align:center;">
-                            <h2>Thank you for registering!</h2>
-                            <p>Please check your email for additional instructions.</p>
-                            <p><a href="${pdfUrl}" target="_blank">Download Registration PDF</a></p>
-                        </div>
-                    `;
-
-                        new bootstrap.Modal(verifyModalEl).show();
-                        verifyModalEl.addEventListener("hidden.bs.modal", () => registerForm.reset());
+                        showVerifySuccess(pdfUrl);
                     })
                     .catch((err) => {
                         let html = "Something went wrong.";
                         if (err?.errors) {
                             html = "";
                             for (const field in err.errors) {
-                                html += `<div class="text-danger mb-1">• ${err.errors[field][0]}</div>`;
+                                html += `<div class="text-danger mb-1">- ${err.errors[field][0]}</div>`;
                             }
                         }
-                        errorMessageEl.innerHTML = html;
-                        new bootstrap.Modal(errorModalEl).show();
+                        showError(html);
                     })
                     .finally(() => {
                         registerBtn.disabled = false;

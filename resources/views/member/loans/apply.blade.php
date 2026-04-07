@@ -79,7 +79,7 @@
                         <div class="flex-1 h-px bg-slate-100"></div>
                     </h3>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div class="space-y-2">
                             <label class="text-sm font-bold text-slate-700" for="loan-type">Loan Type</label>
                             <select
@@ -111,6 +111,15 @@
                             </p>
                             @error('loan_amount') <p class="text-xs text-red-600 font-semibold">{{ $message }}</p>
                             @enderror
+                        </div>
+
+                        <div class="space-y-2">
+                            <label class="text-sm font-bold text-slate-700" for="loan-terms">Loan Term (Months)</label>
+                            <input
+                                class="w-full rounded-xl border-slate-200 bg-white text-slate-900 px-4 py-3 font-medium"
+                                id="loan-terms" name="terms" type="number" min="1" step="1"
+                                placeholder="e.g. 24" value="{{ old('terms', 24) }}" />
+                            @error('terms') <p class="text-xs text-red-600 font-semibold">{{ $message }}</p> @enderror
                         </div>
                     </div>
                 </section>

@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\LoanPayment;
 use App\Models\LoanDetail;
+use App\Models\LoanApplication;
 use App\Models\User;
+use Illuminate\Support\Facades\Schema;
 
 class LoanPaymentController extends Controller
 {
@@ -242,6 +244,8 @@ class LoanPaymentController extends Controller
     {
         $offices = User::query()->select('office')->distinct()->pluck('office')->toArray();
 
+        $this->syncApprovedLoanApplicationsToLedger();
+
         $loans = LoanDetail::query()
             ->with(['user', 'latestPayment'])
             ->withSum('loanPayments as total_payments_sum', 'total_payments')
@@ -259,7 +263,21 @@ class LoanPaymentController extends Controller
                 $loan->current_balance = $balance;
 
                 return $loan;
-            });
+            })
+            // Prefer base LN-APP-xxxxxx rows over legacy suffixed duplicates.
+            ->sortBy(function ($loan) {
+                $loanId = (string) ($loan->loan_id ?? '');
+                return preg_match('/^LN-APP-\d{6}-[A-Z0-9]{4}$/', $loanId) ? 1 : 0;
+            })
+            // Collapse duplicate synthetic app rows to one visible row.
+            ->unique(function ($loan) {
+                $loanId = (string) ($loan->loan_id ?? '');
+                if (preg_match('/^(LN-APP-\d{6})(?:-[A-Z0-9]{4})?$/', $loanId, $m)) {
+                    return $m[1];
+                }
+                return $loanId;
+            })
+            ->values();
 
         return view('admin.loan_payments', compact('offices', 'loans'));
     }
@@ -350,6 +368,191 @@ class LoanPaymentController extends Controller
         ]);
     }
 
+    private function syncApprovedLoanApplicationsToLedger(): void
+    {
+        if (!Schema::hasTable('loan_applications') || !Schema::hasTable('loan_details')) {
+            return;
+        }
+
+        $approvedApps = LoanApplication::query()
+            ->with('user')
+            ->whereRaw('LOWER(COALESCE(status, "")) = ?', ['approved'])
+            ->get();
+
+        foreach ($approvedApps as $application) {
+            $this->createLoanDetailFromApplicationIfMissing($application);
+        }
+    }
+
+    private function createLoanDetailFromApplicationIfMissing(LoanApplication $application): void
+    {
+        $employeeId = $this->resolveEmployeeId($application);
+        if ($employeeId === '') {
+            return;
+        }
+
+        $approvedAmount = (float) ($application->approved_amount ?? $application->loan_amount ?? 0);
+        if ($approvedAmount <= 0) {
+            return;
+        }
+
+        $oldBalance = (float) ($application->old_balance ?? 0);
+        $lpp = (float) ($application->lpp ?? 0);
+        $interest = (float) ($application->interest ?? 0);
+        $handlingFee = (float) ($application->handling_fee ?? 0);
+        $pettyCashLoan = (float) ($application->petty_cash_loan ?? 0);
+        $totalDeduction = ($application->total_deduction !== null)
+            ? (float) $application->total_deduction
+            : ($oldBalance + $lpp + $interest + $handlingFee + $pettyCashLoan);
+        $totalNet = ($application->total_net !== null)
+            ? (float) $application->total_net
+            : max($approvedAmount - $totalDeduction, 0);
+        $terms = max(1, (int) ($application->terms ?? 24));
+        $monthlyPayment = ($application->monthly_payment !== null)
+            ? (float) $application->monthly_payment
+            : ($terms > 0 ? ($approvedAmount / $terms) : 0);
+
+        $appliedDate = optional($application->created_at)?->toDateString() ?? now()->toDateString();
+        $approvedDate = $application->reviewed_at
+            ? \Carbon\Carbon::parse($application->reviewed_at)->toDateString()
+            : now()->toDateString();
+        $loanTypeLabel = $this->mapLoanTypeForLedger($application->loan_type);
+
+        $baseLoanId = $this->makeLedgerLoanId($application);
+
+        // If synthetic rows for this application already exist, keep one canonical row
+        // and remove extra zero-payment duplicates created by previous sync runs.
+        $syntheticRows = LoanDetail::query()
+            ->withCount('loanPayments')
+            ->where(function ($q) use ($baseLoanId) {
+                $q->where('loan_id', $baseLoanId)
+                    ->orWhere('loan_id', 'like', $baseLoanId . '-%');
+            })
+            ->orderByRaw('CASE WHEN loan_id = ? THEN 0 ELSE 1 END', [$baseLoanId])
+            ->get();
+
+        if ($syntheticRows->isNotEmpty()) {
+            $canonical = $syntheticRows->firstWhere('loan_id', $baseLoanId) ?? $syntheticRows->first();
+
+            if (Schema::hasColumn('loan_applications', 'lv_no')) {
+                $application->forceFill(['lv_no' => $canonical->loan_id])->save();
+            }
+
+            $syntheticRows
+                ->where('loan_id', '!=', $canonical->loan_id)
+                ->each(function ($row) use ($canonical) {
+                    // Preserve payment history by moving rows to the canonical loan_id first.
+                    if ((int) ($row->loan_payments_count ?? 0) > 0) {
+                        LoanPayment::where('loan_id', $row->loan_id)
+                            ->update(['loan_id' => $canonical->loan_id]);
+                    }
+                    $row->delete();
+                });
+
+            return;
+        }
+
+        $loanId = null;
+        if (Schema::hasColumn('loan_applications', 'lv_no')) {
+            $loanId = trim((string) ($application->lv_no ?? ''));
+            if ($loanId !== '' && LoanDetail::where('loan_id', $loanId)->exists()) {
+                return;
+            }
+        }
+
+        if ($loanId === null || $loanId === '') {
+            $maybeExisting = LoanDetail::query()
+                ->when(Schema::hasColumn('loan_details', 'employee_ID'), fn($q) => $q->where('employee_ID', $employeeId))
+                ->when(Schema::hasColumn('loan_details', 'loan_amount'), fn($q) => $q->where('loan_amount', $approvedAmount))
+                ->when(Schema::hasColumn('loan_details', 'date_approved'), fn($q) => $q->whereDate('date_approved', $approvedDate))
+                ->when(Schema::hasColumn('loan_details', 'loan_type'), fn($q) => $q->where('loan_type', $loanTypeLabel))
+                ->orderByDesc('created_at')
+                ->first();
+
+            if ($maybeExisting && Schema::hasColumn('loan_applications', 'lv_no')) {
+                $application->forceFill(['lv_no' => $maybeExisting->loan_id])->save();
+                return;
+            }
+        }
+
+        if ($loanId === null || $loanId === '') {
+            $loanId = $baseLoanId;
+        }
+
+        $insert = [];
+        $set = function (string $column, $value) use (&$insert) {
+            if (Schema::hasColumn('loan_details', $column)) {
+                $insert[$column] = $value;
+            }
+        };
+
+        $set('loan_id', $loanId);
+        $set('employee_ID', $employeeId);
+        $set('loan_type', $loanTypeLabel);
+        $set('loan_amount', $approvedAmount);
+        $set('interest_rate', 0);
+        $set('interest', $interest);
+        $set('date_applied', $appliedDate);
+        $set('date_approved', $approvedDate);
+        $set('total_net', $totalNet);
+        $set('terms', $terms);
+        $set('monthly_payment', $monthlyPayment);
+        $set('total_deduction', $totalDeduction);
+        $set('old_balance', $oldBalance);
+        $set('lpp', $lpp);
+        $set('handling_fee', $handlingFee);
+        $set('petty_cash_loan', $pettyCashLoan);
+        $set('co_maker_name', $application->comaker1_name ?? null);
+        $set('co_maker_position', $application->comaker1_position ?? null);
+        $set('co_maker2_name', $application->comaker2_name ?? null);
+        $set('co_maker2_position', $application->comaker2_position ?? null);
+        $set('remarks', 'Approved Loan Request');
+
+        if (!empty($insert)) {
+            LoanDetail::create($insert);
+        }
+
+        if (Schema::hasColumn('loan_applications', 'lv_no')) {
+            $application->forceFill(['lv_no' => $loanId])->save();
+        }
+    }
+
+    private function resolveEmployeeId(LoanApplication $application): string
+    {
+        $user = $application->user;
+        return collect([
+            $application->member_key,
+            $user->employee_ID ?? null,
+            $user->employees_id ?? null,
+            $user->employee_id ?? null,
+        ])
+            ->map(fn($v) => trim((string) $v))
+            ->first(fn($v) => $v !== '' && strtolower($v) !== 'n/a') ?? '';
+    }
+
+    private function makeLedgerLoanId(LoanApplication $application): string
+    {
+        return 'LN-APP-' . str_pad((string) $application->id, 6, '0', STR_PAD_LEFT);
+    }
+
+    private function mapLoanTypeForLedger(?string $loanType): string
+    {
+        $raw = strtolower(trim((string) $loanType));
+        $raw = str_replace(['_', '-'], ' ', $raw);
+        $raw = preg_replace('/\s+/', ' ', $raw) ?? '';
+
+        if (str_contains($raw, 'education')) {
+            return 'Educational Loan';
+        }
+        if (str_contains($raw, 'appliance')) {
+            return 'Appliance Loan';
+        }
+        if (str_contains($raw, 'grocery')) {
+            return 'Grocery Loan';
+        }
+
+        return 'Regular Loan';
+    }
 
 
 
